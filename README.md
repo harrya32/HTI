@@ -91,3 +91,8 @@ Check the output for basic logging and confirmation that the components load cor
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+
+##TODO
+- Get Jax working for GPU, so that NLOT is not so slow
+- Test combining both metric learning methods (changing the regularisation in NLOT to bias it towards the LAND/RBF MFM metric)
+- Add conditioning, and test on toy conditional distributions
