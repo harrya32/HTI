@@ -1,0 +1,87 @@
+Initializing distributed: GLOBAL_RANK: 1, MEMBER: 2/2
+LOCAL_RANK: 1 - CUDA_VISIBLE_DEVICES: [0,1]
+LOCAL_RANK: 1 - CUDA_VISIBLE_DEVICES: [0,1]
+[1m-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[1m<frozen runpy> 198 _run_module_as_main
+[1m<frozen runpy> 88 _run_code
+[1mmain.py 239 <module>
+[1mmain(updated_args, seed=seed, t_exclude=t_exclude)
+[1mmain.py 214 main
+[1mtrainer.fit(
+[1mtrainer.py 543 fit
+[1mcall._call_and_handle_interrupt(
+[1mcall.py 43 _call_and_handle_interrupt
+[1mreturn trainer.strategy.launcher.launch(trainer_fn, *args, trainer=trainer, **kwargs)
+[1msubprocess_script.py 105 launch
+[1mreturn function(*args, **kwargs)
+[1mtrainer.py 579 _fit_impl
+[1mself._run(model, ckpt_path=ckpt_path)
+[1mtrainer.py 986 _run
+[1mresults = self._run_stage()
+[1mtrainer.py 1030 _run_stage
+[1mself._run_sanity_check()
+[1mtrainer.py 1059 _run_sanity_check
+[1mval_loop.run()
+[1mutilities.py 182 _decorator
+[1mreturn loop_run(self, *args, **kwargs)
+[1mevaluation_loop.py 135 run
+[1mself._evaluation_step(batch, batch_idx, dataloader_idx, dataloader_iter)
+[1mevaluation_loop.py 396 _evaluation_step
+[1moutput = call._call_strategy_hook(trainer, hook_name, *step_args)
+[1mcall.py 309 _call_strategy_hook
+[1moutput = fn(*args, **kwargs)
+[1mstrategy.py 411 validation_step
+[1mreturn self._forward_redirection(self.model, self.lightning_module, "validation_step", *args, **kwargs)
+[1mstrategy.py 642 __call__
+[1mwrapper_output = wrapper_module(*args, **kwargs)
+[1mmodule.py 1532 _wrapped_call_impl
+[1mreturn self._call_impl(*args, **kwargs)
+[1mmodule.py 1541 _call_impl
+[1mreturn forward_call(*args, **kwargs)
+[1mdistributed.py 1593 forward
+[1melse self._run_ddp_forward(*inputs, **kwargs)
+[1mdistributed.py 1411 _run_ddp_forward
+[1mreturn self.module(*inputs, **kwargs)  # type: ignore[index]
+[1mmodule.py 1532 _wrapped_call_impl
+[1mreturn self._call_impl(*args, **kwargs)
+[1mmodule.py 1541 _call_impl
+[1mreturn forward_call(*args, **kwargs)
+[1mstrategy.py 635 wrapped_forward
+[1mout = method(*_args, **_kwargs)
+[1mflow_net_train.py 119 validation_step
+[1mval_loss = self._compute_loss(main_batch)
+[1mflow_net_train.py 52 _compute_loss
+[1mts, xts, uts = self._process_flow(x0s, x1s)
+[1mflow_net_train.py 81 _process_flow
+[1mt, xt, ut = self.flow_matcher.sample_location_and_conditional_flow(
+[1mmfm.py 78 sample_location_and_conditional_flow
+[1mxt = self.sample_xt(x0, x1, t, eps, t_min, t_max)
+[1mmfm.py 51 sample_xt
+[1mmu_t = self.compute_mu_t(x0, x1, t, t_min, t_max)
+[1mmfm.py 35 compute_mu_t
+[1mself.geopath_net_output = self.geopath_net(x0, x1, t)
+[1mmodule.py 1532 _wrapped_call_impl
+[1mreturn self._call_impl(*args, **kwargs)
+[1mmodule.py 1541 _call_impl
+[1mreturn forward_call(*args, **kwargs)
+[1mmlp.py 34 forward
+[1mreturn self.mainnet(x)
+[1mmodule.py 1532 _wrapped_call_impl
+[1mreturn self._call_impl(*args, **kwargs)
+[1mmodule.py 1541 _call_impl
+[1mreturn forward_call(*args, **kwargs)
+[1mmlp_base.py 46 forward
+[1mreturn self.model(x)
+[1mmodule.py 1532 _wrapped_call_impl
+[1mreturn self._call_impl(*args, **kwargs)
+[1mmodule.py 1541 _call_impl
+[1mreturn forward_call(*args, **kwargs)
+[1mcontainer.py 217 forward
+[1minput = module(input)
+[1mmodule.py 1532 _wrapped_call_impl
+[1mreturn self._call_impl(*args, **kwargs)
+[1mmodule.py 1541 _call_impl
+[1mreturn forward_call(*args, **kwargs)
+[1mlinear.py 116 forward
+[1mreturn F.linear(input, self.weight, self.bias)
+[1mRuntimeError:

@@ -1,0 +1,114 @@
+{
+    "os": "Linux-5.15.0-1086-azure-x86_64-with-glibc2.31",
+    "python": "3.11.11",
+    "heartbeatAt": "2025-04-18T14:56:34.985160",
+    "startedAt": "2025-04-18T14:56:34.419156",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--config_path",
+        "./configs/sphere/mfm.yaml"
+    ],
+    "state": "running",
+    "program": "-m mfm.train.main",
+    "codePathLocal": null,
+    "git": {
+        "remote": "https://github.com/kksniak/metric-flow-matching.git",
+        "commit": "c58400b7a32f7d4e7780fe4fc49ed0e8ffdff734"
+    },
+    "email": null,
+    "root": "/home/azureuser/localfiles/HTI/metric-flow-matching",
+    "host": "hmka3-on20250416",
+    "username": "azureuser",
+    "executable": "/home/azureuser/miniconda/envs/mfm/bin/python",
+    "cpu_count": 12,
+    "cpu_count_logical": 12,
+    "cpu_freq": {
+        "current": 2593.9949999999994,
+        "min": 0.0,
+        "max": 0.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2593.995,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2593.995,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2593.995,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2593.995,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2593.995,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2593.995,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2593.995,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2593.995,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2593.995,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2593.995,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2593.995,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2593.995,
+            "min": 0.0,
+            "max": 0.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 118.05400085449219,
+            "used": 73.23124694824219
+        }
+    },
+    "gpu": "Tesla V100-PCIE-16GB",
+    "gpu_count": 2,
+    "gpu_devices": [
+        {
+            "name": "Tesla V100-PCIE-16GB",
+            "memory_total": 17179869184
+        },
+        {
+            "name": "Tesla V100-PCIE-16GB",
+            "memory_total": 17179869184
+        }
+    ],
+    "memory": {
+        "total": 220.20083618164062
+    }
+}

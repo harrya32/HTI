@@ -1,0 +1,136 @@
+GPU available: True (cuda), used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/setup.py:187: GPU available but not used. You can set it by doing `Trainer(accelerator='gpu')`.
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loggers/wandb.py:390: There is a wandb run already in progress and newly created instances of `WandbLogger` will reuse this run. If this is not desired, call `wandb.finish()` before instantiating `WandbLogger`.
+  | Name        | Type       | Params
+-------------------------------------------
+0 | geopath_net | GeoPathMLP | 9.0 K
+-------------------------------------------
+9.0 K     Trainable params
+0         Non-trainable params
+9.0 K     Total params
+0.036     Total estimated model params size (MB)
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loops/fit_loop.py:298: The number of training batches (35) is smaller than the logging interval Trainer(log_every_n_steps=50). Set a lower value for log_every_n_steps if you want to see logs for the training epoch.
+
+Epoch 0:   0%|                                                                                                                                                                                  | 0/35 [00:00<?, ?it/s]
+
+
+
+
+
+
+
+
+Epoch 4: 100%|█| 35/35 [00:03<00:00, 10.76it/s, v_num=58kg, GeoPathNet/train_loss_geopath_step=0.819, GeoPathNet/mean_velocity_geopath=28.10, GeoPathNet/val_loss_geopath=0.929, GeoPathNet/mean_geopath_geopath=0.386,
+
+Epoch 5: 100%|█| 35/35 [00:03<00:00, 10.09it/s, v_num=58kg, GeoPathNet/train_loss_geopath_step=0.797, GeoPathNet/mean_velocity_geopath=27.40, GeoPathNet/val_loss_geopath=0.832, GeoPathNet/mean_geopath_geopath=0.298,
+
+Epoch 6: 100%|█| 35/35 [00:03<00:00,  9.87it/s, v_num=58kg, GeoPathNet/train_loss_geopath_step=0.694, GeoPathNet/mean_velocity_geopath=24.90, GeoPathNet/val_loss_geopath=0.719, GeoPathNet/mean_geopath_geopath=0.509,
+
+
+Epoch 7: 100%|█| 35/35 [00:05<00:00,  6.64it/s, v_num=58kg, GeoPathNet/train_loss_geopath_step=0.815, GeoPathNet/mean_velocity_geopath=22.70, GeoPathNet/val_loss_geopath=0.743, GeoPathNet/mean_geopath_geopath=0.543,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Epoch 16: 100%|█| 35/35 [00:03<00:00, 11.56it/s, v_num=58kg, GeoPathNet/train_loss_geopath_step=0.684, GeoPathNet/mean_velocity_geopath=20.30, GeoPathNet/val_loss_geopath=0.649, GeoPathNet/mean_geopath_geopath=0.533
+
+
+
+
+
+
+
+
+
+
+Epoch 22: 100%|█| 35/35 [00:03<00:00, 11.00it/s, v_num=58kg, GeoPathNet/train_loss_geopath_step=0.689, GeoPathNet/mean_velocity_geopath=18.60, GeoPathNet/val_loss_geopath=0.581, GeoPathNet/mean_geopath_geopath=0.555
+
+Epoch 23: 100%|█| 35/35 [00:03<00:00, 10.79it/s, v_num=58kg, GeoPathNet/train_loss_geopath_step=0.563, GeoPathNet/mean_velocity_geopath=18.40, GeoPathNet/val_loss_geopath=0.579, GeoPathNet/mean_geopath_geopath=0.536
+
+
+
+
+
+
+Epoch 27: 100%|█| 35/35 [00:03<00:00, 11.51it/s, v_num=58kg, GeoPathNet/train_loss_geopath_step=0.498, GeoPathNet/mean_velocity_geopath=18.60, GeoPathNet/val_loss_geopath=0.601, GeoPathNet/mean_geopath_geopath=0.544
+
+Epoch 28: 100%|█| 35/35 [00:03<00:00, 10.56it/s, v_num=58kg, GeoPathNet/train_loss_geopath_step=0.561, GeoPathNet/mean_velocity_geopath=19.20, GeoPathNet/val_loss_geopath=0.608, GeoPathNet/mean_geopath_geopath=0.550
+
+Epoch 29: 100%|█| 35/35 [00:03<00:00, 11.51it/s, v_num=58kg, GeoPathNet/train_loss_geopath_step=0.573, GeoPathNet/mean_velocity_geopath=18.90, GeoPathNet/val_loss_geopath=0.613, GeoPathNet/mean_geopath_geopath=0.544
+
+
+
+
+
+
+Epoch 33: 100%|█| 35/35 [00:03<00:00, 11.24it/s, v_num=58kg, GeoPathNet/train_loss_geopath_step=0.630, GeoPathNet/mean_velocity_geopath=18.20, GeoPathNet/val_loss_geopath=0.595, GeoPathNet/mean_geopath_geopath=0.530
+
+Epoch 34: 100%|█| 35/35 [00:03<00:00,  9.30it/s, v_num=58kg, GeoPathNet/train_loss_geopath_step=0.616, GeoPathNet/mean_velocity_geopath=19.30, GeoPathNet/val_loss_geopath=0.631, GeoPathNet/mean_geopath_geopath=0.548
+Sanity Checking DataLoader 0:   0%|                                                                                                                                                              | 0/2 [00:00<?, ?it/s]
+GPU available: True (cuda), used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+  | Name     | Type        | Params
+-----------------------------------------
+0 | flow_net | VelocityNet | 8.8 K
+-----------------------------------------
+8.8 K     Trainable params
+0         Non-trainable params
+8.8 K     Total params
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Epoch 33:  94%|██████████████████████████████████████████████████████████████▏   | 33/35 [00:01<00:00, 18.59it/s, v_num=58kg, FlowNet/mean_geopath_cfm=0.515, FlowNet/train_loss_cfm=0.163, FlowNet/val_loss_cfm=0.192]
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/call.py:54: Detected KeyboardInterrupt, attempting graceful shutdown...
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/connectors/data_connector.py:441: The 'test_dataloader' does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` to `num_workers=11` in the `DataLoader` to improve performance.
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/torchdyn/numerics/odeint.py:83: UserWarning: Setting tolerances has no effect on fixed-step methods
+
+Testing DataLoader 0:   0%|                                                                                                                                                                      | 0/1 [00:00<?, ?it/s]
