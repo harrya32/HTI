@@ -117,7 +117,17 @@ def get_gsb_gmm_sampler(batch_size, key):
     return train_dataloaders
 
 
-def get_samplers_scarvelis(geometry_str):
+def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
+    """Load Scarvelis datasets, optionally selecting a subset of pairs.
+
+    Args:
+        geometry_str: Name of the Scarvelis dataset (e.g., 'scarvelis_circle').
+        num_pairs_requested: The desired number of evenly spaced pairs. If None
+                             or >= total available pairs, all pairs are used.
+
+    Returns:
+        A list of sampler iterators corresponding to the selected timepoints.
+    """
     paths = {
         "scarvelis_circle": "data_gic_24_gaussians_radius_1_std_0p1_100_samples_closed.pt",
         "scarvelis_vee": "data_mass_split_std_1_100_samples_8_intermediate_scale_x10.pt",
@@ -140,6 +150,36 @@ def get_samplers_scarvelis(geometry_str):
     if geometry_str == "scarvelis_xpath":
         assert dataset.shape[0] == 2
         dataset = jnp.concatenate((dataset[0], dataset[1]), axis=1)
+
+    # --- Pair selection logic --- START
+    total_timepoints = dataset.shape[0]
+    total_pairs = total_timepoints - 1
+
+    if num_pairs_requested is not None and num_pairs_requested > 0 and num_pairs_requested < total_pairs:
+        print(f"Selecting {num_pairs_requested} pairs evenly spaced from {total_pairs} total pairs.")
+        # Calculate indices for k+1 timepoints to get k pairs
+        num_timepoints_to_select = num_pairs_requested + 1
+        selected_indices_float = np.linspace(0, total_timepoints - 1, num=num_timepoints_to_select)
+        selected_timepoint_indices = np.round(selected_indices_float).astype(int)
+        selected_timepoint_indices = np.unique(selected_timepoint_indices) # Ensure uniqueness after rounding
+        
+        # Adjust if rounding resulted in fewer timepoints than needed
+        if len(selected_timepoint_indices) < num_timepoints_to_select:
+             # This is a fallback, might not be perfectly even spacing but ensures correct number
+             selected_timepoint_indices = np.linspace(0, total_timepoints - 1, num=num_timepoints_to_select).astype(int)
+             selected_timepoint_indices = np.unique(selected_timepoint_indices)
+             # If still not enough due to extreme distribution, we might need a more robust selection
+             # but for typical cases, this should suffice.
+             print(f"Adjusted selected timepoint indices: {selected_timepoint_indices}")
+
+
+        print(f"Using timepoint indices: {selected_timepoint_indices}")
+        dataset = dataset[selected_timepoint_indices]
+    else:
+        print(f"Using all {total_pairs} available pairs.")
+        selected_timepoint_indices = np.arange(total_timepoints)
+    # --- Pair selection logic --- END
+
 
     samplers = [
         iter(sampler_from_data(dataset[t])) for t in range(dataset.shape[0])

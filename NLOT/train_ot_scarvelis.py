@@ -67,13 +67,20 @@ class Workspace:
 
         if self.cfg.data is None:
             self.cfg.data = self.cfg.geometry
-        samplers = data.get_samplers_scarvelis(self.cfg.data)
+        # Pass the requested number of pairs from config to the sampler function
+        # Store samplers as instance variable
+        self.samplers = data.get_samplers_scarvelis(
+            self.cfg.data,
+            num_pairs_requested=self.cfg.get("num_pairs", None) # Use .get for safety
+        )
 
         self.geometry.bounds, self.geometry.xbounds, self.geometry.ybounds = data.get_bounds(self.cfg.data)
 
-        self.num_pairs = len(samplers) - 1
+        # Update num_pairs based on the actual length of the loaded samplers
+        self.num_pairs = len(self.samplers) - 1
         print(f'training on {self.num_pairs} pairs')
-        self.eval_samples = [next(s) for s in samplers]
+        # Use self.samplers for eval samples
+        self.eval_samples = [next(s) for s in self.samplers]
 
         self.optimizer_target_potential = optax.adamw(
             learning_rate=self.cfg.potential_lr)
@@ -111,7 +118,8 @@ class Workspace:
         self.state_source_maps = [state_source_map]
 
         if 'spline_model' in self.params_geometry:
-            self.fit_spline_amortizer(samplers, init=True)
+            # Pass self.samplers to fit_spline_amortizer
+            self.fit_spline_amortizer(self.samplers, init=True)
 
         self.train_step = 0
 
@@ -248,14 +256,13 @@ class Workspace:
         return new_params_geometry, new_state_geometry, loss
 
     def run(self):
-        samplers = data.get_samplers_scarvelis(self.cfg.data)
 
         logf, writer = self._init_logging()
         dual_loss = -1.
 
         while self.train_step < self.cfg.num_train_iters:
             start = time.time()
-            batches = self.sample_all_batches(samplers)
+            batches = self.sample_all_batches(self.samplers)
             new_states, info = self.update_all_states(
                 self.state_target_potentials, self.state_source_maps,
                 batches)
@@ -313,7 +320,7 @@ class Workspace:
             if self.train_step % self.cfg.spline.update_frequency == 0 \
                     and 'spline_model' in self.params_geometry \
                     and self.train_step < self.cfg.num_train_iters - 1000:
-                self.fit_spline_amortizer(samplers=samplers, init=False)
+                self.fit_spline_amortizer(samplers=self.samplers, init=False)
 
 
             if self.train_step % self.cfg.plot_frequency == 0:
