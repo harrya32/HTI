@@ -71,7 +71,7 @@ class Workspace:
         # Store samplers as instance variable
         self.samplers = data.get_samplers_scarvelis(
             self.cfg.data,
-            num_pairs_requested=self.cfg.get("num_pairs", None) # Use .get for safety
+            num_pairs_requested=self.cfg.get("num_pairs", None) 
         )
 
         self.geometry.bounds, self.geometry.xbounds, self.geometry.ybounds = data.get_bounds(self.cfg.data)
@@ -218,13 +218,18 @@ class Workspace:
     def geometry_loss(self, params_geometry,
                       state_target_potentials, state_source_maps,
                       batches, key):
-        metric = lambda x: self.geometry.apply(
+        metric_fn = lambda x: self.geometry.apply(
             {'params': params_geometry},
             x, method=self.geometry.metric)
-        metric_vmap = jax.vmap(metric)
-        metric_jac_vmap = jax.vmap(jax.jacfwd(metric))
+        metric_vmap = jax.vmap(metric_fn)
+        inv_metric_fn = lambda x: jnp.linalg.inv(metric_fn(x))
+        inv_metric_vmap = jax.vmap(inv_metric_fn)
 
         dual_losses = []
+        frobenius_regs = [] # List to store Frobenius regularization term for each pair
+
+        reg_key, key = jax.random.split(key) # Split key for regularization sampling
+
         for t in range(self.num_pairs):
             batch = batches[t]
             _, info_t = self.neural_dual_solver.loss_fn(
@@ -233,9 +238,47 @@ class Workspace:
                 params_geometry, batch)
             dual_losses.append(-info_t.dual_loss)
 
+            # --- Frobenius Norm Regularization (Straight Line Path) ---
+            # 1. Get target points x1 from the batch
+            source_points = batch['source']
+            target_points = batch['target'] # Use target points from the batch
+
+            # 2. Sample t' ~ U(0, 1) for each point
+            batch_size = source_points.shape[0]
+            t_key, reg_key = jax.random.split(reg_key)
+            times = jax.random.uniform(t_key, shape=(batch_size, 1)) # Shape (batch_size, 1) for broadcasting
+
+            # 3. Calculate points along straight line: sigma(t') = (1-t')*x0 + t'*x1
+            path_points = (1.0 - times) * source_points + times * target_points
+
+            # 4. Evaluate inverse metric G^-1(sigma(t'))
+            #    Use vmapped inverse function for batch processing
+            inv_metrics_at_path = inv_metric_vmap(path_points) # Shape (batch_size, dim, dim)
+
+            # 5. Calculate squared Frobenius norm ||G^-1(sigma(t'))||^2_F = Tr((G^-1)^T G^-1) = Tr(G^-2)
+            #    Use vmap again for batch processing the trace calculation
+            frobenius_sq_norms = jax.vmap(lambda m: jnp.trace(m @ m))(inv_metrics_at_path) # Shape (batch_size,)
+
+            # 6. Average over the batch
+            mean_frobenius_reg = jnp.mean(frobenius_sq_norms)
+            frobenius_regs.append(mean_frobenius_reg)
+
+
+        # --- Combine Losses ---
         mean_dual_loss = jnp.mean(jnp.stack(dual_losses))
-        total_loss = mean_dual_loss
-        return total_loss
+        mean_frobenius_reg = jnp.mean(jnp.stack(frobenius_regs)) # Average over pairs
+
+        frobenius_weight = self.cfg.metric.get('frobenius_reg_weight', 0.0) # Weight for Frobenius
+
+        total_loss = (
+            mean_dual_loss
+            + frobenius_weight * mean_frobenius_reg
+        )        
+
+
+        return mean_dual_loss
+        
+        #return total_loss NOT READY YET
 
     @functools.partial(jax.jit, static_argnums=[0])
     def update_geometry(self, params_geometry, state_geometry,

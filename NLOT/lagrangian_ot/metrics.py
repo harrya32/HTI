@@ -96,3 +96,34 @@ class NeuralNetMetric(MetricBase):
 
         A = R.T @ Q @ R
         return A
+
+
+@dataclass
+class NeuralNetMetric_new(MetricBase):
+    D = 2
+
+    def setup(self):
+        assert self.D == 2
+        self.net = nn.Sequential([
+            nn.Dense(128),
+            nn.leaky_relu,
+            nn.Dense(128),
+            nn.leaky_relu,
+            nn.Dense(4)
+        ])
+
+    def __call__(self, x, eta = 1e-3):
+        assert x.ndim == 1 and x.shape[0] == self.D
+        
+        nn_out = self.net(x)
+        a = nn_out[0]
+        b = nn_out[1]
+        c = nn_out[2]
+        d = nn_out[3]
+
+        Q = jnp.array([[a, b], 
+                       [c, d]])
+
+        A = Q.T @ Q + eta * jnp.eye(2)
+
+        return A
