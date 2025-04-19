@@ -20,6 +20,7 @@ import dataclasses
 from typing import Iterator
 
 import hydra
+from omegaconf import OmegaConf
 
 from lagrangian_ot import models, neuraldual, metrics, geodesics, geometries, data
 
@@ -31,11 +32,22 @@ from IPython.core import ultratb
 sys.excepthook = ultratb.FormattedTB(
     mode='Plain', color_scheme='Neutral', call_pdb=1)
 
+import wandb
+
 class Workspace:
     def __init__(self, cfg):
         self.cfg = cfg
         self.work_dir = os.getcwd()
         print(f"workspace: {self.work_dir}")
+
+        # Initialize wandb
+        wandb.init(
+            project=cfg.get("wandb_project", "NLOT-Scarvelis_" + self.cfg.geometry), # Default project name
+            entity=cfg.get("wandb_entity", None), # Replace with your entity if needed
+            config=OmegaConf.to_container(cfg, resolve=True), # Convert Hydra cfg to dict
+            name=cfg.get("run_name", None), # Optional run name
+            # mode="disabled" if cfg.get("debug", False) else "online", # Optionally disable for debugging
+        )
 
         self.key = jax.random.PRNGKey(self.cfg.seed)
         self.elapsed_time = 0.
@@ -248,49 +260,75 @@ class Workspace:
                 self.state_target_potentials, self.state_source_maps,
                 batches)
             self.state_target_potentials, self.state_source_maps = new_states
-            update_time = time.time() - start
-            self.elapsed_time += update_time
-            print(
-                f'[{self.train_step}/{self.cfg.num_train_iters}] '
-                f'dual_loss: {info.dual_loss:.2e}, amor_loss: {info.amor_loss:.2e} '
-                f'num_ctransform_iter: {info.num_ctransform_iter:.2f} '
-                f'update_time: {update_time:.2f} '
-            )
 
-            start = time.time()
-            if self.train_step > self.cfg.metric.warmup_steps \
-                    and self.train_step % self.cfg.metric.update_frequency == 0 \
-                    and self.cfg.geometry == 'neural_net_metric':
-                for _ in range(self.cfg.metric.update_repeat):
-                    k1, self.key = jax.random.split(self.key)
-                    self.params_geometry, self.state_geometry, dual_loss = self.update_geometry(
-                        self.params_geometry, self.state_geometry,
-                        self.state_target_potentials, self.state_source_maps,
-                        batches, k1)
-                    print(f'=== [metric] dual_loss: {dual_loss:.2e}')
+            update_step_time = time.time() - start
+            self.elapsed_time += update_step_time
+
+            if self.train_step % self.cfg.metric.update_frequency == 0:
+                start = time.time()
+                k1, self.key = jax.random.split(self.key)
+                new_params_geometry, new_state_geometry, geom_loss = self.update_geometry(
+                    self.params_geometry, self.state_geometry,
+                    self.state_target_potentials, self.state_source_maps,
+                    batches, k1)
+                self.params_geometry, self.state_geometry = new_params_geometry, new_state_geometry
+                update_metric_time = time.time() - start
+                self.elapsed_time += update_metric_time
+                print(
+                    f'step: {self.train_step}/{self.cfg.num_train_iters} '
+                    f'dual_loss: {info.dual_loss:.2e}, amor_loss: {info.amor_loss:.2e} '
+                    f'geom_loss: {geom_loss:.2e} '
+                    f'num_ctransform_iter: {info.num_ctransform_iter:.2f} '
+                    f'update_step_time: {update_step_time:.2f}s '
+                    f'update_metric_time: {update_metric_time:.2f}s '
+                )
+                # Log metrics including geometry loss
+                wandb.log({
+                    "train/dual_loss": info.dual_loss,
+                    "train/amor_loss": info.amor_loss,
+                    "train/geom_loss": geom_loss,
+                    "train/num_ctransform_iter": info.num_ctransform_iter,
+                    "train/update_step_time": update_step_time,
+                    "train/update_metric_time": update_metric_time,
+                    "train/elapsed_time": self.elapsed_time,
+                }, step=self.train_step)
+
+            else:
+                 print(
+                    f'step: {self.train_step}/{self.cfg.num_train_iters} '
+                    f'dual_loss: {info.dual_loss:.2e}, amor_loss: {info.amor_loss:.2e} '
+                    f'num_ctransform_iter: {info.num_ctransform_iter:.2f} '
+                    f'update_step_time: {update_step_time:.2f}s '
+                )
+                 # Log metrics excluding geometry loss
+                 wandb.log({
+                     "train/dual_loss": info.dual_loss,
+                     "train/amor_loss": info.amor_loss,
+                     "train/num_ctransform_iter": info.num_ctransform_iter,
+                     "train/update_step_time": update_step_time,
+                     "train/elapsed_time": self.elapsed_time,
+                 }, step=self.train_step)
 
 
             if self.train_step % self.cfg.spline.update_frequency == 0 \
-                    and 'spline_model' in self.params_geometry:
-                self.fit_spline_amortizer(samplers, init=False)
-            self.elapsed_time += time.time() - start
+                    and 'spline_model' in self.params_geometry \
+                    and self.train_step < self.cfg.num_train_iters - 1000:
+                self.fit_spline_amortizer(samplers=samplers, init=False)
+
 
             if self.train_step % self.cfg.plot_frequency == 0:
-                self.plot()
+                self.plot_all_pairs()
+                self.plot_pushforward()
 
-                if self.has_reference_geometry:
-                    alignment = self.eval_alignment()
-                else:
-                    alignment = -1.
+            if self.train_step % self.cfg.plot_frequency == 0 and self.has_reference_geometry:
+                self.eval_alignment()
 
-                writer.writerow({
-                    'iter': self.train_step,
-                    'potential_dual_loss': info.dual_loss,
-                    'metric_dual_loss': dual_loss,
-                    'elapsed_time': self.elapsed_time,
-                    'alignment': alignment,
-                })
-                logf.flush()
+            writer.writerow({
+                'iter': self.train_step,
+                'ot_cost': -info.dual_loss,
+                'elapsed_time': self.elapsed_time,
+            })
+            logf.flush()
 
             self.train_step += 1
             if self.train_step % self.cfg.save_frequency == 0:
@@ -326,8 +364,7 @@ class Workspace:
 
     def _init_logging(self):
         logf = open('log.csv', 'a')
-        fieldnames = ['iter', 'potential_dual_loss', 'metric_dual_loss',
-                      'elapsed_time', 'alignment']
+        fieldnames = ['iter', 'ot_cost', 'elapsed_time']
         writer = csv.DictWriter(logf, fieldnames=fieldnames)
         if os.stat('log.csv').st_size == 0:
             writer.writeheader()
@@ -341,17 +378,14 @@ class Workspace:
         self.plot_pushforward()
 
     def plot_all_pairs(self):
-        if self.cfg.geometry == 'scarvelis_xpath' or self.cfg.geometry == 'scarvelis_vee':
-            ncol = 5
-        else:
-            ncol = 6
-        nrow = math.ceil(self.num_pairs / ncol)
-        fig, axs = plt.subplots(nrow, ncol, figsize=(ncol * 4, nrow * 4),
-                                gridspec_kw={'wspace': 0, 'hspace': 0})
-        axs = axs.ravel()
-        self._setup_ax(axs)
+        print('plotting')
+        rows = math.ceil(math.sqrt(self.num_pairs))
+        cols = math.ceil(self.num_pairs / rows)
+        fig, axs = plt.subplots(rows, cols, figsize=(cols * 3, rows * 3))
+        axs = axs.flatten()
 
         for t in range(self.num_pairs):
+            self._setup_ax(axs[t])
             self.neural_dual_solver.plot_forward_map(
                 self.eval_samples[t],
                 self.eval_samples[t+1],
@@ -359,38 +393,36 @@ class Workspace:
                 self.state_target_potentials[t],
                 self.params_geometry,
                 ax=axs[t],
-                legend=False,
+                # Remove legend=False
             )
 
-        for ax in axs:
-            self._clean_axis(ax)
+        for i in range(self.num_pairs, len(axs)):
+            axs[i].axis('off')
 
-        fname = 'all-pairs.png'
-        print(f'saving to {fname}')
-        fig.savefig(fname, bbox_inches='tight', pad_inches=0)
+        fig.tight_layout()
+        fig.savefig('all_pairs.png')
+        # Log the combined plot to wandb
+        wandb.log({"plots/all_pairs": wandb.Image('all_pairs.png')}, step=self.train_step)
         plt.close(fig)
 
-    def _setup_ax(self, axs):
-        if not isinstance(axs, np.ndarray):
-            axs = np.array([axs])
-        for ax in axs:
-            if hasattr(self.geometry, 'xbounds'):
-                xlims = self.geometry.xbounds
-                ylims = self.geometry.ybounds
-            else:
-                xlims = ylims = self.geometry.bounds
+    def _setup_ax(self, ax): 
+        if hasattr(self.geometry, 'xbounds'):
+            xlims = self.geometry.xbounds
+            ylims = self.geometry.ybounds
+        else:
+            xlims = ylims = self.geometry.bounds
 
-            ax.set_xlim(xlims)
-            ax.set_ylim(ylims)
-            # ax.set_aspect('equal')
+        ax.set_xlim(xlims)
+        ax.set_ylim(ylims)
+        # ax.set_aspect('equal')
 
         self.geometry.add_plot_background(
-            self.params_geometry, axs, xlims=xlims, ylims=ylims)
+            self.params_geometry, ax, xlims=xlims, ylims=ylims)
 
         if 'neural' in self.cfg.geometry:
             if self.cfg.data in ['scarvelis_xpath','scarvelis_vee','scarvelis_circle']:
                 self.reference_geometry.add_plot_background(
-                    self.params_geometry, axs, xlims=xlims, ylims=ylims,
+                    self.params_geometry, ax, xlims=xlims, ylims=ylims,
                     alpha=0.5,
                 )
 
@@ -458,6 +490,11 @@ class Workspace:
             fig = ax.get_figure()
             print(f'saving to {fname}')
             fig.savefig(fname, bbox_inches='tight', pad_inches=0)
+
+            # Log the  plot to wandb
+            wandb.log({"plots/pushforward": wandb.Image(fname)}, step=self.train_step)
+            plt.close(fig)
+            
 
 
     def save(self, tag="latest"):

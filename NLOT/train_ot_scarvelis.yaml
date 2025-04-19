@@ -2,11 +2,11 @@ defaults:
   - _self_
 
 seed: 0
-num_train_iters: 100
+num_train_iters: 200
 batch_size: 1024
 potential_lr: 1e-4
 
-plot_frequency: 100
+plot_frequency: 25
 save_frequency: ${plot_frequency}
 
 metric:
@@ -16,8 +16,8 @@ metric:
   lr: 5e-3
 
 # neural_net_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee
-geometry: 'scarvelis_xpath'
-data: 'scarvelis_xpath'
+geometry: 'scarvelis_circle'
+data: 'scarvelis_circle'
 
 geometry_kwargs:
   spline_solver_kwargs:

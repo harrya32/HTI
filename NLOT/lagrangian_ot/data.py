@@ -146,7 +146,7 @@ def get_samplers_scarvelis(geometry_str):
     ]
 
     # only keep every 2nd sample
-    samplers = [samplers[i] for i in range(0, len(samplers), 2)]
+    #samplers = [samplers[i] for i in range(0, len(samplers), 2)]
     return samplers
 
 

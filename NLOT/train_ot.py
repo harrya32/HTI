@@ -17,6 +17,7 @@ import shutil
 import csv
 import torch
 import functools
+import wandb
 
 from geomloss import SamplesLoss
 
@@ -44,6 +45,15 @@ class Workspace:
         self.cfg = cfg
         self.work_dir = os.getcwd()
         print(f"workspace: {self.work_dir}")
+
+        # Initialize wandb
+        wandb.init(
+            project=cfg.get("wandb_project", "NLOT"),
+            entity=cfg.get("wandb_entity", None), # Replace with your entity if needed
+            config=dataclasses.asdict(cfg), # Log hydra config
+            name=cfg.get("run_name", None), # Optional run name
+            # mode="disabled" if cfg.get("debug", False) else "online", # Optionally disable for debugging
+        )
 
         if self.cfg.save_all_plots:
             os.makedirs('plots')
@@ -206,6 +216,14 @@ class Workspace:
                 f'num_ctransform_iter: {info.num_ctransform_iter:.2f} '
                 f'update_step_time: {update_step_time:.2f}s '
             )
+            # Log training metrics to wandb
+            wandb.log({
+                "train/dual_loss": info.dual_loss,
+                "train/amor_loss": info.amor_loss,
+                "train/num_ctransform_iter": info.num_ctransform_iter,
+                "train/update_step_time": update_step_time,
+                "train/elapsed_time": self.elapsed_time,
+            }, step=self.train_step)
 
             start_time = time.time()
             if self.cfg.spline.restart_frequency is not None \
@@ -238,14 +256,22 @@ class Workspace:
                 self.plot()
 
                 if self.cfg.save_all_plots:
-                    shutil.copy('latest.png', f'plots/{self.train_step:06d}.png')
+                    plot_path = f'plots/{self.train_step:06d}.png'
+                    shutil.copy('latest.png', plot_path)
+                    wandb.log({"plots/latest": wandb.Image(plot_path)}, step=self.train_step) # Log latest plot
                     if self.train_step % (10*self.cfg.save_frequency) == 0 \
                             and self.train_step > 1000:
                         os.system('ffmpeg -r 10 -pattern_type glob -i "plots/*.png" -c:v '
                                 'libx264 -pix_fmt yuv420p -crf 23 -y training.mp4')
+                        # Optionally log the video if needed
+                        # wandb.log({"training_video": wandb.Video("training.mp4")}, step=self.train_step)
+                else:
+                     wandb.log({"plots/latest": wandb.Image('latest.png')}, step=self.train_step) # Log latest plot even if not saving all
 
             if self.train_step % self.cfg.eval_frequency == 0:
                 marginal_w2 = self.eval_marginal_W2()
+                # Log evaluation metric
+                wandb.log({"eval/marginal_w2": marginal_w2}, step=self.train_step)
 
                 writer.writerow({
                     'iter': self.train_step,
