@@ -1,0 +1,15 @@
+{"time":"2025-04-18T22:29:34.465015984Z","level":"INFO","msg":"stream: starting","core version":"0.19.9","symlink path":"/home/azureuser/localfiles/HTI/NLOT/exp/local/2025.04.18/2229.scarvelis_circle/wandb/run-20250418_222934-hl28ng5a/logs/debug-core.log"}
+{"time":"2025-04-18T22:29:34.945396563Z","level":"INFO","msg":"created new stream","id":"hl28ng5a"}
+{"time":"2025-04-18T22:29:34.945436761Z","level":"INFO","msg":"stream: started","id":"hl28ng5a"}
+{"time":"2025-04-18T22:29:34.94545516Z","level":"INFO","msg":"writer: Do: started","stream_id":"hl28ng5a"}
+{"time":"2025-04-18T22:29:34.945469259Z","level":"INFO","msg":"sender: started","stream_id":"hl28ng5a"}
+{"time":"2025-04-18T22:29:34.946228419Z","level":"INFO","msg":"handler: started","stream_id":"hl28ng5a"}
+{"time":"2025-04-18T22:29:35.150426484Z","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-04-18T22:32:51.828748318Z","level":"INFO","msg":"stream: closing","id":"hl28ng5a"}
+{"time":"2025-04-18T22:32:51.828779817Z","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-04-18T22:32:51.828839115Z","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-04-18T22:32:52.407446756Z","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-04-18T22:32:52.635586427Z","level":"INFO","msg":"handler: closed","stream_id":"hl28ng5a"}
+{"time":"2025-04-18T22:32:52.635615526Z","level":"INFO","msg":"writer: Close: closed","stream_id":"hl28ng5a"}
+{"time":"2025-04-18T22:32:52.635625426Z","level":"INFO","msg":"sender: closed","stream_id":"hl28ng5a"}
+{"time":"2025-04-18T22:32:52.635701823Z","level":"INFO","msg":"stream: closed","id":"hl28ng5a"}

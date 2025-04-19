@@ -1,0 +1,113 @@
+=== File /home/azureuser/localfiles/HTI/NLOT/lagrangian_ot/../scarvelis_data/data_gic_24_gaussians_radius_1_std_0p1_100_samples_closed.pt does not exist. Trying to download from https://github.com/cscarv/riemannian-metric-learning-ot
+training on 24 pairs
+fitting spline amortizer
+[0] loss: 9.86e-02 grad_norm: 3.39e-03
+[1000] loss: 8.52e-02 grad_norm: 3.31e-03
+Traceback (most recent call last):
+  File "/home/azureuser/localfiles/HTI/NLOT/./train_ot_scarvelis.py", line 522, in <module>
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/hydra/main.py", line 94, in decorated_main
+    _run_hydra(
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/hydra/_internal/utils.py", line 394, in _run_hydra
+    _run_app(
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/hydra/_internal/utils.py", line 457, in _run_app
+    run_and_report(
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/hydra/_internal/utils.py", line 220, in run_and_report
+    return func()
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/hydra/_internal/utils.py", line 458, in <lambda>
+    lambda: hydra.run(
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/hydra/_internal/hydra.py", line 119, in run
+    ret = run_job(
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/hydra/core/utils.py", line 186, in run_job
+    ret.return_value = task_function(task_cfg)
+  File "/home/azureuser/localfiles/HTI/NLOT/./train_ot_scarvelis.py", line 519, in main
+    workspace = pkl.load(f)
+  File "/home/azureuser/localfiles/HTI/NLOT/train_ot_scarvelis.py", line 270, in run
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/traceback_util.py", line 166, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/pjit.py", line 250, in cache_miss
+    outs, out_flat, out_tree, args_flat, jaxpr = _python_pjit_helper(
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/pjit.py", line 163, in _python_pjit_helper
+    out_flat = pjit_p.bind(*args_flat, **params)
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/core.py", line 2677, in bind
+    return self.bind_with_trace(top_trace, args, params)
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/core.py", line 383, in bind_with_trace
+    out = trace.process_primitive(self, map(trace.full_raise, args), params)
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/core.py", line 815, in process_primitive
+    return primitive.impl(*tracers, **params)
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/pjit.py", line 1203, in _pjit_call_impl
+    return xc._xla.pjit(name, f, call_impl_cache_miss, [], [], donated_argnums,
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/pjit.py", line 1187, in call_impl_cache_miss
+    out_flat, compiled = _pjit_call_impl_python(
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/pjit.py", line 1123, in _pjit_call_impl_python
+    always_lower=False, lowering_platform=None).compile()
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/interpreters/pxla.py", line 2323, in compile
+    executable = UnloadedMeshExecutable.from_hlo(
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/interpreters/pxla.py", line 2645, in from_hlo
+    xla_executable, compile_options = _cached_compilation(
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/interpreters/pxla.py", line 2555, in _cached_compilation
+    xla_executable = dispatch.compile_or_get_cached(
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/dispatch.py", line 497, in compile_or_get_cached
+    return backend_compile(backend, computation, compile_options,
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/profiler.py", line 314, in wrapper
+    return func(*args, **kwargs)
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/dispatch.py", line 465, in backend_compile
+    return backend.compile(built_c, compile_options=options)
+KeyboardInterrupt
+Traceback [0;36m(most recent call last)[0m:
+[0m  File [1;32m~/localfiles/HTI/NLOT/./train_ot_scarvelis.py:522[0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/hydra/main.py:94[0m in [1;35mdecorated_main[0m
+    _run_hydra([0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/hydra/_internal/utils.py:394[0m in [1;35m_run_hydra[0m
+    _run_app([0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/hydra/_internal/utils.py:457[0m in [1;35m_run_app[0m
+    run_and_report([0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/hydra/_internal/utils.py:220[0m in [1;35mrun_and_report[0m
+    return func()[0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/hydra/_internal/utils.py:458[0m in [1;35m<lambda>[0m
+    lambda: hydra.run([0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/hydra/_internal/hydra.py:119[0m in [1;35mrun[0m
+    ret = run_job([0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/hydra/core/utils.py:186[0m in [1;35mrun_job[0m
+    ret.return_value = task_function(task_cfg)[0m
+[0m  File [1;32m~/localfiles/HTI/NLOT/./train_ot_scarvelis.py:519[0m in [1;35mmain[0m
+    workspace = pkl.load(f)[0m
+[0m  File [1;32m~/localfiles/HTI/NLOT/train_ot_scarvelis.py:270[0m in [1;35mrun[0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/traceback_util.py:166[0m in [1;35mreraise_with_filtered_traceback[0m
+    return fun(*args, **kwargs)[0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/pjit.py:250[0m in [1;35mcache_miss[0m
+    outs, out_flat, out_tree, args_flat, jaxpr = _python_pjit_helper([0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/pjit.py:163[0m in [1;35m_python_pjit_helper[0m
+    out_flat = pjit_p.bind(*args_flat, **params)[0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/core.py:2677[0m in [1;35mbind[0m
+    return self.bind_with_trace(top_trace, args, params)[0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/core.py:383[0m in [1;35mbind_with_trace[0m
+    out = trace.process_primitive(self, map(trace.full_raise, args), params)[0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/core.py:815[0m in [1;35mprocess_primitive[0m
+    return primitive.impl(*tracers, **params)[0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/pjit.py:1203[0m in [1;35m_pjit_call_impl[0m
+    return xc._xla.pjit(name, f, call_impl_cache_miss, [], [], donated_argnums,[0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/pjit.py:1187[0m in [1;35mcall_impl_cache_miss[0m
+    out_flat, compiled = _pjit_call_impl_python([0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/pjit.py:1123[0m in [1;35m_pjit_call_impl_python[0m
+    always_lower=False, lowering_platform=None).compile()[0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/interpreters/pxla.py:2323[0m in [1;35mcompile[0m
+    executable = UnloadedMeshExecutable.from_hlo([0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/interpreters/pxla.py:2645[0m in [1;35mfrom_hlo[0m
+    xla_executable, compile_options = _cached_compilation([0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/interpreters/pxla.py:2555[0m in [1;35m_cached_compilation[0m
+    xla_executable = dispatch.compile_or_get_cached([0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/dispatch.py:497[0m in [1;35mcompile_or_get_cached[0m
+    return backend_compile(backend, computation, compile_options,[0m
+[0m  File [1;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/profiler.py:314[0m in [1;35mwrapper[0m
+    return func(*args, **kwargs)[0m
+[0;36m  File [0;32m~/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/dispatch.py:465[0;36m in [0;35mbackend_compile[0;36m
+[0;31m    return backend.compile(built_c, compile_options=options)[0;36m
+[0;31mKeyboardInterrupt[0m
+
+> [0;32m/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/jax/_src/dispatch.py[0m(465)[0;36mbackend_compile[0;34m()[0m
+[0;32m    463 [0;31m  [0;31m# TODO(sharadmv): remove this fallback when all backends allow `compile`[0m[0;34m[0m[0;34m[0m[0m
+[0m[0;32m    464 [0;31m  [0;31m# to take in `host_callbacks`[0m[0;34m[0m[0;34m[0m[0m
+[0m[0;32m--> 465 [0;31m  [0;32mreturn[0m [0mbackend[0m[0;34m.[0m[0mcompile[0m[0;34m([0m[0mbuilt_c[0m[0;34m,[0m [0mcompile_options[0m[0;34m=[0m[0moptions[0m[0;34m)[0m[0;34m[0m[0;34m[0m[0m
+[0m[0;32m    466 [0;31m[0;34m[0m[0m
+[0m[0;32m    467 [0;31m[0m_ir_dump_counter[0m [0;34m=[0m [0mitertools[0m[0;34m.[0m[0mcount[0m[0;34m([0m[0;34m)[0m[0;34m[0m[0;34m[0m[0m
+[0m

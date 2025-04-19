@@ -1,0 +1,50 @@
+{
+  "os": "Linux-5.15.0-1086-azure-x86_64-with-glibc2.31",
+  "python": "CPython 3.10.16",
+  "startedAt": "2025-04-18T22:29:34.462528Z",
+  "args": [
+    "geometry=scarvelis_circle"
+  ],
+  "program": "/home/azureuser/localfiles/HTI/NLOT/./train_ot_scarvelis.py",
+  "codePath": "NLOT/train_ot_scarvelis.py",
+  "git": {
+    "remote": "https://github.com/harrya32/HTI.git",
+    "commit": "628647ffed24b623fa12fba66da70369245fa5d2"
+  },
+  "email": "harryamad@gmail.com",
+  "root": "/home/azureuser/localfiles/HTI/NLOT/exp/local/2025.04.18/2229.scarvelis_circle",
+  "host": "hmka3-on20250416",
+  "executable": "/home/azureuser/miniconda/envs/lagrangian_ot/bin/python3",
+  "cpu_count": 12,
+  "cpu_count_logical": 12,
+  "gpu": "Tesla V100-PCIE-16GB",
+  "gpu_count": 2,
+  "disk": {
+    "/": {
+      "total": "126759518208",
+      "used": "97393852416"
+    }
+  },
+  "memory": {
+    "total": "236438847488"
+  },
+  "cpu": {
+    "count": 12,
+    "countLogical": 12
+  },
+  "gpu_nvidia": [
+    {
+      "name": "Tesla V100-PCIE-16GB",
+      "memoryTotal": "17179869184",
+      "cudaCores": 5120,
+      "architecture": "Volta"
+    },
+    {
+      "name": "Tesla V100-PCIE-16GB",
+      "memoryTotal": "17179869184",
+      "cudaCores": 5120,
+      "architecture": "Volta"
+    }
+  ],
+  "cudaVersion": "12.4"
+}

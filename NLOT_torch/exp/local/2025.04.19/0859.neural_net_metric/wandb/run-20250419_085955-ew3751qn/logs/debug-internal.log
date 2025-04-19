@@ -1,0 +1,15 @@
+{"time":"2025-04-19T08:59:55.247959981Z","level":"INFO","msg":"stream: starting","core version":"0.19.9","symlink path":"/home/azureuser/localfiles/HTI/NLOT/exp/local/2025.04.19/0859.neural_net_metric/wandb/run-20250419_085955-ew3751qn/logs/debug-core.log"}
+{"time":"2025-04-19T08:59:55.500257201Z","level":"INFO","msg":"created new stream","id":"ew3751qn"}
+{"time":"2025-04-19T08:59:55.500298397Z","level":"INFO","msg":"stream: started","id":"ew3751qn"}
+{"time":"2025-04-19T08:59:55.500330894Z","level":"INFO","msg":"handler: started","stream_id":"ew3751qn"}
+{"time":"2025-04-19T08:59:55.500339194Z","level":"INFO","msg":"writer: Do: started","stream_id":"ew3751qn"}
+{"time":"2025-04-19T08:59:55.50098344Z","level":"INFO","msg":"sender: started","stream_id":"ew3751qn"}
+{"time":"2025-04-19T08:59:55.756722971Z","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-04-19T09:37:49.943389465Z","level":"INFO","msg":"stream: closing","id":"ew3751qn"}
+{"time":"2025-04-19T09:37:49.943415863Z","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-04-19T09:37:49.943441962Z","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-04-19T09:37:50.467225964Z","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-04-19T09:37:50.638761334Z","level":"INFO","msg":"handler: closed","stream_id":"ew3751qn"}
+{"time":"2025-04-19T09:37:50.638808632Z","level":"INFO","msg":"writer: Close: closed","stream_id":"ew3751qn"}
+{"time":"2025-04-19T09:37:50.638830331Z","level":"INFO","msg":"sender: closed","stream_id":"ew3751qn"}
+{"time":"2025-04-19T09:37:50.638861329Z","level":"INFO","msg":"stream: closed","id":"ew3751qn"}

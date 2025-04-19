@@ -1,0 +1,47 @@
+Selecting 4 pairs evenly spaced from 24 total pairs.
+Using timepoint indices: [ 0  6 12 18 24]
+training on 4 pairs
+fitting spline amortizer
+[0] loss: 3.65e-01 grad_norm: 2.21e-02
+[1000] loss: 1.17e-01 grad_norm: 2.20e-03
+step: 0/200 dual_loss: 1.11e-01, amor_loss: 2.53e-01 geom_loss: -9.73e-02 num_ctransform_iter: 18.52 update_step_time: 14.07s update_metric_time: 37.49s
+plotting
+saving to pushforward.png
+step: 1/200 dual_loss: 9.61e-02, amor_loss: 2.56e-01 num_ctransform_iter: 19.04 update_step_time: 3.25s
+step: 2/200 dual_loss: 7.94e-02, amor_loss: 2.54e-01 num_ctransform_iter: 19.24 update_step_time: 3.20s
+step: 3/200 dual_loss: 7.20e-02, amor_loss: 2.95e-01 num_ctransform_iter: 19.78 update_step_time: 3.13s
+step: 4/200 dual_loss: 6.78e-02, amor_loss: 4.49e-01 num_ctransform_iter: 19.60 update_step_time: 3.31s
+step: 5/200 dual_loss: 5.97e-02, amor_loss: 5.06e-01 num_ctransform_iter: 18.25 update_step_time: 3.25s
+step: 6/200 dual_loss: 3.70e-02, amor_loss: 4.72e-01 num_ctransform_iter: 19.57 update_step_time: 3.24s
+step: 7/200 dual_loss: 2.11e-02, amor_loss: 3.92e-01 num_ctransform_iter: 18.71 update_step_time: 3.35s
+step: 8/200 dual_loss: 2.13e-02, amor_loss: 6.70e-01 num_ctransform_iter: 17.59 update_step_time: 3.17s
+step: 9/200 dual_loss: 5.81e-03, amor_loss: 4.76e-01 num_ctransform_iter: 17.95 update_step_time: 3.26s
+step: 10/200 dual_loss: -1.01e-03, amor_loss: 6.21e-01 geom_loss: -2.42e-03 num_ctransform_iter: 17.78 update_step_time: 3.25s update_metric_time: 3.33s
+step: 11/200 dual_loss: 6.75e-03, amor_loss: 6.99e-01 num_ctransform_iter: 18.98 update_step_time: 3.27s
+step: 12/200 dual_loss: -8.15e-03, amor_loss: 7.26e-01 num_ctransform_iter: 18.99 update_step_time: 3.21s
+step: 13/200 dual_loss: -1.18e-02, amor_loss: 7.22e-01 num_ctransform_iter: 19.24 update_step_time: 3.24s
+step: 14/200 dual_loss: -1.86e-02, amor_loss: 6.92e-01 num_ctransform_iter: 19.32 update_step_time: 3.30s
+step: 15/200 dual_loss: -3.37e-02, amor_loss: 6.22e-01 num_ctransform_iter: 19.48 update_step_time: 3.27s
+step: 16/200 dual_loss: -3.50e-02, amor_loss: 7.02e-01 num_ctransform_iter: 19.03 update_step_time: 3.38s
+step: 17/200 dual_loss: -3.93e-02, amor_loss: 7.18e-01 num_ctransform_iter: 18.82 update_step_time: 3.43s
+step: 18/200 dual_loss: -1.41e-02, amor_loss: 8.76e-01 num_ctransform_iter: 18.47 update_step_time: 3.40s
+step: 19/200 dual_loss: -1.63e-02, amor_loss: 8.96e-01 num_ctransform_iter: 18.83 update_step_time: 3.27s
+step: 20/200 dual_loss: -1.53e-02, amor_loss: 9.57e-01 geom_loss: 3.42e-02 num_ctransform_iter: 18.67 update_step_time: 3.34s update_metric_time: 3.14s
+step: 21/200 dual_loss: -2.75e-02, amor_loss: 9.03e-01 num_ctransform_iter: 18.92 update_step_time: 3.37s
+step: 22/200 dual_loss: -2.72e-02, amor_loss: 9.38e-01 num_ctransform_iter: 18.85 update_step_time: 3.28s
+step: 23/200 dual_loss: -3.47e-02, amor_loss: 9.38e-01 num_ctransform_iter: 18.67 update_step_time: 3.25s
+step: 24/200 dual_loss: -5.59e-02, amor_loss: 7.41e-01 num_ctransform_iter: 19.48 update_step_time: 3.26s
+Saving to /home/azureuser/localfiles/HTI/NLOT/exp/local/2025.04.19/0817.scarvelis_circle/latest.pkl
+Error executing job with overrides: []
+Traceback (most recent call last):
+  File "/home/azureuser/localfiles/HTI/NLOT/./train_ot_scarvelis.py", line 530, in main
+  File "/home/azureuser/localfiles/HTI/NLOT/train_ot_scarvelis.py", line 346, in run
+  File "/home/azureuser/localfiles/HTI/NLOT/train_ot_scarvelis.py", line 515, in save
+    def main(cfg):
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/cloudpickle/cloudpickle_fast.py", line 57, in dump
+    ).dump(obj)
+  File "/home/azureuser/miniconda/envs/lagrangian_ot/lib/python3.10/site-packages/cloudpickle/cloudpickle_fast.py", line 632, in dump
+    return Pickler.dump(self, obj)
+TypeError: cannot pickle 'generator' object
+
+Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.

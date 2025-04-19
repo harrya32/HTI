@@ -507,8 +507,17 @@ class Workspace:
     def save(self, tag="latest"):
         path = os.path.join(self.work_dir, f"{tag}.pkl")
         print(f"Saving to {path}")
-        with open(path, "wb") as f:
-            pkl.dump(self, f)
+
+        # Temporarily remove non-picklable samplers
+        samplers_backup = self.samplers
+        self.samplers = None
+
+        try:
+            with open(path, "wb") as f:
+                pkl.dump(self, f)
+        finally:
+            # Restore samplers
+            self.samplers = samplers_backup
 
 
 @hydra.main(config_path=".", config_name="train_ot_scarvelis.yaml", version_base="1.1")
@@ -520,6 +529,12 @@ def main(cfg):
         print(f"Resuming fom {fname}")
         with open(fname, "rb") as f:
             workspace = pkl.load(f)
+        # Re-initialize samplers after loading, as they were removed before saving
+        workspace.samplers = data.get_samplers_scarvelis(
+            workspace.cfg.data,
+            num_pairs_requested=workspace.cfg.get("num_pairs", None)
+        )
+        print(f"Re-initialized samplers for loaded workspace (num_pairs={len(workspace.samplers)-1})")
     else:
         workspace = W(cfg)
 

@@ -1,0 +1,244 @@
+Selecting 4 pairs evenly spaced from 24 total pairs.
+Using timepoint indices: [ 0  6 12 18 24]
+training on 4 pairs
+fitting spline amortizer
+[0] loss: 3.65e-01 grad_norm: 2.21e-02
+[1000] loss: 1.17e-01 grad_norm: 2.20e-03
+step: 0/200 dual_loss: 1.11e-01, amor_loss: 2.53e-01 geom_loss: -9.73e-02 num_ctransform_iter: 18.52 update_step_time: 14.06s update_metric_time: 37.73s
+plotting
+saving to pushforward.png
+step: 1/200 dual_loss: 9.61e-02, amor_loss: 2.56e-01 num_ctransform_iter: 19.04 update_step_time: 3.22s
+step: 2/200 dual_loss: 7.94e-02, amor_loss: 2.54e-01 num_ctransform_iter: 19.24 update_step_time: 3.14s
+step: 3/200 dual_loss: 7.20e-02, amor_loss: 2.95e-01 num_ctransform_iter: 19.78 update_step_time: 3.25s
+step: 4/200 dual_loss: 6.78e-02, amor_loss: 4.49e-01 num_ctransform_iter: 19.60 update_step_time: 3.12s
+step: 5/200 dual_loss: 5.97e-02, amor_loss: 5.06e-01 num_ctransform_iter: 18.25 update_step_time: 3.12s
+step: 6/200 dual_loss: 3.70e-02, amor_loss: 4.72e-01 num_ctransform_iter: 19.57 update_step_time: 3.15s
+step: 7/200 dual_loss: 2.11e-02, amor_loss: 3.92e-01 num_ctransform_iter: 18.71 update_step_time: 3.14s
+step: 8/200 dual_loss: 2.13e-02, amor_loss: 6.70e-01 num_ctransform_iter: 17.59 update_step_time: 3.11s
+step: 9/200 dual_loss: 5.81e-03, amor_loss: 4.76e-01 num_ctransform_iter: 17.95 update_step_time: 3.17s
+step: 10/200 dual_loss: -1.01e-03, amor_loss: 6.21e-01 geom_loss: -2.42e-03 num_ctransform_iter: 17.78 update_step_time: 3.23s update_metric_time: 3.02s
+step: 11/200 dual_loss: 6.75e-03, amor_loss: 6.99e-01 num_ctransform_iter: 18.98 update_step_time: 3.29s
+step: 12/200 dual_loss: -8.15e-03, amor_loss: 7.26e-01 num_ctransform_iter: 18.99 update_step_time: 3.16s
+step: 13/200 dual_loss: -1.18e-02, amor_loss: 7.22e-01 num_ctransform_iter: 19.24 update_step_time: 3.26s
+step: 14/200 dual_loss: -1.86e-02, amor_loss: 6.92e-01 num_ctransform_iter: 19.32 update_step_time: 3.25s
+step: 15/200 dual_loss: -3.37e-02, amor_loss: 6.22e-01 num_ctransform_iter: 19.48 update_step_time: 3.24s
+step: 16/200 dual_loss: -3.50e-02, amor_loss: 7.02e-01 num_ctransform_iter: 19.03 update_step_time: 3.22s
+step: 17/200 dual_loss: -3.93e-02, amor_loss: 7.18e-01 num_ctransform_iter: 18.82 update_step_time: 3.21s
+step: 18/200 dual_loss: -1.41e-02, amor_loss: 8.76e-01 num_ctransform_iter: 18.47 update_step_time: 3.24s
+step: 19/200 dual_loss: -1.63e-02, amor_loss: 8.96e-01 num_ctransform_iter: 18.83 update_step_time: 3.26s
+step: 20/200 dual_loss: -1.53e-02, amor_loss: 9.57e-01 geom_loss: 3.42e-02 num_ctransform_iter: 18.67 update_step_time: 3.30s update_metric_time: 3.12s
+step: 21/200 dual_loss: -2.75e-02, amor_loss: 9.03e-01 num_ctransform_iter: 18.92 update_step_time: 3.17s
+step: 22/200 dual_loss: -2.72e-02, amor_loss: 9.38e-01 num_ctransform_iter: 18.85 update_step_time: 3.21s
+step: 23/200 dual_loss: -3.47e-02, amor_loss: 9.38e-01 num_ctransform_iter: 18.67 update_step_time: 3.17s
+step: 24/200 dual_loss: -5.59e-02, amor_loss: 7.41e-01 num_ctransform_iter: 19.48 update_step_time: 3.14s
+Saving to /home/azureuser/localfiles/HTI/NLOT/exp/local/2025.04.19/0827.scarvelis_circle/latest.pkl
+step: 25/200 dual_loss: -6.41e-02, amor_loss: 7.90e-01 num_ctransform_iter: 19.39 update_step_time: 3.15s
+plotting
+saving to pushforward.png
+step: 26/200 dual_loss: -7.31e-02, amor_loss: 7.22e-01 num_ctransform_iter: 19.39 update_step_time: 3.13s
+step: 27/200 dual_loss: -8.21e-02, amor_loss: 7.27e-01 num_ctransform_iter: 19.54 update_step_time: 3.14s
+step: 28/200 dual_loss: -8.54e-02, amor_loss: 7.29e-01 num_ctransform_iter: 19.65 update_step_time: 3.11s
+step: 29/200 dual_loss: -6.35e-02, amor_loss: 9.03e-01 num_ctransform_iter: 19.60 update_step_time: 3.28s
+step: 30/200 dual_loss: -9.20e-02, amor_loss: 7.21e-01 geom_loss: 9.93e-02 num_ctransform_iter: 19.64 update_step_time: 3.25s update_metric_time: 3.02s
+step: 31/200 dual_loss: -7.67e-02, amor_loss: 7.98e-01 num_ctransform_iter: 19.76 update_step_time: 3.28s
+step: 32/200 dual_loss: -8.22e-02, amor_loss: 7.82e-01 num_ctransform_iter: 19.69 update_step_time: 3.18s
+step: 33/200 dual_loss: -1.29e-01, amor_loss: 5.94e-01 num_ctransform_iter: 19.53 update_step_time: 3.22s
+step: 34/200 dual_loss: -8.64e-02, amor_loss: 7.60e-01 num_ctransform_iter: 19.76 update_step_time: 3.19s
+step: 35/200 dual_loss: -8.52e-02, amor_loss: 7.94e-01 num_ctransform_iter: 19.53 update_step_time: 3.26s
+step: 36/200 dual_loss: -9.56e-02, amor_loss: 7.36e-01 num_ctransform_iter: 19.39 update_step_time: 3.27s
+step: 37/200 dual_loss: -1.17e-01, amor_loss: 7.59e-01 num_ctransform_iter: 19.58 update_step_time: 3.18s
+step: 38/200 dual_loss: -8.05e-02, amor_loss: 7.48e-01 num_ctransform_iter: 19.24 update_step_time: 3.18s
+step: 39/200 dual_loss: -9.64e-02, amor_loss: 7.06e-01 num_ctransform_iter: 19.07 update_step_time: 3.15s
+step: 40/200 dual_loss: -7.73e-02, amor_loss: 7.68e-01 geom_loss: 6.43e-02 num_ctransform_iter: 19.59 update_step_time: 3.18s update_metric_time: 3.25s
+step: 41/200 dual_loss: -7.93e-02, amor_loss: 7.84e-01 num_ctransform_iter: 19.72 update_step_time: 3.29s
+step: 42/200 dual_loss: -9.16e-02, amor_loss: 7.58e-01 num_ctransform_iter: 19.13 update_step_time: 3.25s
+step: 43/200 dual_loss: -5.94e-02, amor_loss: 7.35e-01 num_ctransform_iter: 19.32 update_step_time: 3.27s
+step: 44/200 dual_loss: -5.25e-02, amor_loss: 7.71e-01 num_ctransform_iter: 19.21 update_step_time: 3.24s
+step: 45/200 dual_loss: -5.07e-02, amor_loss: 7.54e-01 num_ctransform_iter: 19.39 update_step_time: 3.09s
+step: 46/200 dual_loss: -3.48e-02, amor_loss: 8.06e-01 num_ctransform_iter: 19.35 update_step_time: 3.26s
+step: 47/200 dual_loss: -3.12e-02, amor_loss: 7.53e-01 num_ctransform_iter: 19.76 update_step_time: 3.22s
+step: 48/200 dual_loss: -3.23e-02, amor_loss: 7.55e-01 num_ctransform_iter: 19.42 update_step_time: 3.21s
+step: 49/200 dual_loss: -1.25e-02, amor_loss: 7.67e-01 num_ctransform_iter: 19.47 update_step_time: 3.25s
+Saving to /home/azureuser/localfiles/HTI/NLOT/exp/local/2025.04.19/0827.scarvelis_circle/latest.pkl
+step: 50/200 dual_loss: -6.24e-03, amor_loss: 7.28e-01 geom_loss: 9.03e-04 num_ctransform_iter: 18.82 update_step_time: 3.18s update_metric_time: 3.02s
+plotting
+saving to pushforward.png
+step: 51/200 dual_loss: 8.82e-03, amor_loss: 7.17e-01 num_ctransform_iter: 19.41 update_step_time: 3.08s
+step: 52/200 dual_loss: 1.68e-02, amor_loss: 7.10e-01 num_ctransform_iter: 19.22 update_step_time: 3.35s
+step: 53/200 dual_loss: 6.33e-03, amor_loss: 6.70e-01 num_ctransform_iter: 19.47 update_step_time: 3.28s
+step: 54/200 dual_loss: 2.26e-02, amor_loss: 6.62e-01 num_ctransform_iter: 19.61 update_step_time: 3.18s
+step: 55/200 dual_loss: 2.41e-02, amor_loss: 6.72e-01 num_ctransform_iter: 19.69 update_step_time: 3.20s
+step: 56/200 dual_loss: 2.03e-02, amor_loss: 6.56e-01 num_ctransform_iter: 19.54 update_step_time: 3.19s
+step: 57/200 dual_loss: 1.91e-02, amor_loss: 5.98e-01 num_ctransform_iter: 19.68 update_step_time: 3.22s
+step: 58/200 dual_loss: 2.54e-02, amor_loss: 6.31e-01 num_ctransform_iter: 19.56 update_step_time: 3.25s
+step: 59/200 dual_loss: 2.05e-02, amor_loss: 5.82e-01 num_ctransform_iter: 19.08 update_step_time: 3.22s
+step: 60/200 dual_loss: 2.10e-02, amor_loss: 5.84e-01 geom_loss: -2.91e-02 num_ctransform_iter: 19.47 update_step_time: 3.25s update_metric_time: 3.07s
+step: 61/200 dual_loss: 2.81e-02, amor_loss: 5.57e-01 num_ctransform_iter: 18.71 update_step_time: 3.26s
+step: 62/200 dual_loss: 2.93e-02, amor_loss: 5.80e-01 num_ctransform_iter: 18.65 update_step_time: 3.24s
+step: 63/200 dual_loss: 2.43e-02, amor_loss: 5.58e-01 num_ctransform_iter: 18.83 update_step_time: 3.23s
+step: 64/200 dual_loss: 3.11e-02, amor_loss: 5.56e-01 num_ctransform_iter: 19.19 update_step_time: 3.25s
+step: 65/200 dual_loss: 3.36e-02, amor_loss: 5.56e-01 num_ctransform_iter: 18.64 update_step_time: 3.21s
+step: 66/200 dual_loss: 2.23e-02, amor_loss: 5.12e-01 num_ctransform_iter: 19.44 update_step_time: 3.23s
+step: 67/200 dual_loss: 3.16e-02, amor_loss: 5.25e-01 num_ctransform_iter: 18.70 update_step_time: 3.17s
+step: 68/200 dual_loss: 3.24e-02, amor_loss: 4.97e-01 num_ctransform_iter: 19.09 update_step_time: 3.29s
+step: 69/200 dual_loss: 3.03e-02, amor_loss: 4.78e-01 num_ctransform_iter: 18.77 update_step_time: 3.21s
+step: 70/200 dual_loss: 3.01e-02, amor_loss: 4.82e-01 geom_loss: -2.38e-02 num_ctransform_iter: 18.58 update_step_time: 3.31s update_metric_time: 3.10s
+step: 71/200 dual_loss: 2.72e-02, amor_loss: 4.74e-01 num_ctransform_iter: 19.42 update_step_time: 3.27s
+step: 72/200 dual_loss: 2.85e-02, amor_loss: 4.32e-01 num_ctransform_iter: 19.39 update_step_time: 3.30s
+step: 73/200 dual_loss: 2.52e-02, amor_loss: 4.48e-01 num_ctransform_iter: 18.86 update_step_time: 3.26s
+step: 74/200 dual_loss: 1.68e-02, amor_loss: 4.24e-01 num_ctransform_iter: 19.78 update_step_time: 3.29s
+Saving to /home/azureuser/localfiles/HTI/NLOT/exp/local/2025.04.19/0827.scarvelis_circle/latest.pkl
+step: 75/200 dual_loss: 2.80e-02, amor_loss: 3.82e-01 num_ctransform_iter: 19.47 update_step_time: 3.29s
+plotting
+saving to pushforward.png
+step: 76/200 dual_loss: 2.17e-02, amor_loss: 3.74e-01 num_ctransform_iter: 19.48 update_step_time: 3.09s
+step: 77/200 dual_loss: 2.61e-02, amor_loss: 3.79e-01 num_ctransform_iter: 19.37 update_step_time: 3.13s
+step: 78/200 dual_loss: 2.34e-02, amor_loss: 3.49e-01 num_ctransform_iter: 19.60 update_step_time: 3.31s
+step: 79/200 dual_loss: 2.37e-02, amor_loss: 3.11e-01 num_ctransform_iter: 19.57 update_step_time: 3.19s
+step: 80/200 dual_loss: 1.25e-02, amor_loss: 3.23e-01 geom_loss: -1.57e-02 num_ctransform_iter: 19.56 update_step_time: 3.20s update_metric_time: 3.16s
+step: 81/200 dual_loss: 1.76e-02, amor_loss: 3.30e-01 num_ctransform_iter: 19.50 update_step_time: 3.20s
+step: 82/200 dual_loss: 1.39e-02, amor_loss: 2.66e-01 num_ctransform_iter: 19.47 update_step_time: 3.17s
+step: 83/200 dual_loss: 1.16e-02, amor_loss: 3.15e-01 num_ctransform_iter: 19.67 update_step_time: 3.10s
+step: 84/200 dual_loss: 1.05e-02, amor_loss: 2.63e-01 num_ctransform_iter: 19.38 update_step_time: 3.11s
+step: 85/200 dual_loss: 1.39e-02, amor_loss: 2.31e-01 num_ctransform_iter: 19.58 update_step_time: 3.26s
+step: 86/200 dual_loss: -4.06e-03, amor_loss: 2.88e-01 num_ctransform_iter: 19.61 update_step_time: 3.20s
+step: 87/200 dual_loss: 6.91e-03, amor_loss: 2.35e-01 num_ctransform_iter: 19.42 update_step_time: 3.12s
+step: 88/200 dual_loss: 7.25e-03, amor_loss: 2.15e-01 num_ctransform_iter: 19.74 update_step_time: 3.16s
+step: 89/200 dual_loss: 7.35e-03, amor_loss: 2.03e-01 num_ctransform_iter: 19.28 update_step_time: 3.11s
+step: 90/200 dual_loss: 5.20e-03, amor_loss: 2.07e-01 geom_loss: -8.71e-04 num_ctransform_iter: 19.87 update_step_time: 3.19s update_metric_time: 2.94s
+step: 91/200 dual_loss: 8.68e-04, amor_loss: 1.58e-01 num_ctransform_iter: 19.56 update_step_time: 3.15s
+step: 92/200 dual_loss: 1.20e-03, amor_loss: 1.78e-01 num_ctransform_iter: 19.61 update_step_time: 3.22s
+step: 93/200 dual_loss: -3.23e-03, amor_loss: 1.69e-01 num_ctransform_iter: 19.50 update_step_time: 3.24s
+step: 94/200 dual_loss: -5.44e-03, amor_loss: 1.51e-01 num_ctransform_iter: 19.64 update_step_time: 3.15s
+step: 95/200 dual_loss: -3.58e-03, amor_loss: 1.23e-01 num_ctransform_iter: 19.62 update_step_time: 3.13s
+step: 96/200 dual_loss: -4.28e-03, amor_loss: 1.23e-01 num_ctransform_iter: 19.83 update_step_time: 3.22s
+step: 97/200 dual_loss: -6.62e-03, amor_loss: 1.51e-01 num_ctransform_iter: 19.77 update_step_time: 3.15s
+step: 98/200 dual_loss: -8.73e-03, amor_loss: 1.75e-01 num_ctransform_iter: 19.78 update_step_time: 3.15s
+step: 99/200 dual_loss: -1.54e-02, amor_loss: 1.39e-01 num_ctransform_iter: 19.60 update_step_time: 3.19s
+Saving to /home/azureuser/localfiles/HTI/NLOT/exp/local/2025.04.19/0827.scarvelis_circle/latest.pkl
+step: 100/200 dual_loss: -9.80e-03, amor_loss: 1.61e-01 geom_loss: 1.06e-02 num_ctransform_iter: 19.83 update_step_time: 3.17s update_metric_time: 3.10s
+plotting
+saving to pushforward.png
+step: 101/200 dual_loss: -1.10e-02, amor_loss: 1.41e-01 num_ctransform_iter: 19.76 update_step_time: 3.25s
+step: 102/200 dual_loss: -1.58e-02, amor_loss: 1.79e-01 num_ctransform_iter: 19.49 update_step_time: 3.17s
+step: 103/200 dual_loss: -1.17e-02, amor_loss: 1.73e-01 num_ctransform_iter: 19.62 update_step_time: 3.03s
+step: 104/200 dual_loss: -1.73e-02, amor_loss: 1.93e-01 num_ctransform_iter: 19.17 update_step_time: 3.13s
+step: 105/200 dual_loss: -1.57e-02, amor_loss: 1.52e-01 num_ctransform_iter: 19.60 update_step_time: 3.04s
+step: 106/200 dual_loss: -2.00e-02, amor_loss: 1.19e-01 num_ctransform_iter: 19.96 update_step_time: 3.00s
+step: 107/200 dual_loss: -1.61e-02, amor_loss: 8.34e-02 num_ctransform_iter: 19.76 update_step_time: 3.02s
+step: 108/200 dual_loss: -1.20e-02, amor_loss: 5.41e-02 num_ctransform_iter: 19.68 update_step_time: 3.09s
+step: 109/200 dual_loss: -1.48e-02, amor_loss: 7.09e-02 num_ctransform_iter: 19.93 update_step_time: 3.16s
+step: 110/200 dual_loss: -9.75e-03, amor_loss: 7.53e-02 geom_loss: 8.10e-03 num_ctransform_iter: 19.72 update_step_time: 3.01s update_metric_time: 3.18s
+step: 111/200 dual_loss: -8.44e-03, amor_loss: 6.68e-02 num_ctransform_iter: 19.94 update_step_time: 2.96s
+step: 112/200 dual_loss: -9.27e-03, amor_loss: 5.33e-02 num_ctransform_iter: 19.98 update_step_time: 2.96s
+step: 113/200 dual_loss: -1.57e-02, amor_loss: 3.79e-02 num_ctransform_iter: 19.93 update_step_time: 3.24s
+step: 114/200 dual_loss: -1.24e-02, amor_loss: 2.51e-02 num_ctransform_iter: 19.93 update_step_time: 3.04s
+step: 115/200 dual_loss: -1.22e-02, amor_loss: 3.71e-02 num_ctransform_iter: 19.97 update_step_time: 3.09s
+step: 116/200 dual_loss: -8.48e-03, amor_loss: 2.86e-02 num_ctransform_iter: 20.00 update_step_time: 3.03s
+step: 117/200 dual_loss: -1.16e-02, amor_loss: 3.30e-02 num_ctransform_iter: 19.97 update_step_time: 3.10s
+step: 118/200 dual_loss: -1.07e-02, amor_loss: 3.99e-02 num_ctransform_iter: 20.00 update_step_time: 3.18s
+step: 119/200 dual_loss: -7.16e-03, amor_loss: 2.85e-02 num_ctransform_iter: 20.00 update_step_time: 3.19s
+step: 120/200 dual_loss: -8.66e-03, amor_loss: 3.17e-02 geom_loss: 7.07e-03 num_ctransform_iter: 20.00 update_step_time: 3.14s update_metric_time: 3.19s
+step: 121/200 dual_loss: -7.42e-03, amor_loss: 3.58e-02 num_ctransform_iter: 19.97 update_step_time: 3.11s
+step: 122/200 dual_loss: -7.85e-03, amor_loss: 3.43e-02 num_ctransform_iter: 20.00 update_step_time: 3.12s
+step: 123/200 dual_loss: -6.71e-03, amor_loss: 3.33e-02 num_ctransform_iter: 20.00 update_step_time: 3.10s
+step: 124/200 dual_loss: -5.30e-03, amor_loss: 3.06e-02 num_ctransform_iter: 19.97 update_step_time: 3.19s
+Saving to /home/azureuser/localfiles/HTI/NLOT/exp/local/2025.04.19/0827.scarvelis_circle/latest.pkl
+step: 125/200 dual_loss: -4.71e-03, amor_loss: 2.80e-02 num_ctransform_iter: 20.00 update_step_time: 3.07s
+plotting
+saving to pushforward.png
+step: 126/200 dual_loss: -6.00e-03, amor_loss: 3.47e-02 num_ctransform_iter: 19.94 update_step_time: 3.05s
+step: 127/200 dual_loss: -6.28e-03, amor_loss: 3.53e-02 num_ctransform_iter: 19.97 update_step_time: 3.03s
+step: 128/200 dual_loss: -5.36e-03, amor_loss: 3.09e-02 num_ctransform_iter: 20.00 update_step_time: 3.02s
+step: 129/200 dual_loss: -5.24e-03, amor_loss: 3.23e-02 num_ctransform_iter: 19.97 update_step_time: 3.09s
+step: 130/200 dual_loss: -3.32e-03, amor_loss: 3.15e-02 geom_loss: 8.92e-03 num_ctransform_iter: 19.97 update_step_time: 3.02s update_metric_time: 3.00s
+step: 131/200 dual_loss: -2.91e-03, amor_loss: 2.24e-02 num_ctransform_iter: 19.90 update_step_time: 3.06s
+step: 132/200 dual_loss: -2.69e-03, amor_loss: 2.33e-02 num_ctransform_iter: 19.86 update_step_time: 3.04s
+step: 133/200 dual_loss: -7.06e-03, amor_loss: 2.79e-02 num_ctransform_iter: 19.94 update_step_time: 3.07s
+step: 134/200 dual_loss: -2.31e-03, amor_loss: 1.89e-02 num_ctransform_iter: 20.00 update_step_time: 3.11s
+step: 135/200 dual_loss: -2.26e-03, amor_loss: 1.68e-02 num_ctransform_iter: 19.97 update_step_time: 3.15s
+step: 136/200 dual_loss: -4.20e-03, amor_loss: 1.85e-02 num_ctransform_iter: 20.00 update_step_time: 3.12s
+step: 137/200 dual_loss: -2.47e-03, amor_loss: 1.56e-02 num_ctransform_iter: 20.00 update_step_time: 3.12s
+step: 138/200 dual_loss: -3.01e-03, amor_loss: 1.88e-02 num_ctransform_iter: 20.00 update_step_time: 3.18s
+step: 139/200 dual_loss: -2.43e-03, amor_loss: 1.51e-02 num_ctransform_iter: 20.00 update_step_time: 3.18s
+step: 140/200 dual_loss: -2.24e-03, amor_loss: 1.43e-02 geom_loss: 8.73e-03 num_ctransform_iter: 20.00 update_step_time: 3.15s update_metric_time: 3.20s
+step: 141/200 dual_loss: -4.03e-03, amor_loss: 1.61e-02 num_ctransform_iter: 20.00 update_step_time: 3.15s
+step: 142/200 dual_loss: -2.01e-03, amor_loss: 1.40e-02 num_ctransform_iter: 20.00 update_step_time: 3.10s
+step: 143/200 dual_loss: -6.12e-03, amor_loss: 2.32e-02 num_ctransform_iter: 19.96 update_step_time: 3.19s
+step: 144/200 dual_loss: -1.80e-03, amor_loss: 1.21e-02 num_ctransform_iter: 19.99 update_step_time: 3.17s
+step: 145/200 dual_loss: -1.81e-03, amor_loss: 1.04e-02 num_ctransform_iter: 20.00 update_step_time: 3.06s
+step: 146/200 dual_loss: -1.43e-03, amor_loss: 1.05e-02 num_ctransform_iter: 19.94 update_step_time: 3.08s
+step: 147/200 dual_loss: -1.33e-03, amor_loss: 1.03e-02 num_ctransform_iter: 19.97 update_step_time: 3.11s
+step: 148/200 dual_loss: -6.05e-03, amor_loss: 1.73e-02 num_ctransform_iter: 19.95 update_step_time: 3.13s
+step: 149/200 dual_loss: -9.34e-03, amor_loss: 1.54e-02 num_ctransform_iter: 20.00 update_step_time: 3.22s
+Saving to /home/azureuser/localfiles/HTI/NLOT/exp/local/2025.04.19/0827.scarvelis_circle/latest.pkl
+step: 150/200 dual_loss: -2.90e-03, amor_loss: 1.19e-02 geom_loss: 1.96e-03 num_ctransform_iter: 20.00 update_step_time: 3.08s update_metric_time: 3.23s
+plotting
+saving to pushforward.png
+step: 151/200 dual_loss: -2.23e-03, amor_loss: 1.14e-02 num_ctransform_iter: 20.00 update_step_time: 3.34s
+step: 152/200 dual_loss: -2.17e-03, amor_loss: 8.40e-03 num_ctransform_iter: 20.00 update_step_time: 3.34s
+step: 153/200 dual_loss: -8.79e-03, amor_loss: 2.12e-02 num_ctransform_iter: 19.99 update_step_time: 3.33s
+step: 154/200 dual_loss: -2.30e-03, amor_loss: 7.29e-03 num_ctransform_iter: 20.00 update_step_time: 3.37s
+step: 155/200 dual_loss: -1.11e-02, amor_loss: 1.79e-02 num_ctransform_iter: 20.00 update_step_time: 3.28s
+step: 156/200 dual_loss: -2.14e-03, amor_loss: 8.28e-03 num_ctransform_iter: 20.00 update_step_time: 3.31s
+step: 157/200 dual_loss: -5.82e-03, amor_loss: 2.18e-02 num_ctransform_iter: 19.93 update_step_time: 3.45s
+step: 158/200 dual_loss: -7.30e-03, amor_loss: 1.51e-02 num_ctransform_iter: 19.99 update_step_time: 3.40s
+step: 159/200 dual_loss: -7.62e-03, amor_loss: 1.64e-02 num_ctransform_iter: 20.00 update_step_time: 3.43s
+step: 160/200 dual_loss: -3.63e-03, amor_loss: 1.16e-02 geom_loss: 3.44e-03 num_ctransform_iter: 19.98 update_step_time: 3.45s update_metric_time: 3.10s
+step: 161/200 dual_loss: -4.00e-03, amor_loss: 1.18e-02 num_ctransform_iter: 20.00 update_step_time: 3.37s
+step: 162/200 dual_loss: -2.48e-03, amor_loss: 7.88e-03 num_ctransform_iter: 20.00 update_step_time: 3.40s
+step: 163/200 dual_loss: -8.90e-03, amor_loss: 2.21e-02 num_ctransform_iter: 19.94 update_step_time: 3.42s
+step: 164/200 dual_loss: -2.63e-03, amor_loss: 7.73e-03 num_ctransform_iter: 20.00 update_step_time: 3.33s
+step: 165/200 dual_loss: -8.56e-03, amor_loss: 1.63e-02 num_ctransform_iter: 19.98 update_step_time: 3.39s
+step: 166/200 dual_loss: -3.38e-03, amor_loss: 8.44e-03 num_ctransform_iter: 20.00 update_step_time: 3.40s
+step: 167/200 dual_loss: -5.81e-03, amor_loss: 1.06e-02 num_ctransform_iter: 19.99 update_step_time: 3.28s
+step: 168/200 dual_loss: -6.26e-03, amor_loss: 1.06e-02 num_ctransform_iter: 20.00 update_step_time: 3.37s
+step: 169/200 dual_loss: -7.17e-03, amor_loss: 1.81e-02 num_ctransform_iter: 19.92 update_step_time: 3.36s
+step: 170/200 dual_loss: -4.38e-03, amor_loss: 1.03e-02 geom_loss: 2.83e-03 num_ctransform_iter: 20.00 update_step_time: 3.45s update_metric_time: 3.39s
+step: 171/200 dual_loss: -5.08e-03, amor_loss: 1.09e-02 num_ctransform_iter: 19.96 update_step_time: 3.49s
+step: 172/200 dual_loss: -3.25e-03, amor_loss: 7.03e-03 num_ctransform_iter: 20.00 update_step_time: 3.34s
+step: 173/200 dual_loss: -2.79e-03, amor_loss: 8.03e-03 num_ctransform_iter: 20.00 update_step_time: 3.37s
+step: 174/200 dual_loss: -7.35e-03, amor_loss: 1.71e-02 num_ctransform_iter: 19.94 update_step_time: 3.37s
+Saving to /home/azureuser/localfiles/HTI/NLOT/exp/local/2025.04.19/0827.scarvelis_circle/latest.pkl
+step: 175/200 dual_loss: -6.69e-03, amor_loss: 2.07e-02 num_ctransform_iter: 19.98 update_step_time: 3.36s
+plotting
+saving to pushforward.png
+step: 176/200 dual_loss: -3.10e-03, amor_loss: 7.86e-03 num_ctransform_iter: 20.00 update_step_time: 3.24s
+step: 177/200 dual_loss: -3.44e-03, amor_loss: 5.90e-03 num_ctransform_iter: 20.00 update_step_time: 3.32s
+step: 178/200 dual_loss: -3.00e-03, amor_loss: 7.55e-03 num_ctransform_iter: 20.00 update_step_time: 3.18s
+step: 179/200 dual_loss: -2.52e-03, amor_loss: 1.17e-02 num_ctransform_iter: 20.00 update_step_time: 3.28s
+step: 180/200 dual_loss: -3.52e-03, amor_loss: 7.73e-03 geom_loss: 4.43e-03 num_ctransform_iter: 19.94 update_step_time: 3.24s update_metric_time: 3.18s
+step: 181/200 dual_loss: -5.62e-03, amor_loss: 1.15e-02 num_ctransform_iter: 19.98 update_step_time: 3.30s
+step: 182/200 dual_loss: -2.29e-03, amor_loss: 1.21e-02 num_ctransform_iter: 19.97 update_step_time: 3.28s
+step: 183/200 dual_loss: -3.11e-03, amor_loss: 1.04e-02 num_ctransform_iter: 19.91 update_step_time: 3.35s
+step: 184/200 dual_loss: -4.38e-03, amor_loss: 1.31e-02 num_ctransform_iter: 20.00 update_step_time: 3.26s
+step: 185/200 dual_loss: -5.70e-03, amor_loss: 3.02e-02 num_ctransform_iter: 19.96 update_step_time: 3.34s
+step: 186/200 dual_loss: -6.50e-03, amor_loss: 3.08e-02 num_ctransform_iter: 19.98 update_step_time: 3.32s
+step: 187/200 dual_loss: -4.33e-03, amor_loss: 1.63e-02 num_ctransform_iter: 20.00 update_step_time: 3.32s
+step: 188/200 dual_loss: -4.24e-03, amor_loss: 1.62e-02 num_ctransform_iter: 20.00 update_step_time: 3.29s
+step: 189/200 dual_loss: -5.73e-03, amor_loss: 2.19e-02 num_ctransform_iter: 19.96 update_step_time: 3.26s
+step: 190/200 dual_loss: -3.00e-03, amor_loss: 8.79e-03 geom_loss: 4.09e-03 num_ctransform_iter: 20.00 update_step_time: 3.31s update_metric_time: 3.25s
+step: 191/200 dual_loss: -5.21e-03, amor_loss: 1.24e-02 num_ctransform_iter: 19.96 update_step_time: 3.32s
+step: 192/200 dual_loss: -2.32e-03, amor_loss: 9.40e-03 num_ctransform_iter: 20.00 update_step_time: 3.30s
+step: 193/200 dual_loss: -4.34e-03, amor_loss: 9.73e-03 num_ctransform_iter: 19.95 update_step_time: 3.31s
+step: 194/200 dual_loss: -3.00e-03, amor_loss: 6.29e-03 num_ctransform_iter: 20.00 update_step_time: 3.22s
+step: 195/200 dual_loss: -1.05e-02, amor_loss: 2.36e-02 num_ctransform_iter: 19.97 update_step_time: 3.39s
+step: 196/200 dual_loss: -3.12e-03, amor_loss: 5.32e-03 num_ctransform_iter: 20.00 update_step_time: 3.30s
+step: 197/200 dual_loss: -3.56e-03, amor_loss: 7.52e-03 num_ctransform_iter: 19.99 update_step_time: 3.27s
+step: 198/200 dual_loss: -2.98e-03, amor_loss: 6.08e-03 num_ctransform_iter: 20.00 update_step_time: 3.36s
+step: 199/200 dual_loss: -5.88e-03, amor_loss: 1.01e-02 num_ctransform_iter: 19.93 update_step_time: 3.33s
+Saving to /home/azureuser/localfiles/HTI/NLOT/exp/local/2025.04.19/0827.scarvelis_circle/latest.pkl
+--- plotting
+plotting
+saving to pushforward.png
+Error executing job with overrides: []
+Traceback (most recent call last):
+  File "/home/azureuser/localfiles/HTI/NLOT/./train_ot_scarvelis.py", line 541, in main
+    workspace.run()
+  File "/home/azureuser/localfiles/HTI/NLOT/train_ot_scarvelis.py", line 345, in run
+    self.eval_alignment()
+  File "/home/azureuser/localfiles/HTI/NLOT/train_ot_scarvelis.py", line 365, in eval_alignment
+    self.reference_geometry, self.params_geometry, xflat)
+AttributeError: 'Workspace' object has no attribute 'reference_geometry'. Did you mean: 'has_reference_geometry'?
+
+Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.
