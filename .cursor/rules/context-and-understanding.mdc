@@ -9,7 +9,7 @@ alwaysApply: true
         *   `README.md` (Project overview, setup, patterns, technology stack)
         *   `docs/architecture.md` (System architecture, component relationships)
         *   `docs/technical.md` (Technical specifications, established patterns)
-        *   `tasks/tasks.md` (Current development tasks, requirements)
+        *   `docs/tasks.md` (Current development tasks, requirements)
     *   If documentation is missing, unclear, or conflicts with the request, **ask for clarification**.
 2.  **Architecture Adherence:**
     *   Understand and respect module boundaries, data flow, system interfaces, and component dependencies outlined in `docs/architecture.md`.
