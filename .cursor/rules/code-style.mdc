@@ -1,0 +1,13 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+1.  **TypeScript Guidelines:** Use strict typing (avoid `any`). Document complex logic or public APIs with JSDoc.
+2.  **Readability & Maintainability:** Write clean, well-organized code.
+3.  **Small Files & Components:**
+    *   Try keep files under **300 lines**. Refactor proactively.
+4.  **Avoid Duplication (DRY):** Actively look for and reuse existing functionality. Refactor to eliminate duplication.
+7.  **Pattern Consistency:** Adhere to established project patterns. Don't introduce new ones without discussion/explicit instruction. If replacing an old pattern, ensure the old implementation is fully removed.
+8.  **File Naming:** Use clear, descriptive names. Avoid "temp", "refactored", "improved", etc., in permanent file names.
+9.  **No One-Time Scripts:** Do not commit one-time utility scripts into the main codebase.

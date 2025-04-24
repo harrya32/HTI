@@ -1,0 +1,19 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+1.  **Documentation First:**
+    *   **Always** check for and thoroughly review relevant project documentation *before* starting any task. This includes:
+        *   Product Requirements Documents (PRDs)
+        *   `README.md` (Project overview, setup, patterns, technology stack)
+        *   `docs/architecture.md` (System architecture, component relationships)
+        *   `docs/technical.md` (Technical specifications, established patterns)
+        *   `tasks/tasks.md` (Current development tasks, requirements)
+    *   If documentation is missing, unclear, or conflicts with the request, **ask for clarification**.
+2.  **Architecture Adherence:**
+    *   Understand and respect module boundaries, data flow, system interfaces, and component dependencies outlined in `docs/architecture.md`.
+    *   Validate that changes comply with the established architecture. Warn and propose compliant solutions if a violation is detected.
+3.  **Pattern & Tech Stack Awareness:**
+    *   Reference `README.md` and `docs/technical.md` to understand and utilize existing patterns and technologies.
+    *   Exhaust options using existing implementations before proposing new patterns or libraries.x
