@@ -73,7 +73,7 @@ class XMetric(ScarvelisMetric):
         return (a*v1 + b*v2) / 1.25
 
 @dataclass
-class NeuralNetMetric(MetricBase):
+class NeuralNetMetric_old(MetricBase):
     D = 2
 
     def setup(self):
@@ -99,7 +99,7 @@ class NeuralNetMetric(MetricBase):
 
 
 @dataclass
-class NeuralNetMetric_new(MetricBase):
+class NeuralNetMetric(MetricBase):
     D = 2
 
     def setup(self):

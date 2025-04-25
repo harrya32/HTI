@@ -3,21 +3,21 @@ defaults:
 
 # neural_net_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee
 geometry: 'neural_net_metric'
-data: 'scarvelis_vee'
-num_pairs: 4 # Set to integer N to use N evenly spaced pairs, null to use all
+data: 'scarvelis_circle'
+num_pairs: 10 # Set to integer N to use N evenly spaced pairs, null to use all
 seed: 0
-num_train_iters: 200
+num_train_iters: 1000
 batch_size: 1024
 potential_lr: 1e-4
 
-plot_frequency: 25
+plot_frequency: 50
 save_frequency: ${plot_frequency}
 
 metric:
   warmup_steps: 50
-  update_frequency: 1
+  update_frequency: 5
   update_repeat: 1
-  frobenius_reg_weight: 0
+  frobenius_reg_weight: 10
   lr: 5e-3
 
 geometry_kwargs:

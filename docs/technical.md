@@ -52,8 +52,9 @@ src/
 ├── policies/             # Original NN Policy implementations
 │   ├── networks/
 │   ├── training/        # (Training happens during active sampling)
-│   └── evaluation/
-├── metric_geodesic/     # Joint metric & geodesic learning
+│   ├── evaluation/
+│   └── sampling/        # Behavior collection from trained policies
+├── geometry/     # Joint metric & geodesic learning
 │   ├── architectures/
 │   ├── training/
 │   └── utils/

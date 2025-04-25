@@ -359,7 +359,7 @@ def sampler_from_data(data, batch_size=None):
 class SphereUniform(ABC):
     manifold: Sphere
     batch_size: int
-    init_rng: jax.random.PRNGKeyArray
+    init_rng: jax.Array
 
     def __iter__(self) -> Iterator[jnp.array]:
         return self._create_sample_generators()
@@ -377,7 +377,7 @@ class SphereUniform(ABC):
 class WrappedNormal(ABC):
     manifold: Sphere
     batch_size: int
-    init_rng: jax.random.PRNGKeyArray
+    init_rng: jax.Array
     loc: jnp.ndarray
     scale: jnp.ndarray
 

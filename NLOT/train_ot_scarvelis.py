@@ -15,6 +15,8 @@ import os
 import optax
 import cloudpickle as pkl
 from copy import copy
+from flax.core import FrozenDict
+
 
 import dataclasses
 from typing import Iterator
@@ -43,7 +45,6 @@ class Workspace:
         # Initialize wandb
         wandb.init(
             project=cfg.get("wandb_project", "NLOT-Scarvelis_" + self.cfg.geometry), # Default project name
-            entity=cfg.get("wandb_entity", None), # Replace with your entity if needed
             config=OmegaConf.to_container(cfg, resolve=True), # Convert Hydra cfg to dict
             name=cfg.get("run_name", None), # Optional run name
             # mode="disabled" if cfg.get("debug", False) else "online", # Optionally disable for debugging
@@ -51,6 +52,9 @@ class Workspace:
 
         self.key = jax.random.PRNGKey(self.cfg.seed)
         self.elapsed_time = 0.
+        
+        # Store frobenius regularization weight as instance variable
+        self.frobenius_weight = self.cfg.metric.get('frobenius_reg_weight', 0.0)
 
         self.geometry = geometries.get(
             self.cfg.geometry, self.cfg.geometry_kwargs)
@@ -93,6 +97,8 @@ class Workspace:
             k1, self.eval_samples[0][0], self.eval_samples[1][0],
             method=self.geometry.cost
         ).get('params', {})
+
+        self.params_geometry = FrozenDict(self.params_geometry)
         self.state_geometry = self.optimizer_geom.init(self.params_geometry)
 
         target_potential = models.MLP(
@@ -238,47 +244,41 @@ class Workspace:
                 params_geometry, batch)
             dual_losses.append(-info_t.dual_loss)
 
-            # --- Frobenius Norm Regularization (Straight Line Path) ---
-            # 1. Get target points x1 from the batch
-            source_points = batch['source']
-            target_points = batch['target'] # Use target points from the batch
+            # Only calculate Frobenius regularization if the weight is non-zero
+            if self.frobenius_weight:
+                source_points = batch['source']
+                target_points = batch['target'] 
 
-            # 2. Sample t' ~ U(0, 1) for each point
-            batch_size = source_points.shape[0]
-            t_key, reg_key = jax.random.split(reg_key)
-            times = jax.random.uniform(t_key, shape=(batch_size, 1)) # Shape (batch_size, 1) for broadcasting
+                # 2. Sample t' ~ U(0, 1) for each point
+                batch_size = source_points.shape[0]
+                t_key, reg_key = jax.random.split(reg_key)
+                times = jax.random.uniform(t_key, shape=(batch_size, 1)) # Shape (batch_size, 1) for broadcasting
 
-            # 3. Calculate points along straight line: sigma(t') = (1-t')*x0 + t'*x1
-            path_points = (1.0 - times) * source_points + times * target_points
+                # 3. Calculate points along straight line: sigma(t') = (1-t')*x0 + t'*x1
+                path_points = (1.0 - times) * source_points + times * target_points
 
-            # 4. Evaluate inverse metric G^-1(sigma(t'))
-            #    Use vmapped inverse function for batch processing
-            inv_metrics_at_path = inv_metric_vmap(path_points) # Shape (batch_size, dim, dim)
+                # 4. Evaluate inverse metric G^-1(sigma(t'))
+                #    Use vmapped inverse function for batch processing
+                inv_metrics_at_path = inv_metric_vmap(path_points) # Shape (batch_size, dim, dim)
 
-            # 5. Calculate squared Frobenius norm ||G^-1(sigma(t'))||^2_F = Tr((G^-1)^T G^-1) = Tr(G^-2)
-            #    Use vmap again for batch processing the trace calculation
-            frobenius_sq_norms = jax.vmap(lambda m: jnp.trace(m @ m))(inv_metrics_at_path) # Shape (batch_size,)
+                # 5. Calculate squared Frobenius norm ||G^-1(sigma(t'))||^2_F = Tr((G^-1)^T G^-1) = Tr(G^-2)
+                #    Use vmap again for batch processing the trace calculation
+                frobenius_sq_norms = jax.vmap(lambda m: jnp.trace(m @ m))(inv_metrics_at_path) # Shape (batch_size,)
 
-            # 6. Average over the batch
-            mean_frobenius_reg = jnp.mean(frobenius_sq_norms)
-            frobenius_regs.append(mean_frobenius_reg)
-
-
-        # --- Combine Losses ---
-        mean_dual_loss = jnp.mean(jnp.stack(dual_losses))
-        mean_frobenius_reg = jnp.mean(jnp.stack(frobenius_regs)) # Average over pairs
-
-        frobenius_weight = self.cfg.metric.get('frobenius_reg_weight', 0.0) # Weight for Frobenius
-
-        total_loss = (
-            mean_dual_loss
-            + frobenius_weight * mean_frobenius_reg
-        )        
+                # 6. Average over the batch
+                mean_frobenius_reg = jnp.mean(frobenius_sq_norms)
+                frobenius_regs.append(mean_frobenius_reg)
 
 
-        return mean_dual_loss
-        
-        #return total_loss NOT READY YET
+        mean_dual_loss = jnp.mean(jnp.stack(dual_losses)) 
+
+        if self.frobenius_weight:
+            mean_frobenius_reg = jnp.mean(jnp.stack(frobenius_regs)) # Average over pairs
+            total_loss = mean_dual_loss + self.frobenius_weight * mean_frobenius_reg
+        else:
+            total_loss = mean_dual_loss
+
+        return total_loss
 
     @functools.partial(jax.jit, static_argnums=[0])
     def update_geometry(self, params_geometry, state_geometry,
@@ -292,8 +292,15 @@ class Workspace:
 
         # TODO: could remove 'spline_model' from updates
         # (currently grads are all zero)
+        #updates, new_state_geometry = self.optimizer_geom.update(
+        #    grads, state_geometry, params=params_geometry)
+        
         updates, new_state_geometry = self.optimizer_geom.update(
-            grads, state_geometry, params=params_geometry)
+            grads,
+            state_geometry,
+            FrozenDict(params_geometry) # Ensure params are passed as FrozenDict
+        )
+
         new_params_geometry = optax.apply_updates(params_geometry, updates)
 
         return new_params_geometry, new_state_geometry, loss
@@ -337,9 +344,6 @@ class Workspace:
                     "train/dual_loss": info.dual_loss,
                     "train/amor_loss": info.amor_loss,
                     "train/geom_loss": geom_loss,
-                    "train/num_ctransform_iter": info.num_ctransform_iter,
-                    "train/update_step_time": update_step_time,
-                    "train/update_metric_time": update_metric_time,
                     "train/elapsed_time": self.elapsed_time,
                 }, step=self.train_step)
 
@@ -354,8 +358,6 @@ class Workspace:
                  wandb.log({
                      "train/dual_loss": info.dual_loss,
                      "train/amor_loss": info.amor_loss,
-                     "train/num_ctransform_iter": info.num_ctransform_iter,
-                     "train/update_step_time": update_step_time,
                      "train/elapsed_time": self.elapsed_time,
                  }, step=self.train_step)
 

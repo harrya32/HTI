@@ -172,7 +172,7 @@ class MetricGeodesicLearner(nn.Module):
         pass
 
     def compute_loss(self, batch_data, **kwargs):
-        """Compute joint loss (e.g., OT cost + geodesic alignment + density bias)."""
+        """Compute joint loss"""
         # Combined loss for metric and geodesic predictor
         pass
 ```
@@ -204,7 +204,7 @@ class ActiveSampler:
         # 3. Evaluate acquisition function for candidate lambdas
         # 4. Select lambda* with highest score
         
-        selected_lambda = ... # Choose best lambda*
+        selected_lambda = # Choose best lambda*
         self.sampled_lambdas.add(selected_lambda)
         self.iterations += 1
         return selected_lambda
@@ -284,7 +284,6 @@ graph TD
 
 ### 2. Metric & Geodesic Learning
 - Joint training of `A(y,x)` and `\phi(y0, y1, x)`
-- Loss incorporates OT cost, data density, geodesic properties
 - Provides geometry and path information
 
 ### 3. Active Sampling
@@ -323,7 +322,7 @@ policy:
   hyperparameters:
     discount: 0.99
     entropy_coef: 0.01
-    # Other hyperparameters to interpolate
+    # Other hyperparameters
   
   training:
     algorithm: ppo
@@ -342,14 +341,13 @@ metric_geodesic:
     batch_size: 64
     learning_rate: 1e-4
     n_epochs_per_update: 10 # Epochs to train metric/geodesic per active sample
-    loss_weights: {ot_cost: 1.0, density: 0.1, geodesic_align: 0.5}
 ```
 
 ### 4. Active Sampling Configs
 ```yaml
 active_sampling:
   budget: 20 # Max number of new lambda samples
-  initial_lambdas: [0.1, 0.5, 0.9]
+  initial_lambdas: [0.1, 0.9]
   uncertainty_method: ot_distance_heuristic
   acquisition_strategy: max_average_uncertainty
 ```
@@ -378,7 +376,7 @@ flow:
 ### 1. Training Metrics
 - **Active Sampling:** Selected `lambda*`, Acquisition scores
 - **Policy Training:** Rewards, value loss (for each `lambda` run)
-- **Metric/Geodesic Training:** Joint loss, OT cost, geodesic alignment error
+- **Metric/Geodesic Training:** Joint loss
 - **Flow Training:** Flow matching loss
 - Gradient statistics for all models
 
