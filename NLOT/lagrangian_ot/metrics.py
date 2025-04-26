@@ -99,14 +99,12 @@ class NeuralNetMetric_old(MetricBase):
 
 
 @dataclass
-class NeuralNetMetric(MetricBase):
+class NeuralNetMetric_direct(MetricBase):
     D = 2
 
     def setup(self):
         assert self.D == 2
         self.net = nn.Sequential([
-            nn.Dense(128),
-            nn.leaky_relu,
             nn.Dense(128),
             nn.leaky_relu,
             nn.Dense(4)
@@ -127,3 +125,86 @@ class NeuralNetMetric(MetricBase):
         A = Q.T @ Q + eta * jnp.eye(2)
 
         return A
+
+@dataclass
+class NeuralNetMetric(MetricBase):
+    D: int = 2
+    min_eigenvalue: float = 0.1
+    max_eigenvalue: float = 10.0
+    
+    def setup(self):
+        # Network outputs eigenvalues and parameters for rotation
+        # For D dimensional space: D eigenvalues + D(D-1)/2 rotation parameters
+        # For D=2, we output eigenvalues and a 2D vector for arctan2
+        if self.D == 2:
+            output_size = self.D + 2  # D eigenvalues + 2 for rotation via arctan2
+        else:
+            output_size = self.D + (self.D * (self.D - 1)) // 2
+        
+        self.net = nn.Sequential([
+            nn.Dense(128),
+            nn.leaky_relu,
+            nn.Dense(128),
+            nn.leaky_relu,
+            nn.Dense(output_size)
+        ])
+    
+    def __call__(self, x, eta=1e-3):
+        assert x.ndim == 1 and x.shape[0] == self.D
+        
+        nn_out = self.net(x)
+        
+        # Extract eigenvalues (first D outputs)
+        # Apply sigmoid + scaling to keep eigenvalues in reasonable range
+        raw_eigenvalues = nn_out[:self.D]
+        eigenvalues = self.min_eigenvalue + jax.nn.sigmoid(raw_eigenvalues) * (self.max_eigenvalue - self.min_eigenvalue)
+        
+        # Create rotation matrix from remaining parameters
+        rotation = self._create_rotation_matrix(nn_out[self.D:])
+        
+        # Create diagonal matrix from eigenvalues
+        diagonal = jnp.diag(eigenvalues)
+        
+        # Compute metric tensor: R^T D R
+        A = rotation.T @ diagonal @ rotation
+        
+        return A
+    
+    def _create_rotation_matrix(self, params):
+        """
+        Create a rotation matrix from parameters.
+        For D=2: uses arctan2 from 2D vector like original implementation
+        For D=3: 3 angle parameters (Euler angles)
+        For D>3: D(D-1)/2 parameters for generalized rotation
+        """
+        if self.D == 2:
+            # Use arctan2 like the original implementation
+            theta = jnp.arctan2(params[1], params[0])
+            rotation = jnp.array([
+                [jnp.cos(theta), -jnp.sin(theta)],
+                [jnp.sin(theta), jnp.cos(theta)]
+            ])
+            return rotation
+        else:
+            # For higher dimensions, use a series of Givens rotations
+            # This is one approach to parameterize SO(n) with D(D-1)/2 parameters
+            rotation = jnp.eye(self.D)
+            param_idx = 0
+            
+            for i in range(self.D):
+                for j in range(i+1, self.D):
+                    # Create a Givens rotation in the (i,j) plane
+                    angle = params[param_idx]
+                    param_idx += 1
+                    
+                    # Create rotation matrix for this plane
+                    givens = jnp.eye(self.D)
+                    givens = givens.at[i, i].set(jnp.cos(angle))
+                    givens = givens.at[j, j].set(jnp.cos(angle))
+                    givens = givens.at[i, j].set(-jnp.sin(angle))
+                    givens = givens.at[j, i].set(jnp.sin(angle))
+                    
+                    # Apply this rotation
+                    rotation = rotation @ givens
+                    
+            return rotation
