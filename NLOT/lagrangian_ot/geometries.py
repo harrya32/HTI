@@ -159,6 +159,20 @@ def get(name, geometry_kwargs):
             metric_initializer_fn=metrics.NeuralNetMetric,
             **geometry_kwargs,
         )
+    elif name == "neural_net_metric_eig":
+        return MetricManifold(
+            bounds=(-2, 2),
+            distance_mode=DistanceModes.SQUARED_GEODESIC,
+            metric_initializer_fn=metrics.NeuralNetMetricEig,
+            **geometry_kwargs,
+        )
+    elif name == "land_metric":
+        return MetricManifold(
+            bounds=(-2, 2),
+            distance_mode=DistanceModes.SQUARED_GEODESIC,
+            metric_initializer_fn=metrics.LANDMetric,
+            **geometry_kwargs,
+        )
     else:
         raise ValueError(f"Unknown geometry: {name}")
 
@@ -392,7 +406,7 @@ class MetricManifold(GeometryBase):
 
         if issubclass(
             self.metric_initializer_fn, metrics.ScarvelisMetric
-        ) or issubclass(self.metric_initializer_fn, metrics.NeuralNetMetric):
+        ) or issubclass(self.metric_initializer_fn, metrics.NeuralNetMetric) or issubclass(self.metric_initializer_fn, metrics.NeuralNetMetricEig):
             grid_size = 21
 
             assert len(xlims) == 2
