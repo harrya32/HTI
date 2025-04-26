@@ -32,7 +32,7 @@ class DistanceModes:
     LAGRANGIAN = "lagrangian"
 
 
-def get(name, geometry_kwargs):
+def get(name, geometry_kwargs, samples=None):
     if name == "sq_euclidean":
         return SqEuclidean()
     elif name == "gmm":
@@ -171,6 +171,7 @@ def get(name, geometry_kwargs):
             bounds=(-2, 2),
             distance_mode=DistanceModes.SQUARED_GEODESIC,
             metric_initializer_fn=metrics.LANDMetric,
+            samples=samples,
             **geometry_kwargs,
         )
     else:
@@ -305,6 +306,7 @@ class MetricManifold(GeometryBase):
     spline_model_initializer_fn: Callable = spline_amortizer.SplineMLP
     lagrangian_potential_initializer_fn: Optional[Callable] = None
     spline_solver_kwargs: Optional[Dict] = None
+    samples: Optional[jnp.ndarray] = None
 
     def __post_init__(self):
         if self.spline_solver_kwargs is None:
@@ -318,7 +320,10 @@ class MetricManifold(GeometryBase):
         super().__post_init__()
 
     def setup(self):
-        self.metric_module = self.metric_initializer_fn()
+        if self.samples is not None:
+            self.metric_module = self.metric_initializer_fn(samples=self.samples)
+        else:
+            self.metric_module = self.metric_initializer_fn()
         if self.lagrangian_potential_initializer_fn is not None:
             self.lagrangian_potential_module = (
                 self.lagrangian_potential_initializer_fn()
@@ -406,7 +411,10 @@ class MetricManifold(GeometryBase):
 
         if issubclass(
             self.metric_initializer_fn, metrics.ScarvelisMetric
-        ) or issubclass(self.metric_initializer_fn, metrics.NeuralNetMetric) or issubclass(self.metric_initializer_fn, metrics.NeuralNetMetricEig):
+        ) or issubclass(
+            self.metric_initializer_fn, metrics.NeuralNetMetric
+            ) or issubclass(
+                self.metric_initializer_fn, metrics.NeuralNetMetricEig):
             grid_size = 21
 
             assert len(xlims) == 2

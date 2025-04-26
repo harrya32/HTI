@@ -56,34 +56,34 @@ class Workspace:
         # Store frobenius regularization weight as instance variable
         self.frobenius_weight = self.cfg.metric.get('frobenius_reg_weight', 0.0)
 
-        self.geometry = geometries.get(
-            self.cfg.geometry, self.cfg.geometry_kwargs)
 
-        if 'euclidean' in self.cfg.geometry or 'neural' in self.cfg.geometry:
+        self.samplers = data.get_samplers_scarvelis(
+            self.cfg.data,
+            num_pairs_requested=self.cfg.get("num_pairs", None) 
+        )
+            
+        self.geometry = geometries.get(
+            self.cfg.geometry, 
+            self.cfg.geometry_kwargs, 
+            jnp.array([next(s) for s in self.samplers]) if 'land' in self.cfg.geometry else None)
+
+        if 'euclidean' in self.cfg.geometry or 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry:
             if self.cfg.data is None:
                 raise ValueError(
                     'data must be specified for euclidean and neural geometries')
 
-        self.has_reference_geometry = 'neural' in self.cfg.geometry
+        self.has_reference_geometry = 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry
         if self.has_reference_geometry:
             self.reference_geometry = geometries.get(
                 self.cfg.data, self.cfg.geometry_kwargs)
 
         if self.cfg.data is None:
             self.cfg.data = self.cfg.geometry
-        # Pass the requested number of pairs from config to the sampler function
-        # Store samplers as instance variable
-        self.samplers = data.get_samplers_scarvelis(
-            self.cfg.data,
-            num_pairs_requested=self.cfg.get("num_pairs", None) 
-        )
 
         self.geometry.bounds, self.geometry.xbounds, self.geometry.ybounds = data.get_bounds(self.cfg.data)
 
-        # Update num_pairs based on the actual length of the loaded samplers
         self.num_pairs = len(self.samplers) - 1
         print(f'training on {self.num_pairs} pairs')
-        # Use self.samplers for eval samples
         self.eval_samples = [next(s) for s in self.samplers]
 
         self.optimizer_target_potential = optax.adamw(

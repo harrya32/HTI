@@ -73,51 +73,6 @@ class XMetric(ScarvelisMetric):
         return (a*v1 + b*v2) / 1.25
 
 @dataclass
-class LANDMetric(MetricBase):
-    D: int = 2
-    gamma: float = 1.0  # Width parameter for the weighting kernel
-    rho: float = 1e-3  # Regularization parameter
-    alpha: float = 1.0  # Power for the metric
-    samples: Optional[jnp.ndarray] = None  # Sample points to compute the metric
-    
-    def setup(self):
-        # Validate that samples are provided
-        if self.samples is None:
-            raise ValueError("The 'samples' parameter must be provided for LANDMetric")
-    
-    def _weighting_function(self, x, samples):
-        # Compute weights based on distance to samples
-        pairwise_sq_diff = (x - samples) ** 2
-        pairwise_sq_dist = jnp.sum(pairwise_sq_diff, axis=-1)
-        weights = jnp.exp(-pairwise_sq_dist / (2 * self.gamma**2))
-        return weights
-    
-    def __call__(self, x):
-        assert x.ndim == 1 and x.shape[0] == self.D
-        
-        # Compute weights for each sample based on distance to x
-        weights = self._weighting_function(x, self.samples)
-        
-        # Compute differences between x and samples
-        differences = self.samples - x
-        squared_differences = differences**2
-        
-        # Compute the weighted sum of squared differences for each dimension
-        M_diag = jnp.zeros(self.D)
-        for d in range(self.D):
-            M_diag = M_diag.at[d].set(
-                jnp.sum(weights * squared_differences[:, d]) + self.rho
-            )
-        
-        # Apply the alpha power (optional parameter for controlling metric strength)
-        M_diag = M_diag ** self.alpha
-        
-        # Convert diagonal to full matrix
-        M = jnp.diag(M_diag)
-        
-        return M
-
-@dataclass
 class NeuralNetMetric(MetricBase):
     D = 2
 
@@ -144,7 +99,7 @@ class NeuralNetMetric(MetricBase):
 
 
 @dataclass
-class NeuralNetMetric_direct(MetricBase):
+class NeuralNetMetricDirect(MetricBase):
     D = 2
 
     def setup(self):
@@ -253,5 +208,49 @@ class NeuralNetMetricEig(MetricBase):
                     rotation = rotation @ givens
                     
             return rotation
-        
 
+@dataclass
+class LANDMetric(MetricBase):
+    D: int = 2
+    gamma: float = 1.0  # Width parameter for the weighting kernel
+    rho: float = 1e-3  # Regularization parameter
+    alpha: float = 1.0  # Power for the metric
+    samples: Optional[jnp.ndarray] = None  # Sample points to compute the metric
+    
+    def setup(self):
+        # Validate that samples are provided
+        if self.samples is None:
+            raise ValueError("The 'samples' parameter must be provided for LANDMetric")
+        
+    
+    def _weighting_function(self, x, samples):
+        # Compute weights based on distance to samples
+        pairwise_sq_diff = (x - samples) ** 2
+        pairwise_sq_dist = jnp.sum(pairwise_sq_diff, axis=-1)
+        weights = jnp.exp(-pairwise_sq_dist / (2 * self.gamma**2))
+        return weights
+    
+    def __call__(self, x):
+        assert x.ndim == 1 and x.shape[0] == self.D
+        
+        # Compute weights for each sample based on distance to x
+        weights = self._weighting_function(x, self.samples)
+        
+        # Compute differences between x and samples
+        differences = self.samples - x
+        squared_differences = differences**2
+        
+        # Compute the weighted sum of squared differences for each dimension
+        M_diag = jnp.zeros(self.D)
+        for d in range(self.D):
+            M_diag = M_diag.at[d].set(
+                jnp.sum(weights * squared_differences[:, d]) + self.rho
+            )
+        
+        # Apply the alpha power (optional parameter for controlling metric strength)
+        M_diag = M_diag ** self.alpha
+        
+        # Convert diagonal to full matrix
+        M = jnp.diag(M_diag)
+        
+        return M

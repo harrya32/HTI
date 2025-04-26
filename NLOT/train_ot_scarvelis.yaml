@@ -3,8 +3,8 @@ defaults:
 
 # neural_net_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee, neural_net_metric_eig
 geometry: 'neural_net_metric_eig'
-data: 'scarvelis_xpath'
-num_pairs: 6 # Set to integer N to use N evenly spaced pairs, null to use all
+data: 'scarvelis_circle'
+num_pairs: 10 # Set to integer N to use N evenly spaced pairs, null to use all
 seed: 0
 num_train_iters: 2000
 batch_size: 1024
