@@ -414,7 +414,9 @@ class MetricManifold(GeometryBase):
         ) or issubclass(
             self.metric_initializer_fn, metrics.NeuralNetMetric
             ) or issubclass(
-                self.metric_initializer_fn, metrics.NeuralNetMetricEig):
+                self.metric_initializer_fn, metrics.NeuralNetMetricEig
+                ) or issubclass(
+                    self.metric_initializer_fn, metrics.LANDMetric):
             grid_size = 21
 
             assert len(xlims) == 2

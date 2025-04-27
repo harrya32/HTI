@@ -61,11 +61,10 @@ class Workspace:
             self.cfg.data,
             num_pairs_requested=self.cfg.get("num_pairs", None) 
         )
-            
         self.geometry = geometries.get(
             self.cfg.geometry, 
             self.cfg.geometry_kwargs, 
-            jnp.array([next(s) for s in self.samplers]) if 'land' in self.cfg.geometry else None)
+            jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)) if 'land' in self.cfg.geometry else None)
 
         if 'euclidean' in self.cfg.geometry or 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry:
             if self.cfg.data is None:
@@ -75,7 +74,7 @@ class Workspace:
         self.has_reference_geometry = 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry
         if self.has_reference_geometry:
             self.reference_geometry = geometries.get(
-                self.cfg.data, self.cfg.geometry_kwargs)
+                self.cfg.geometry, self.cfg.geometry_kwargs, jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)) if 'land' in self.cfg.geometry else None)
 
         if self.cfg.data is None:
             self.cfg.data = self.cfg.geometry
@@ -124,7 +123,6 @@ class Workspace:
         self.state_source_maps = [state_source_map]
 
         if 'spline_model' in self.params_geometry:
-            # Pass self.samplers to fit_spline_amortizer
             self.fit_spline_amortizer(self.samplers, init=True)
 
         self.train_step = 0
@@ -183,8 +181,6 @@ class Workspace:
             grad_norm_threshold=self.cfg.spline.grad_norm_threshold,
         )
 
-
-
     def update_all_states(self, state_target_potentials, state_source_maps, batches):
         out = []
         for t in range(self.num_pairs):
@@ -219,7 +215,6 @@ class Workspace:
                 "target": jnp.asarray(next(samplers[t+1])),
             })
         return batches
-
 
     def geometry_loss(self, params_geometry,
                       state_target_potentials, state_source_maps,
@@ -339,7 +334,6 @@ class Workspace:
                     f'update_step_time: {update_step_time:.2f}s '
                     f'update_metric_time: {update_metric_time:.2f}s '
                 )
-                # Log metrics including geometry loss
                 wandb.log({
                     "train/dual_loss": info.dual_loss,
                     "train/amor_loss": info.amor_loss,
@@ -348,14 +342,13 @@ class Workspace:
                 }, step=self.train_step)
 
             else:
-                 print(
+                print(
                     f'step: {self.train_step}/{self.cfg.num_train_iters} '
                     f'dual_loss: {info.dual_loss:.2e}, amor_loss: {info.amor_loss:.2e} '
                     f'num_ctransform_iter: {info.num_ctransform_iter:.2f} '
                     f'update_step_time: {update_step_time:.2f}s '
                 )
-                 # Log metrics excluding geometry loss
-                 wandb.log({
+                wandb.log({
                      "train/dual_loss": info.dual_loss,
                      "train/amor_loss": info.amor_loss,
                      "train/elapsed_time": self.elapsed_time,
@@ -373,7 +366,12 @@ class Workspace:
                 self.plot_pushforward()
 
             if self.train_step % self.cfg.plot_frequency == 0 and self.has_reference_geometry:
-                self.eval_alignment()
+                alignment, true_eigen_vals, learned_eigen_vals = self.eval_alignment()
+                print(f"True eigenvalues: {true_eigen_vals}")
+                print(f"Learned eigenvalues: {learned_eigen_vals}")
+                wandb.log({
+                    "train/geom_alignment": alignment,
+                }, step=self.train_step)
 
             writer.writerow({
                 'iter': self.train_step,
@@ -395,24 +393,38 @@ class Workspace:
             self.geometry.xbounds, self.geometry.ybounds, 100)
         xflat = jnp.asarray(xflat)
 
-        if not hasattr(self, 'eigvecs'):
-            @functools.partial(jax.jit, static_argnums=[0])
-            @functools.partial(jax.vmap, in_axes=(None, None, 0))
-            def eigvecs(geometry, params_geometry, x):
-                A = geometry.apply(
+        if not hasattr(self, 'true_eigvecs') or not hasattr(self, 'learned_eigvecs'):
+            # Create separate functions for each geometry to avoid comparison issues
+            @functools.partial(jax.jit)
+            @functools.partial(jax.vmap, in_axes=(None, 0))
+            def true_eigvecs(params_geometry, x):
+                A = self.reference_geometry.apply(
+                    {'params': params_geometry},
+                    x, method=self.reference_geometry.metric)
+                vals, vecs = jnp.linalg.eigh(A)
+                return vecs.T, vals
+            
+            @functools.partial(jax.jit)
+            @functools.partial(jax.vmap, in_axes=(None, 0))
+            def learned_eigvecs(params_geometry, x):
+                A = self.geometry.apply(
                     {'params': params_geometry},
                     x, method=self.geometry.metric)
                 vals, vecs = jnp.linalg.eigh(A)
-                return vecs.T
-            self.eigvecs = eigvecs
+                return vecs.T, vals
+                
+            self.true_eigvecs = true_eigvecs
+            self.learned_eigvecs = learned_eigvecs
 
-        true_A_evecs = self.eigvecs(
-            self.reference_geometry, self.params_geometry, xflat)
-        learned_A_evecs = self.eigvecs(
-            self.geometry, self.params_geometry, xflat)
+        true_A_evecs, true_eigen_vals = self.true_eigvecs(
+            self.params_geometry, xflat)
+        print('true_A_evecs shape:', true_A_evecs.shape)
+        print('true_eigen_vals shape:', true_eigen_vals.shape)
+        learned_A_evecs, learned_eigen_vals = self.learned_eigvecs(
+            self.params_geometry, xflat)
         alignment = jnp.abs(
             (true_A_evecs * learned_A_evecs).sum(axis=2)).mean().item()
-        return alignment
+        return alignment, true_eigen_vals, learned_eigen_vals
 
     def _init_logging(self):
         logf = open('log.csv', 'a')
@@ -434,7 +446,12 @@ class Workspace:
         rows = math.ceil(math.sqrt(self.num_pairs))
         cols = math.ceil(self.num_pairs / rows)
         fig, axs = plt.subplots(rows, cols, figsize=(cols * 3, rows * 3))
-        axs = axs.flatten()
+        
+        # Handle case when there's only one pair (axs is a single Axes object, not an array)
+        if self.num_pairs == 1:
+            axs = [axs]  # Convert single Axes to a list with one element
+        else:
+            axs = axs.flatten()
 
         for t in range(self.num_pairs):
             self._setup_ax(axs[t])
@@ -471,8 +488,8 @@ class Workspace:
         self.geometry.add_plot_background(
             self.params_geometry, ax, xlims=xlims, ylims=ylims)
 
-        if 'neural' in self.cfg.geometry:
-            if self.cfg.data in ['scarvelis_xpath','scarvelis_vee','scarvelis_circle']:
+        if 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry:
+            if self.cfg.data in ['scarvelis_xpath','scarvelis_vee','scarvelis_circle','scarvelis_arch']:
                 self.reference_geometry.add_plot_background(
                     self.params_geometry, ax, xlims=xlims, ylims=ylims,
                     alpha=0.5,

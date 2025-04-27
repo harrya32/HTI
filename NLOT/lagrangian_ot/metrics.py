@@ -130,7 +130,9 @@ class NeuralNetMetricDirect(MetricBase):
 class NeuralNetMetricEig(MetricBase):
     D: int = 2
     min_eigenvalue: float = 0.1
-    max_eigenvalue: float = 10.0
+    max_eigenvalue: float = 1
+    temperature: float = 1.0  
+    total_budget: Optional[float] = None  # Total eigenvalue budget, defaults to D if None
     
     def setup(self):
         # Network outputs eigenvalues and parameters for rotation
@@ -153,19 +155,23 @@ class NeuralNetMetricEig(MetricBase):
         assert x.ndim == 1 and x.shape[0] == self.D
         
         nn_out = self.net(x)
-        
-        # Extract eigenvalues (first D outputs)
-        # Apply sigmoid + scaling to keep eigenvalues in reasonable range
         raw_eigenvalues = nn_out[:self.D]
-        eigenvalues = self.min_eigenvalue + jax.nn.sigmoid(raw_eigenvalues) * (self.max_eigenvalue - self.min_eigenvalue)
         
-        # Create rotation matrix from remaining parameters
+        # Competitive allocation of eigenvalue budget using softmax
+        eigenvalue_weights = jax.nn.softmax(raw_eigenvalues * self.temperature)
+        
+        # Set total budget to D if not specified
+        budget = self.D if self.total_budget is None else self.total_budget
+        
+        # Compute eigenvalues: ensure minimum values while competitively allocating the budget
+        budget_range = self.max_eigenvalue - self.min_eigenvalue
+        eigenvalues = self.min_eigenvalue + eigenvalue_weights * budget_range * (budget / self.D)
+        
+        # Ensure all eigenvalues respect bounds
+        eigenvalues = jnp.clip(eigenvalues, self.min_eigenvalue, self.max_eigenvalue)
+        
         rotation = self._create_rotation_matrix(nn_out[self.D:])
-        
-        # Create diagonal matrix from eigenvalues
         diagonal = jnp.diag(eigenvalues)
-        
-        # Compute metric tensor: R^T D R
         A = rotation.T @ diagonal @ rotation
         
         return A
@@ -178,7 +184,6 @@ class NeuralNetMetricEig(MetricBase):
         For D>3: D(D-1)/2 parameters for generalized rotation
         """
         if self.D == 2:
-            # Use arctan2 like the original implementation
             theta = jnp.arctan2(params[1], params[0])
             rotation = jnp.array([
                 [jnp.cos(theta), -jnp.sin(theta)],
@@ -204,7 +209,6 @@ class NeuralNetMetricEig(MetricBase):
                     givens = givens.at[i, j].set(-jnp.sin(angle))
                     givens = givens.at[j, i].set(jnp.sin(angle))
                     
-                    # Apply this rotation
                     rotation = rotation @ givens
                     
             return rotation
@@ -212,8 +216,8 @@ class NeuralNetMetricEig(MetricBase):
 @dataclass
 class LANDMetric(MetricBase):
     D: int = 2
-    gamma: float = 1.0  # Width parameter for the weighting kernel
-    rho: float = 1e-3  # Regularization parameter
+    gamma: float = 0.125 # Width parameter for the weighting kernel
+    rho: float = 0.001  # Regularization parameter
     alpha: float = 1.0  # Power for the metric
     samples: Optional[jnp.ndarray] = None  # Sample points to compute the metric
     
@@ -222,6 +226,12 @@ class LANDMetric(MetricBase):
         if self.samples is None:
             raise ValueError("The 'samples' parameter must be provided for LANDMetric")
         
+    
+    def _get_processed_samples(self):
+        # Reshape samples if they have shape e.g. (2,100,2) to (200,2)
+        if len(self.samples.shape) > 2:
+            return jnp.reshape(self.samples, (-1, self.D))
+        return self.samples
     
     def _weighting_function(self, x, samples):
         # Compute weights based on distance to samples
@@ -232,12 +242,14 @@ class LANDMetric(MetricBase):
     
     def __call__(self, x):
         assert x.ndim == 1 and x.shape[0] == self.D
+        # Get processed samples
+        processed_samples = self.samples#self._get_processed_samples()
         
         # Compute weights for each sample based on distance to x
-        weights = self._weighting_function(x, self.samples)
+        weights = self._weighting_function(x, processed_samples)
         
         # Compute differences between x and samples
-        differences = self.samples - x
+        differences = processed_samples - x
         squared_differences = differences**2
         
         # Compute the weighted sum of squared differences for each dimension
@@ -249,6 +261,9 @@ class LANDMetric(MetricBase):
         
         # Apply the alpha power (optional parameter for controlling metric strength)
         M_diag = M_diag ** self.alpha
+
+        #invert
+        M_diag = 1/M_diag
         
         # Convert diagonal to full matrix
         M = jnp.diag(M_diag)

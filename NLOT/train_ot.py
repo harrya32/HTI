@@ -220,8 +220,6 @@ class Workspace:
             wandb.log({
                 "train/dual_loss": info.dual_loss,
                 "train/amor_loss": info.amor_loss,
-                "train/num_ctransform_iter": info.num_ctransform_iter,
-                "train/update_step_time": update_step_time,
                 "train/elapsed_time": self.elapsed_time,
             }, step=self.train_step)
 
