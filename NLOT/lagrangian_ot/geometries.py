@@ -32,7 +32,7 @@ class DistanceModes:
     LAGRANGIAN = "lagrangian"
 
 
-def get(name, geometry_kwargs, samples=None):
+def get(name, geometry_kwargs, land_kwargs, samples=None):
     if name == "sq_euclidean":
         return SqEuclidean()
     elif name == "gmm":
@@ -172,6 +172,7 @@ def get(name, geometry_kwargs, samples=None):
             distance_mode=DistanceModes.SQUARED_GEODESIC,
             metric_initializer_fn=metrics.LANDMetric,
             samples=samples,
+            land_kwargs=land_kwargs,
             **geometry_kwargs,
         )
     else:
@@ -307,6 +308,7 @@ class MetricManifold(GeometryBase):
     lagrangian_potential_initializer_fn: Optional[Callable] = None
     spline_solver_kwargs: Optional[Dict] = None
     samples: Optional[jnp.ndarray] = None
+    land_kwargs: Optional[Dict] = None
 
     def __post_init__(self):
         if self.spline_solver_kwargs is None:
@@ -320,7 +322,9 @@ class MetricManifold(GeometryBase):
         super().__post_init__()
 
     def setup(self):
-        if self.samples is not None:
+        if self.samples is not None and self.land_kwargs is not None:
+            self.metric_module = self.metric_initializer_fn(samples=self.samples, **self.land_kwargs)
+        elif self.samples is not None:
             self.metric_module = self.metric_initializer_fn(samples=self.samples)
         else:
             self.metric_module = self.metric_initializer_fn()

@@ -13,13 +13,19 @@ potential_lr: 1e-4
 plot_frequency: 50
 save_frequency: ${plot_frequency}
 
+land_kwargs:
+  alpha: 1.0
+  rho: 0.001
+  gamma: 1.0
+  
 metric:
   warmup_steps: 50
   update_frequency: 10
   update_repeat: 1
   frobenius_reg_weight: 0
   lr: 5e-3
-
+  
+  
 geometry_kwargs:
   spline_solver_kwargs:
     num_spline_nodes: 30
@@ -27,6 +33,7 @@ geometry_kwargs:
     init_lr: 1e-2
     num_spline_points_eval: 20
     max_iter: 0
+
 
 ctransform_solver:
   _target_: lagrangian_ot.ctransform_solvers.CTransformLBFGS

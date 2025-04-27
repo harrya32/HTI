@@ -64,7 +64,8 @@ class Workspace:
         self.geometry = geometries.get(
             self.cfg.geometry, 
             self.cfg.geometry_kwargs, 
-            jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)) if 'land' in self.cfg.geometry else None)
+            self.cfg.land_kwargs,
+            samples=jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)))
 
         if 'euclidean' in self.cfg.geometry or 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry:
             if self.cfg.data is None:
@@ -74,7 +75,10 @@ class Workspace:
         self.has_reference_geometry = 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry
         if self.has_reference_geometry:
             self.reference_geometry = geometries.get(
-                self.cfg.geometry, self.cfg.geometry_kwargs, jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)) if 'land' in self.cfg.geometry else None)
+                self.cfg.geometry, 
+                self.cfg.geometry_kwargs, 
+                self.cfg.land_kwargs if 'land' in self.cfg.geometry else None,
+                samples=jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)) if 'land' in self.cfg.geometry else None)
 
         if self.cfg.data is None:
             self.cfg.data = self.cfg.geometry

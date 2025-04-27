@@ -216,7 +216,7 @@ class NeuralNetMetricEig(MetricBase):
 @dataclass
 class LANDMetric(MetricBase):
     D: int = 2
-    gamma: float = 0.125 # Width parameter for the weighting kernel
+    gamma: float = 0.2 # Width parameter for the weighting kernel
     rho: float = 0.001  # Regularization parameter
     alpha: float = 1.0  # Power for the metric
     samples: Optional[jnp.ndarray] = None  # Sample points to compute the metric
