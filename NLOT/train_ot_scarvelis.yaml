@@ -3,10 +3,10 @@ defaults:
 
 # neural_net_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee, neural_net_metric_eig, land_metric
 geometry: 'land_metric'
-data: 'scarvelis_arch'
-num_pairs: 1 # Set to integer N to use N evenly spaced pairs, null to use all
+data: 'scarvelis_circle'
+num_pairs: 10 # Set to integer N to use N evenly spaced pairs, null to use all
 seed: 1
-num_train_iters: 5000
+num_train_iters: 2000
 batch_size: 1024
 potential_lr: 1e-4
 
@@ -14,9 +14,9 @@ plot_frequency: 50
 save_frequency: ${plot_frequency}
 
 land_kwargs:
-  alpha: 1.0
+  alpha: 1
   rho: 0.001
-  gamma: 1.0
+  gamma: 0.125
   
 metric:
   warmup_steps: 50

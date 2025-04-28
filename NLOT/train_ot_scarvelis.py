@@ -77,8 +77,8 @@ class Workspace:
             self.reference_geometry = geometries.get(
                 self.cfg.geometry, 
                 self.cfg.geometry_kwargs, 
-                self.cfg.land_kwargs if 'land' in self.cfg.geometry else None,
-                samples=jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)) if 'land' in self.cfg.geometry else None)
+                self.cfg.land_kwargs,
+                samples=jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)))
 
         if self.cfg.data is None:
             self.cfg.data = self.cfg.geometry
@@ -334,7 +334,6 @@ class Workspace:
                     f'step: {self.train_step}/{self.cfg.num_train_iters} '
                     f'dual_loss: {info.dual_loss:.2e}, amor_loss: {info.amor_loss:.2e} '
                     f'geom_loss: {geom_loss:.2e} '
-                    f'num_ctransform_iter: {info.num_ctransform_iter:.2f} '
                     f'update_step_time: {update_step_time:.2f}s '
                     f'update_metric_time: {update_metric_time:.2f}s '
                 )
@@ -349,7 +348,6 @@ class Workspace:
                 print(
                     f'step: {self.train_step}/{self.cfg.num_train_iters} '
                     f'dual_loss: {info.dual_loss:.2e}, amor_loss: {info.amor_loss:.2e} '
-                    f'num_ctransform_iter: {info.num_ctransform_iter:.2f} '
                     f'update_step_time: {update_step_time:.2f}s '
                 )
                 wandb.log({
@@ -371,8 +369,6 @@ class Workspace:
 
             if self.train_step % self.cfg.plot_frequency == 0 and self.has_reference_geometry:
                 alignment, true_eigen_vals, learned_eigen_vals = self.eval_alignment()
-                print(f"True eigenvalues: {true_eigen_vals}")
-                print(f"Learned eigenvalues: {learned_eigen_vals}")
                 wandb.log({
                     "train/geom_alignment": alignment,
                 }, step=self.train_step)
@@ -422,8 +418,6 @@ class Workspace:
 
         true_A_evecs, true_eigen_vals = self.true_eigvecs(
             self.params_geometry, xflat)
-        print('true_A_evecs shape:', true_A_evecs.shape)
-        print('true_eigen_vals shape:', true_eigen_vals.shape)
         learned_A_evecs, learned_eigen_vals = self.learned_eigvecs(
             self.params_geometry, xflat)
         alignment = jnp.abs(

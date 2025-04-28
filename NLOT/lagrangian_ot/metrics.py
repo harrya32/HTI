@@ -222,19 +222,17 @@ class LANDMetric(MetricBase):
     samples: Optional[jnp.ndarray] = None  # Sample points to compute the metric
     
     def setup(self):
-        # Validate that samples are provided
         if self.samples is None:
             raise ValueError("The 'samples' parameter must be provided for LANDMetric")
         
     
     def _get_processed_samples(self):
-        # Reshape samples if they have shape e.g. (2,100,2) to (200,2)
+        # Reshape paired samples if they have shape e.g. (2,100,2) to (200,2)
         if len(self.samples.shape) > 2:
             return jnp.reshape(self.samples, (-1, self.D))
         return self.samples
     
     def _weighting_function(self, x, samples):
-        # Compute weights based on distance to samples
         pairwise_sq_diff = (x - samples) ** 2
         pairwise_sq_dist = jnp.sum(pairwise_sq_diff, axis=-1)
         weights = jnp.exp(-pairwise_sq_dist / (2 * self.gamma**2))
@@ -242,30 +240,21 @@ class LANDMetric(MetricBase):
     
     def __call__(self, x):
         assert x.ndim == 1 and x.shape[0] == self.D
-        # Get processed samples
-        processed_samples = self.samples#self._get_processed_samples()
+        processed_samples = self._get_processed_samples()
         
         # Compute weights for each sample based on distance to x
         weights = self._weighting_function(x, processed_samples)
         
-        # Compute differences between x and samples
+        # Compute the weighted sum of squared differences for each dimension
         differences = processed_samples - x
         squared_differences = differences**2
-        
-        # Compute the weighted sum of squared differences for each dimension
         M_diag = jnp.zeros(self.D)
         for d in range(self.D):
             M_diag = M_diag.at[d].set(
                 jnp.sum(weights * squared_differences[:, d]) + self.rho
             )
         
-        # Apply the alpha power (optional parameter for controlling metric strength)
         M_diag = M_diag ** self.alpha
-
-        #invert
         M_diag = 1/M_diag
-        
-        # Convert diagonal to full matrix
         M = jnp.diag(M_diag)
-        
         return M
