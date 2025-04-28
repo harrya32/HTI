@@ -160,9 +160,9 @@ def generate_conditional_gaussian_data(num_points_per_condition: int, variance: 
 
 if __name__ == "__main__":
 
-    #-------------#
-    ###CONDITIONAL DATA###
-    #-------------#
+    #--------------------#
+    #  CONDITIONAL DATA  #
+    #--------------------#
     num_points_per_cond = 500
     conditional_data = generate_conditional_gaussian_data(num_points_per_condition=num_points_per_cond, variance=0.05) 
     total_points = num_points_per_cond * 4
@@ -205,7 +205,7 @@ if __name__ == "__main__":
     print(f"Plot saved to {plot_save_path}")
 
     #-------------#
-    ###ARCH DATA###
+    #  ARCH DATA  #
     #-------------#
     num_points = 1000
     arch_points, labels, unique_labels = generate_arch_data(num_points=num_points)
@@ -220,9 +220,9 @@ if __name__ == "__main__":
     print("arch points shape:", arch_points.shape)
     #torch.save(arch_points, 'scarvelis_data/arch_data.pt')
 
-    #-------------#
-    ###SPHERE DATA###
-    #-------------#
+    #---------------#
+    #  SPHERE DATA  #
+    #---------------#
     sphere_points, labels, unique_labels = generate_sphere_data(num_points=num_points)
     print("sphere points shape:", sphere_points.shape)
     sphere_points = np.reshape(sphere_points, (len(unique_labels), num_points, 3))

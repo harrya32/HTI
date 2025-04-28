@@ -56,7 +56,6 @@ class Workspace:
         # Store frobenius regularization weight as instance variable
         self.frobenius_weight = self.cfg.metric.get('frobenius_reg_weight', 0.0)
 
-
         self.samplers = data.get_samplers_scarvelis(
             self.cfg.data,
             num_pairs_requested=self.cfg.get("num_pairs", None) 
@@ -65,7 +64,10 @@ class Workspace:
             self.cfg.geometry, 
             self.cfg.geometry_kwargs, 
             self.cfg.land_kwargs,
-            samples=jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)))
+            samples=jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)),
+            D=self.cfg.D,
+            C=self.cfg.C
+            )
 
         if 'euclidean' in self.cfg.geometry or 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry:
             if self.cfg.data is None:
@@ -78,7 +80,10 @@ class Workspace:
                 self.cfg.geometry, 
                 self.cfg.geometry_kwargs, 
                 self.cfg.land_kwargs,
-                samples=jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)))
+                samples=jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)),
+                D=self.cfg.D,
+                C=self.cfg.C
+                )
 
         if self.cfg.data is None:
             self.cfg.data = self.cfg.geometry

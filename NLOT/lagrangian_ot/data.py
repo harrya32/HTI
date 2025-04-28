@@ -48,6 +48,13 @@ def get_bounds(name):
             jnp.array((xbounds[0], ybounds[0])),
             jnp.array((xbounds[1], ybounds[1])),
         )
+    elif name == "scarvelis_conditional_gaussian":
+        xbounds = (-2, 2)
+        ybounds = (-2, 2)
+        bounds = (
+            jnp.array((xbounds[0], ybounds[0])),
+            jnp.array((xbounds[1], ybounds[1])),
+        )
     else:
         raise ValueError(f"Invalid data choice: {name}")
 
@@ -140,6 +147,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         "scarvelis_vee": "data_mass_split_std_1_100_samples_8_intermediate_scale_x10.pt",
         "scarvelis_xpath": "data_xpath_std_0p1_100_samples_8_intermediate.pt",
         "scarvelis_arch": "arch_data.pt",
+        "scarvelis_conditional_gaussian": "conditional_gaussians.pt",
     }
     if geometry_str not in paths:
         raise ValueError(f"Invalid geometry choice: {geometry_str}")

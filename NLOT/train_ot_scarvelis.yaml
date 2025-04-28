@@ -1,10 +1,12 @@
 defaults:
   - _self_
 
-# neural_net_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee, neural_net_metric_eig, land_metric
-geometry: 'land_metric'
-data: 'scarvelis_circle'
-num_pairs: 10 # Set to integer N to use N evenly spaced pairs, null to use all
+# neural_net_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee, neural_net_metric_eig, land_metric, scarvelis_conditional_gaussian
+geometry: 'neural_net_metric_eig'
+data: 'scarvelis_conditional_gaussian'
+D: 2
+C: 1
+num_pairs: 1 # Set to integer N to use N evenly spaced pairs, null to use all
 seed: 1
 num_train_iters: 2000
 batch_size: 1024

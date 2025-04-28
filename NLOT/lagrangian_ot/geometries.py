@@ -32,7 +32,7 @@ class DistanceModes:
     LAGRANGIAN = "lagrangian"
 
 
-def get(name, geometry_kwargs, land_kwargs, samples=None):
+def get(name, geometry_kwargs, land_kwargs, samples=None, D=2, C=0):
     if name == "sq_euclidean":
         return SqEuclidean()
     elif name == "gmm":
@@ -164,6 +164,8 @@ def get(name, geometry_kwargs, land_kwargs, samples=None):
             bounds=(-2, 2),
             distance_mode=DistanceModes.SQUARED_GEODESIC,
             metric_initializer_fn=metrics.NeuralNetMetricEig,
+            D=D,
+            C=C,
             **geometry_kwargs,
         )
     elif name == "land_metric":
@@ -182,6 +184,7 @@ def get(name, geometry_kwargs, land_kwargs, samples=None):
 @dataclass
 class GeometryBase(ABC, nn.Module):
     D: int = 2  # dimension of the ambient space
+    C: int = 0  # conditional dimension
     bounds: Tuple = (-2, 2)  # bounds of the measures
 
     # for 2d geometries
@@ -323,11 +326,11 @@ class MetricManifold(GeometryBase):
 
     def setup(self):
         if self.samples is not None and self.land_kwargs is not None:
-            self.metric_module = self.metric_initializer_fn(samples=self.samples, **self.land_kwargs)
+            self.metric_module = self.metric_initializer_fn(D=self.D, C=self.C, samples=self.samples, **self.land_kwargs)
         elif self.samples is not None:
-            self.metric_module = self.metric_initializer_fn(samples=self.samples)
+            self.metric_module = self.metric_initializer_fn(D=self.D, C=self.C, samples=self.samples)
         else:
-            self.metric_module = self.metric_initializer_fn()
+            self.metric_module = self.metric_initializer_fn(D=self.D, C=self.C)
         if self.lagrangian_potential_initializer_fn is not None:
             self.lagrangian_potential_module = (
                 self.lagrangian_potential_initializer_fn()
@@ -400,7 +403,6 @@ class MetricManifold(GeometryBase):
     def cost(self, x, y):
         assert x.ndim == 1 and y.ndim == 1
         gamma = self.path(x, y)
-        num_points = gamma.shape[0]
         E = self.curve_energy(gamma)
         if self.distance_mode == DistanceModes.SQUARED_GEODESIC:
             E = 0.5 * E**2

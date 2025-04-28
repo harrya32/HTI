@@ -128,7 +128,8 @@ class NeuralNetMetricDirect(MetricBase):
 
 @dataclass
 class NeuralNetMetricEig(MetricBase):
-    D: int = 2
+    D: int = 2 #data dimension
+    C: int = 0 #conditional dimension
     min_eigenvalue: float = 0.1
     max_eigenvalue: float = 1
     temperature: float = 1.0  
@@ -151,8 +152,8 @@ class NeuralNetMetricEig(MetricBase):
             nn.Dense(output_size)
         ])
     
-    def __call__(self, x, eta=1e-3):
-        assert x.ndim == 1 and x.shape[0] == self.D
+    def __call__(self, x):
+        assert x.ndim == 1 and x.shape[0] == self.D + self.C
         
         nn_out = self.net(x)
         raw_eigenvalues = nn_out[:self.D]
