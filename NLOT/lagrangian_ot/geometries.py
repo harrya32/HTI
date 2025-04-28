@@ -161,7 +161,7 @@ def get(name, geometry_kwargs, land_kwargs, samples=None, D=2, C=0):
         )
     elif name == "neural_net_metric_eig":
         return MetricManifold(
-            bounds=(-2, 2),
+            bounds=(-4, 4),
             distance_mode=DistanceModes.SQUARED_GEODESIC,
             metric_initializer_fn=metrics.NeuralNetMetricEig,
             D=D,
@@ -381,13 +381,7 @@ class MetricManifold(GeometryBase):
             init_params=init_spline_params,
             num_final_points=num_points,
         )
-
-        out_mu = out.mu
-
-        # out_mu is len D, now we want to add the condition to the end
-        condition_repeated = jnp.tile(condition.reshape(1, -1), (num_points, 1))
-        out_mu = jnp.concatenate([out_mu, condition_repeated], axis=-1)
-        return out_mu
+        return out.mu
 
     def energy_at_point(self, x, v):
         M = self.metric(x)
@@ -430,6 +424,9 @@ class MetricManifold(GeometryBase):
         if not isinstance(axs, np.ndarray):
             axs = np.array([axs])
 
+        # Determine if we need to handle conditional dimensions for plotting
+        plot_with_condition = self.C > 0
+
         if issubclass(
             self.metric_initializer_fn, metrics.ScarvelisMetric
         ) or issubclass(
@@ -450,13 +447,24 @@ class MetricManifold(GeometryBase):
                 def eigs_vmap(params, x):
                     A = self.apply({"params": params}, x, method=self.metric)
                     vals, vecs = jnp.linalg.eigh(A)
-                    return vals, vecs.T
+                    # Return only spatial eigenvectors for 2D plotting
+                    return vals, vecs[:self.D, :self.D].T 
 
                 self.eigs_vmap_jit = jax.jit(eigs_vmap)
 
             xflat, x1, x2 = _get_grid(xlims, ylims, grid_size)
-            vals, vecs = self.eigs_vmap_jit(params, xflat)
 
+            # Prepare input for metric evaluation, adding default condition if C > 0
+            if plot_with_condition:
+                # Assume default condition is 0 for plotting background
+                default_condition = jnp.zeros((xflat.shape[0], self.C))
+                x_eval = jnp.concatenate([xflat, default_condition], axis=-1)
+            else:
+                x_eval = xflat
+
+            vals, vecs = self.eigs_vmap_jit(params, x_eval)
+
+            # Use only the first 2 components of eigenvectors for 2D quiver plot
             u = vecs[:, 0, 0].reshape(x1.shape)
             v = vecs[:, 0, 1].reshape(x1.shape)
 
@@ -483,7 +491,16 @@ class MetricManifold(GeometryBase):
                 self.lagrangian_potential_vmap_jit = jax.jit(lagrangian_potential_vmap)
 
             xflat, x1, x2 = _get_grid(xlims, ylims, grid_size)
-            vals = -self.lagrangian_potential_vmap_jit(params, xflat).reshape(x1.shape)
+
+            # Prepare input for potential evaluation, adding default condition if C > 0
+            if plot_with_condition:
+                # Assume default condition is 0 for plotting background
+                default_condition = jnp.zeros((xflat.shape[0], self.C))
+                x_eval = jnp.concatenate([xflat, default_condition], axis=-1)
+            else:
+                x_eval = xflat
+
+            vals = -self.lagrangian_potential_vmap_jit(params, x_eval).reshape(x1.shape)
 
             for ax in axs:
                 CS = ax.contourf(x1, x2, vals, cmap="Blues")

@@ -66,5 +66,7 @@ class MLP(ModelBase):
         else:
             Wx = nn.Dense(self.D, use_bias=True)
             z = x[:, :self.D] + Wx(z)
+            # Add condition to the end
+            z = jnp.concatenate([z, x[:, self.D:]], axis=-1)
 
         return z.squeeze(0) if squeeze else z

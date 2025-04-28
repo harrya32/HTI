@@ -19,7 +19,7 @@ plot_frequency: 50
 save_frequency: ${plot_frequency}
 
 plotting:
-  disable: True
+  disable: False
 
 land_kwargs:
   alpha: 1

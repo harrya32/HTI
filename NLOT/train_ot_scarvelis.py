@@ -26,6 +26,7 @@ from omegaconf import OmegaConf
 
 from lagrangian_ot import models, neuraldual, metrics, geodesics, geometries, data
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 plt.style.use('bmh')
 
@@ -407,6 +408,14 @@ class Workspace:
             self.geometry.xbounds, self.geometry.ybounds, 100)
         xflat = jnp.asarray(xflat)
 
+        # Add default condition if C > 0 for metric evaluation
+        if self.cfg.C > 0:
+            # Assume default condition is 0 for alignment evaluation
+            default_condition = jnp.zeros((xflat.shape[0], self.cfg.C))
+            x_eval = jnp.concatenate([xflat, default_condition], axis=-1)
+        else:
+            x_eval = xflat
+
         if not hasattr(self, 'true_eigvecs') or not hasattr(self, 'learned_eigvecs'):
             # Create separate functions for each geometry to avoid comparison issues
             @functools.partial(jax.jit)
@@ -431,9 +440,9 @@ class Workspace:
             self.learned_eigvecs = learned_eigvecs
 
         true_A_evecs, true_eigen_vals = self.true_eigvecs(
-            self.params_geometry, xflat)
+            self.params_geometry, x_eval)
         learned_A_evecs, learned_eigen_vals = self.learned_eigvecs(
-            self.params_geometry, xflat)
+            self.params_geometry, x_eval)
         alignment = jnp.abs(
             (true_A_evecs * learned_A_evecs).sum(axis=2)).mean().item()
         return alignment, true_eigen_vals, learned_eigen_vals
@@ -528,23 +537,35 @@ class Workspace:
 
         self._setup_ax(ax)
 
+        # Use a consistent colormap for conditions (e.g., viridis)
+        # Ensure this handles the case where C=0 gracefully
+        source_samples_for_cond = self.eval_samples[0]
+        num_conditions = int(jnp.max(source_samples_for_cond[:, -1])) + 1 if self.cfg.C > 0 else 1
+        cmap = plt.get_cmap('viridis', num_conditions)
+        norm = mpl.colors.Normalize(vmin=0, vmax=num_conditions - 1)
+
         num_samples = 50
         # colors = plt.style.library['bmh']['axes.prop_cycle'].by_key()['color']
 
-        cmap = plt.get_cmap('Blues')
-            # cmap_idx = 1-i/N
-            # cmap_idx = cmap_idx/0.9 + 0.1
-            # color = cmap(cmap_idx)
-        # def get_color(i):
-        #     import ipdb; ipdb.set_trace()
-        colors = cmap(np.linspace(1., 0.1, self.num_pairs+1))
+        # cmap = plt.get_cmap('Blues')
+        #     # cmap_idx = 1-i/N
+        #     # cmap_idx = cmap_idx/0.9 + 0.1
+        #     # color = cmap(cmap_idx)
+        # # def get_color(i):
+        #     # import ipdb; ipdb.set_trace()
+        # colors = cmap(np.linspace(1., 0.1, self.num_pairs+1))
 
         init_xs = jax.random.choice(
             jax.random.PRNGKey(0), self.eval_samples[0], shape=(num_samples,))
         for i in range(num_samples):
             init_x = init_xs[i]
-            ax.scatter([init_x[0]], [init_x[1]], color='k', s=20, alpha=1,
-                       zorder=10)
+
+            # Determine color based on initial condition
+            init_condition = init_x[self.cfg.D].astype(int) if self.cfg.C > 0 else 0
+            init_color = cmap(norm(init_condition))
+
+            ax.scatter([init_x[0]], [init_x[1]], s=20, alpha=1,
+                        zorder=10, c=jnp.array([init_color])) # Use condition color, ensure 2D for single point
 
             x = init_x
             for t in range(self.num_pairs):
@@ -563,7 +584,7 @@ class Workspace:
 
                 ax.plot(
                     path[:, 0], path[:, 1],
-                    color=colors[t],
+                    color=init_color, # Color path by initial condition
                     alpha=0.5,
                     lw=3,
                 )

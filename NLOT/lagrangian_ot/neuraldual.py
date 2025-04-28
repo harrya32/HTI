@@ -208,33 +208,48 @@ class ManifoldW2NeuralDual:
         if scatter_kwargs is None:
             scatter_kwargs = {"alpha": 0.5}
 
+        # Get colormap for conditions
+        num_conditions = int(jnp.max(source[:, -1])) + 1 if self.geometry.C > 0 else 1
+        cmap = plt.get_cmap('viridis', num_conditions)
+        norm = mpl.colors.Normalize(vmin=0, vmax=num_conditions - 1)
+
         if ax is None:
             fig = plt.figure(facecolor="white")
             ax = fig.add_subplot(111)
         else:
             fig = ax.get_figure()
 
+        # Extract conditions if C > 0
+        source_conditions = source[:, self.geometry.D].astype(int) if self.geometry.C > 0 else jnp.zeros(source.shape[0], dtype=int)
+        target_conditions = target[:, self.geometry.D].astype(int) if self.geometry.C > 0 else jnp.zeros(target.shape[0], dtype=int)
+
+        # Map conditions to colors
+        source_colors = cmap(norm(source_conditions))
+        target_colors = cmap(norm(target_conditions))
+
         # plot the source and target samples
         label_transport = r"transported"
-        source_color, target_color = "#1A254B", "#A7BED3"
 
         ax.scatter(
                 source[:, 0],
                 source[:, 1],
-                color=source_color,
+                c=source_colors,
                 label="source",
                 **scatter_kwargs,
         )
         ax.scatter(
                 target[:, 0],
                 target[:, 1],
-                color=target_color,
+                c=target_colors,
                 label="target",
                 **scatter_kwargs,
         )
 
         # plot the transported samples
         base_samples = source
+        base_conditions = source_conditions # Assuming condition is preserved by transport
+        base_colors = source_colors # Use the source colors for transported points and paths
+
         N = base_samples.shape[0]
 
         transported_samples = self.pushforward_jit_vmap(
@@ -244,19 +259,21 @@ class ManifoldW2NeuralDual:
         ax.scatter(
                 transported_samples[:, 0],
                 transported_samples[:, 1],
-                color="#F2545B",
+                c=base_colors, # Color transported points same as source
                 label=label_transport,
                 **scatter_kwargs,
         )
         paths = self.path_jit_vmap(params_geometry, base_samples, transported_samples)
 
-        ax.plot(
-            paths[:, :, 0].T,
-            paths[:, :, 1].T,
-            color=[0.5, 0.5, 1],
-            alpha=0.3,
-            lw=1,
-        )
+        # Plot paths individually with corresponding source color
+        for i in range(N):
+            ax.plot(
+                paths[i, :, 0],
+                paths[i, :, 1],
+                color=base_colors[i], # Use the color of the i-th source point
+                alpha=0.3,
+                lw=1,
+            )
 
         if legend:
             legend_kwargs = {
@@ -299,21 +316,36 @@ class ManifoldW2NeuralDual:
         if contourf_kwargs is None:
             contourf_kwargs = {}
 
+        # Get colormap for conditions (consistent with plot_forward_map)
+        num_conditions = int(jnp.max(source[:, -1])) + 1 if self.geometry.C > 0 else 1
+        cmap = plt.get_cmap('viridis', num_conditions)
+        norm = mpl.colors.Normalize(vmin=0, vmax=num_conditions - 1)
+
         ax_specified = ax is not None
         if not ax_specified:
             fig, ax = plt.subplots(figsize=(6, 6), facecolor="white")
         else:
             fig = ax.get_figure()
 
+        # --- Potential Contour Plot --- 
         x1 = jnp.linspace(*x_bounds, num=num_grid)
         x2 = jnp.linspace(*y_bounds, num=num_grid)
         X1, X2 = jnp.meshgrid(x1, x2)
         X12flat = jnp.hstack((X1.reshape(-1, 1), X2.reshape(-1, 1)))
+
+        # Add default condition if C > 0 for potential evaluation
+        if self.geometry.C > 0:
+            # Assume default condition is 0 for plotting potential background
+            default_condition = jnp.zeros((X12flat.shape[0], self.geometry.C))
+            X_eval = jnp.concatenate([X12flat, default_condition], axis=-1)
+        else:
+            X_eval = X12flat
+
         apply_target_potential = jax.vmap(
             functools.partial(
                 state_target_potential.apply_fn,
                 {'params': state_target_potential.params}))
-        Zflat = apply_target_potential(X12flat)
+        Zflat = apply_target_potential(X_eval)
         Zflat = np.asarray(Zflat)
         vmin, vmax = np.quantile(Zflat, [quantile, 1. - quantile])
         Zflat = Zflat.clip(vmin, vmax)
@@ -321,24 +353,29 @@ class ManifoldW2NeuralDual:
 
         CS = ax.contourf(X1, X2, Z, cmap="Blues", **contourf_kwargs)
 
-        source_color, target_color = "#1A254B", "#A7BED3"
-        scatter_kwargs = {"alpha": 0.5}
+        # --- Scatter Plot Source/Target --- 
+        # Extract conditions if C > 0
+        source_conditions = source[:, self.geometry.D].astype(int) if self.geometry.C > 0 else jnp.zeros(source.shape[0], dtype=int)
+        target_conditions = target[:, self.geometry.D].astype(int) if self.geometry.C > 0 else jnp.zeros(target.shape[0], dtype=int)
+
+        # Map conditions to colors
+        source_colors = cmap(norm(source_conditions))
+        target_colors = cmap(norm(target_conditions))
 
         ax.scatter(
                 source[:, 0],
                 source[:, 1],
-                color=source_color,
+                c=source_colors,
                 label="source",
                 **scatter_kwargs,
         )
         ax.scatter(
                 target[:, 0],
                 target[:, 1],
-                color=target_color,
+                c=target_colors,
                 label="target",
                 **scatter_kwargs,
         )
-
 
         ax.set_xlim(*x_bounds)
         ax.set_ylim(*y_bounds)
