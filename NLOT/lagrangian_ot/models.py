@@ -43,6 +43,8 @@ class MLP(ModelBase):
 
     dim_hidden: Sequence[int]
     is_potential: bool = True
+    D: int = 2
+    C: int = 0
 
     @nn.compact
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:    # noqa: D102
@@ -50,7 +52,8 @@ class MLP(ModelBase):
         if squeeze:
             x = jnp.expand_dims(x, 0)
         assert x.ndim == 2, x.ndim
-        n_input = x.shape[-1]
+        assert x.shape[1] == self.D + self.C
+        #n_input = x.shape[-1]
 
         z = x
         for n_hidden in self.dim_hidden:
@@ -61,7 +64,7 @@ class MLP(ModelBase):
             Wx = nn.Dense(1, use_bias=True)
             z = Wx(z).squeeze(-1)
         else:
-            Wx = nn.Dense(n_input, use_bias=True)
-            z = x + Wx(z)
+            Wx = nn.Dense(self.D, use_bias=True)
+            z = x[:, :self.D] + Wx(z)
 
         return z.squeeze(0) if squeeze else z

@@ -16,16 +16,26 @@ from . import splines, meters, geodesics
 class SplineMLP(nn.Module):
     out_dims: int
     num_hidden: int = 1024
+    D: int = 2
+    C: int = 0
 
     @nn.compact
     def __call__(self, x, y):
-        # TODO: parameterize, make deeper
+
         squeeze = x.ndim == 1
         if squeeze:
             x = jnp.expand_dims(x, 0)
             y = jnp.expand_dims(y, 0)
         assert x.ndim == 2
-        z = jnp.concatenate([x, y], axis=1)
+        assert x.shape[-1] == self.D + self.C
+        assert y.shape[-1] == self.D + self.C
+
+        x = x[:, :self.D]
+        y = y[:, :self.D]
+        c = x[:, self.D:]
+
+        z = jnp.concatenate([x, y, c], axis=1)
+
         z = nn.relu(nn.Dense(self.num_hidden)(z))
         z = nn.relu(nn.Dense(self.num_hidden)(z))
         z = nn.Dense(self.out_dims)(z)
@@ -38,9 +48,10 @@ class SplineMLP(nn.Module):
 class SplineAmortizer:
     geometry: "GeometryBase"
     spline_geodesic_solver: geodesics.SplineSolver
+    D: int = 2
+    C: int = 0
 
     def __post_init__(self):
-        self.D = self.spline_geodesic_solver.D
         self.num_params_spline = self.spline_geodesic_solver.spline_basis.shape[-1] * self.D
         self.basis = self.spline_geodesic_solver.spline_basis
 
@@ -63,12 +74,17 @@ class SplineAmortizer:
 
         def spline_energy(params_spline, x, y):
             assert x.ndim == 1 and y.ndim == 1
-
+            assert x.shape[0] == self.D + self.C
+            assert y.shape[0] == self.D + self.C
             # TODO: num, also set spline knots elsewhere?
             ts = jnp.linspace(0., 1., num=20)
 
             path = splines.compute_spline(
-                x=x, y=y, basis=self.basis, params=params_spline, ts=ts)
+                x=x[:self.D], y=y[:self.D], basis=self.basis, params=params_spline, ts=ts)
+            
+            condition = x[self.D:]
+            condition_repeated = jnp.tile(condition.reshape(1, -1), (path.shape[0], 1))
+            path = jnp.concatenate([path, condition_repeated], axis=-1)
             E = curve_energy(path)
             return E
 

@@ -1,19 +1,25 @@
 defaults:
   - _self_
 
-# neural_net_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee, neural_net_metric_eig, land_metric, scarvelis_conditional_gaussian
+# neural_net_metric, neural_net_metric_eig, land_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee
 geometry: 'neural_net_metric_eig'
+
+# scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, scarvelis_conditional_gaussian
 data: 'scarvelis_conditional_gaussian'
 D: 2
 C: 1
-num_pairs: 1 # Set to integer N to use N evenly spaced pairs, null to use all
+num_pairs: 5
 seed: 1
 num_train_iters: 2000
 batch_size: 1024
 potential_lr: 1e-4
+wandb: True
 
 plot_frequency: 50
 save_frequency: ${plot_frequency}
+
+plotting:
+  disable: True
 
 land_kwargs:
   alpha: 1
@@ -26,8 +32,7 @@ metric:
   update_repeat: 1
   frobenius_reg_weight: 0
   lr: 5e-3
-  
-  
+
 geometry_kwargs:
   spline_solver_kwargs:
     num_spline_nodes: 30
@@ -35,7 +40,6 @@ geometry_kwargs:
     init_lr: 1e-2
     num_spline_points_eval: 20
     max_iter: 0
-
 
 ctransform_solver:
   _target_: lagrangian_ot.ctransform_solvers.CTransformLBFGS

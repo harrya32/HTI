@@ -42,24 +42,23 @@ class Workspace:
         self.work_dir = os.getcwd()
         print(f"workspace: {self.work_dir}")
 
-        # Initialize wandb
         wandb.init(
-            project=cfg.get("wandb_project", "NLOT-Scarvelis_" + self.cfg.geometry), # Default project name
-            config=OmegaConf.to_container(cfg, resolve=True), # Convert Hydra cfg to dict
-            name=cfg.get("run_name", None), # Optional run name
-            # mode="disabled" if cfg.get("debug", False) else "online", # Optionally disable for debugging
+            project=cfg.get("wandb_project", "NLOT-Scarvelis_" + self.cfg.geometry), 
+            config=OmegaConf.to_container(cfg, resolve=True), 
+            name=cfg.get("run_name", None),
+            mode="disabled" if not cfg.get("wandb", True) else "online",
         )
 
         self.key = jax.random.PRNGKey(self.cfg.seed)
         self.elapsed_time = 0.
         
-        # Store frobenius regularization weight as instance variable
         self.frobenius_weight = self.cfg.metric.get('frobenius_reg_weight', 0.0)
 
         self.samplers = data.get_samplers_scarvelis(
             self.cfg.data,
             num_pairs_requested=self.cfg.get("num_pairs", None) 
         )
+
         self.geometry = geometries.get(
             self.cfg.geometry, 
             self.cfg.geometry_kwargs, 
@@ -67,7 +66,7 @@ class Workspace:
             samples=jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)),
             D=self.cfg.D,
             C=self.cfg.C
-            )
+        )
 
         if 'euclidean' in self.cfg.geometry or 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry:
             if self.cfg.data is None:
@@ -111,19 +110,26 @@ class Workspace:
 
         target_potential = models.MLP(
             dim_hidden=self.cfg.target_potential_dim_hidden,
-            is_potential=True)
+            is_potential=True,
+            D=self.cfg.D,
+            C=self.cfg.C
+            )
+        
         source_map = models.MLP(
             dim_hidden=self.cfg.source_map_dim_hidden,
-            is_potential=False)
+            is_potential=False,
+            D=self.cfg.D,
+            C=self.cfg.C
+            )
         ctransform_solver = hydra.utils.instantiate(self.cfg.ctransform_solver)
+
         self.neural_dual_solver = neuraldual.ManifoldW2NeuralDual(
             geometry=self.geometry,
             target_potential=target_potential,
             source_map=source_map,
             ctransform_solver=ctransform_solver,
         )
-
-
+        
         init_key, self.key = jax.random.split(self.key)
         state_target_potential, state_source_map = self.neural_dual_solver.initialize_states(
             self.optimizer_target_potential, self.optimizer_source_map,
@@ -367,16 +373,17 @@ class Workspace:
                     and self.train_step < self.cfg.num_train_iters - 1000:
                 self.fit_spline_amortizer(samplers=self.samplers, init=False)
 
+            # Check if plotting is disabled before attempting any plotting/evaluation steps
+            if not self.cfg.plotting.get('disable', False):
+                if self.train_step % self.cfg.plot_frequency == 0:
+                    self.plot_all_pairs()
+                    self.plot_pushforward()
 
-            if self.train_step % self.cfg.plot_frequency == 0:
-                self.plot_all_pairs()
-                self.plot_pushforward()
-
-            if self.train_step % self.cfg.plot_frequency == 0 and self.has_reference_geometry:
-                alignment, true_eigen_vals, learned_eigen_vals = self.eval_alignment()
-                wandb.log({
-                    "train/geom_alignment": alignment,
-                }, step=self.train_step)
+                if self.train_step % self.cfg.plot_frequency == 0 and self.has_reference_geometry:
+                    alignment, true_eigen_vals, learned_eigen_vals = self.eval_alignment()
+                    wandb.log({
+                        "train/geom_alignment": alignment,
+                    }, step=self.train_step)
 
             writer.writerow({
                 'iter': self.train_step,
@@ -389,8 +396,10 @@ class Workspace:
             if self.train_step % self.cfg.save_frequency == 0:
                 self.save()
 
-        self.plot()
-        self.eval_alignment()
+        if not self.cfg.plotting.get('disable', False):
+            self.plot()
+            if self.has_reference_geometry: 
+                self.eval_alignment()
 
 
     def eval_alignment(self):
@@ -440,6 +449,9 @@ class Workspace:
 
 
     def plot(self):
+        if self.cfg.plotting.get('disable', False):
+            print('--- plotting disabled by config')
+            return
         print('--- plotting')
         self.plot_all_pairs()
         self.plot_pushforward()

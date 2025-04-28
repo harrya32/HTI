@@ -46,13 +46,13 @@ class SplineSolver(SolverBase):
             if num_final_points is not None:
                 ts = jnp.linspace(0., 1., num=num_final_points)
             xs = splines.compute_spline(
-                x=x0, y=x1, basis=self.spline_basis, params=init_params, ts=ts)
+                x=x0[:self.D], y=x1[:self.D], basis=self.spline_basis, params=init_params, ts=ts)
             E = energy_fn(xs)
             return SolverOut(mu=xs, dmu=None, num_iter=0, cost=E)
 
         def F(params):
             xs = splines.compute_spline(
-                x=x0, y=x1, basis=self.spline_basis, params=params, ts=ts)
+                x=x0[:self.D], y=x1[:self.D], basis=self.spline_basis, params=params, ts=ts)
             E = energy_fn(xs)
             return E
 
@@ -85,5 +85,5 @@ class SplineSolver(SolverBase):
         if num_final_points is not None:
             ts = jnp.linspace(0., 1., num=num_final_points)
         xs = splines.compute_spline(
-            x=x0, y=x1, basis=self.spline_basis, params=params, ts=ts)
+            x=x0[:self.D], y=x1[:self.D], basis=self.spline_basis, params=params, ts=ts)
         return SolverOut(mu=xs, dmu=None, num_iter=num_iter, cost=E)

@@ -320,7 +320,7 @@ class MetricManifold(GeometryBase):
             D=self.D, **self.spline_solver_kwargs
         )
         self.spline_amortizer = spline_amortizer.SplineAmortizer(
-            self, self.spline_geodesic_solver
+            self, self.spline_geodesic_solver, D=self.D, C=self.C
         )
         super().__post_init__()
 
@@ -337,7 +337,7 @@ class MetricManifold(GeometryBase):
             )
 
         self.spline_model = self.spline_model_initializer_fn(
-            self.spline_geodesic_solver.num_spline_params
+            out_dims=self.spline_geodesic_solver.num_spline_params, D=self.D, C=self.C
         )
 
     def predict_spline_params(self, x, y):
@@ -351,6 +351,10 @@ class MetricManifold(GeometryBase):
 
     def path(self, x, y, num_points=20):
         assert x.ndim == 1 and y.ndim == 1
+        assert x.shape[0] == self.D + self.C
+        assert y.shape[0] == self.D + self.C
+
+        condition = x[self.D:]
         init_spline_params = jax.lax.stop_gradient(self.predict_spline_params(x, y))
 
         initializing = self.is_mutable_collection("params")
@@ -359,13 +363,15 @@ class MetricManifold(GeometryBase):
             # (linen doesn't work well with jax.lax.while_loop)
             ts = jnp.linspace(0, 1, num_points)
             xs = splines.compute_spline(
-                x=x,
-                y=y,
+                x=x[:self.D],
+                y=y[:self.D],
                 basis=self.spline_amortizer.basis,
                 params=init_spline_params,
                 ts=ts,
             )
-            E = self.curve_energy(xs)
+            # Tile condition to match the number of points in xs
+            condition_repeated = jnp.tile(condition.reshape(1, -1), (num_points, 1))
+            xs = jnp.concatenate([xs, condition_repeated], axis=-1)
             return xs
 
         out = self.spline_geodesic_solver.solve(
@@ -375,10 +381,17 @@ class MetricManifold(GeometryBase):
             init_params=init_spline_params,
             num_final_points=num_points,
         )
-        return out.mu
+
+        out_mu = out.mu
+
+        # out_mu is len D, now we want to add the condition to the end
+        condition_repeated = jnp.tile(condition.reshape(1, -1), (num_points, 1))
+        out_mu = jnp.concatenate([out_mu, condition_repeated], axis=-1)
+        return out_mu
 
     def energy_at_point(self, x, v):
         M = self.metric(x)
+        v = v[:self.D]
         if (
             self.distance_mode == DistanceModes.GEODESIC
             or self.distance_mode == DistanceModes.SQUARED_GEODESIC
@@ -386,6 +399,8 @@ class MetricManifold(GeometryBase):
             kinetic = jnp.sqrt(v @ M @ v)
         else:
             kinetic = 0.5 * v @ M @ v
+
+        #this is only if we have a lagrangian potential, e.g. obstacle avoidance
         lagrangian_potential = (
             self.lagrangian_potential(x)
             if self.lagrangian_potential_initializer_fn is not None

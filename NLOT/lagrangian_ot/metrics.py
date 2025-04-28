@@ -74,7 +74,8 @@ class XMetric(ScarvelisMetric):
 
 @dataclass
 class NeuralNetMetric(MetricBase):
-    D = 2
+    D: int = 2
+    C: int = 0
 
     def setup(self):
         assert self.D == 2
@@ -128,7 +129,7 @@ class NeuralNetMetricDirect(MetricBase):
 
 @dataclass
 class NeuralNetMetricEig(MetricBase):
-    D: int = 2 #data dimension
+    D: int = 2 #ambient dimension
     C: int = 0 #conditional dimension
     min_eigenvalue: float = 0.1
     max_eigenvalue: float = 1
@@ -136,11 +137,11 @@ class NeuralNetMetricEig(MetricBase):
     total_budget: Optional[float] = None  # Total eigenvalue budget, defaults to D if None
     
     def setup(self):
-        # Network outputs eigenvalues and parameters for rotation
+        # Network outputs eigenvalue weights and rotation parameters
         # For D dimensional space: D eigenvalues + D(D-1)/2 rotation parameters
-        # For D=2, we output eigenvalues and a 2D vector for arctan2
+        # For D=2, we output eigenvalues and a 2D vector for arctan2, for similarity to original NLOT implementation
         if self.D == 2:
-            output_size = self.D + 2  # D eigenvalues + 2 for rotation via arctan2
+            output_size = self.D + 2
         else:
             output_size = self.D + (self.D * (self.D - 1)) // 2
         
@@ -153,22 +154,21 @@ class NeuralNetMetricEig(MetricBase):
         ])
     
     def __call__(self, x):
-        assert x.ndim == 1 and x.shape[0] == self.D + self.C
+        assert x.ndim == 1 
+        assert x.shape[0] == self.D + self.C
         
         nn_out = self.net(x)
         raw_eigenvalues = nn_out[:self.D]
         
-        # Competitive allocation of eigenvalue budget using softmax
+        # Allocation of eigenvalue budget using softmax
         eigenvalue_weights = jax.nn.softmax(raw_eigenvalues * self.temperature)
         
         # Set total budget to D if not specified
         budget = self.D if self.total_budget is None else self.total_budget
         
-        # Compute eigenvalues: ensure minimum values while competitively allocating the budget
+        # Compute eigenvalues: ensure minimum values while allocating the budget
         budget_range = self.max_eigenvalue - self.min_eigenvalue
         eigenvalues = self.min_eigenvalue + eigenvalue_weights * budget_range * (budget / self.D)
-        
-        # Ensure all eigenvalues respect bounds
         eigenvalues = jnp.clip(eigenvalues, self.min_eigenvalue, self.max_eigenvalue)
         
         rotation = self._create_rotation_matrix(nn_out[self.D:])

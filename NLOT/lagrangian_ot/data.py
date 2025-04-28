@@ -49,12 +49,8 @@ def get_bounds(name):
             jnp.array((xbounds[1], ybounds[1])),
         )
     elif name == "scarvelis_conditional_gaussian":
-        xbounds = (-2, 2)
-        ybounds = (-2, 2)
-        bounds = (
-            jnp.array((xbounds[0], ybounds[0])),
-            jnp.array((xbounds[1], ybounds[1])),
-        )
+        bounds = (-2, 2)
+        xbounds = ybounds = bounds
     else:
         raise ValueError(f"Invalid data choice: {name}")
 
