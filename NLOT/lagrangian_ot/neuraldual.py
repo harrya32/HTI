@@ -71,7 +71,8 @@ class ManifoldW2NeuralDual:
             lambda params_target, params_geometry, source, target_init: self.ctransform_solver.solve(
                 params_geometry,
                 functools.partial(self.target_potential.apply, {'params': params_target}),
-                source, target_init=target_init
+                source, 
+                target_init=target_init
             ), in_axes=(None, None, 0, 0)))
 
         self.pushforward = lambda params_source, params_target, params_geometry, source: self.ctransform_solver.solve(
@@ -93,20 +94,20 @@ class ManifoldW2NeuralDual:
 
         self.update_fn_jit = jax.jit(self.update_fn)
 
-    def initialize_states(
-            self, optimizer_target_potential, optimizer_source_map,
-            key, source_samples, target_samples):
+    def initialize_states(self, optimizer_target_potential, optimizer_source_map, key, source_samples, target_samples):
         key, key1, key2 = jax.random.split(key, 3)
         params_target_potential = self.target_potential.init(key1, target_samples)['params']
         params_source_map = self.source_map.init(key2, source_samples)['params']
 
         state_target_potential = train_state.TrainState.create(
             apply_fn=self.target_potential.apply,
-            params=params_target_potential, tx=optimizer_target_potential
+            params=params_target_potential, 
+            tx=optimizer_target_potential
         )
         state_source_map = train_state.TrainState.create(
             apply_fn=self.source_map.apply,
-            params=params_source_map, tx=optimizer_source_map,
+            params=params_source_map, 
+            tx=optimizer_source_map,
         )
         return state_target_potential, state_source_map
 
@@ -114,7 +115,9 @@ class ManifoldW2NeuralDual:
     def state_from_dicts(self, optimizer, net, state_dicts):
         params = state_dicts['params']
         state = train_state.TrainState.create(
-            apply_fn=net.apply, params=params, tx=optimizer
+            apply_fn=net.apply, 
+            params=params, 
+            tx=optimizer
         )
         state = flax.serialization.from_state_dict(state, state_dicts)
         return state
@@ -135,7 +138,10 @@ class ManifoldW2NeuralDual:
             self.target_potential.apply, {'params': params_target_potential})
         if self.ctransform_solver is not None:
             finetune_target_hat = lambda source, target_init: self.ctransform_solver.solve(
-                params_geometry, target_potential_partial, source, target_init=target_init
+                params_geometry, 
+                target_potential_partial, 
+                source, 
+                target_init=target_init
             )
             finetune_target_hat = jax.vmap(finetune_target_hat)
             out = finetune_target_hat(source, init_target_hat)
@@ -150,8 +156,7 @@ class ManifoldW2NeuralDual:
         target_potential = target_potential_partial(target)
         cost_vmap = jax.vmap(lambda x, y: self.geometry.apply(
             {'params': params_geometry}, x, y, method=self.geometry.cost))
-        source_potential = cost_vmap(source, target_hat_detach) - \
-            target_potential_partial(target_hat_detach)
+        source_potential = cost_vmap(source, target_hat_detach) - target_potential_partial(target_hat_detach)
         dual_source = source_potential.mean()
         dual_target = target_potential.mean()
         dual_loss = -dual_source - dual_target
@@ -206,23 +211,17 @@ class ManifoldW2NeuralDual:
         if scatter_kwargs is None:
             scatter_kwargs = {"alpha": 0.5}
 
-        # Determine unique conditions from source data if C > 0
         if self.geometry.C > 0:
             source_condition_vectors = source[:, self.geometry.D:]
             unique_conditions, source_condition_indices = jnp.unique(source_condition_vectors, axis=0, return_inverse=True)
             num_unique_conditions = unique_conditions.shape[0]
-            # Also get target conditions for coloring target points, if needed
             target_condition_vectors = target[:, self.geometry.D:]
-            # Map target conditions to the indices found in source for consistent coloring
-            # This requires a way to map target vectors to the unique source indices. 
-            # For simplicity, we'll assume target conditions are represented similarly and use their raw values for coloring.
             target_conditions_raw = target[:, self.geometry.D].astype(int)
         else:
             num_unique_conditions = 1
             source_condition_indices = jnp.zeros(source.shape[0], dtype=int)
             target_conditions_raw = jnp.zeros(target.shape[0], dtype=int)
 
-        # Setup colormap based on the actual number of unique conditions found
         cmap = plt.get_cmap('viridis', num_unique_conditions)
         norm = mpl.colors.Normalize(vmin=0, vmax=num_unique_conditions - 1)
 
@@ -232,13 +231,9 @@ class ManifoldW2NeuralDual:
         else:
             fig = ax.get_figure()
 
-        # Map condition indices (from unique) to colors for source
         source_colors = cmap(norm(source_condition_indices))
-        # Use raw target condition values for target colors (assuming they map reasonably)
-        # Clamp target conditions to be within the norm range to avoid errors
         target_colors = cmap(norm(jnp.clip(target_conditions_raw, 0, num_unique_conditions - 1)))
 
-        # plot the source and target samples
         label_transport = r"transported"
 
         ax.scatter(
@@ -251,19 +246,21 @@ class ManifoldW2NeuralDual:
         ax.scatter(
                 target[:, 0],
                 target[:, 1],
-                c=target_colors, # Use colors based on raw target condition
+                c=target_colors, # Use colors based on target condition
                 label="target",
                 **scatter_kwargs
         )
 
-        # plot the transported samples
         base_samples = source
         base_colors = source_colors # Use the source colors for transported points and paths
 
         N = base_samples.shape[0]
 
         transported_samples = self.pushforward_jit_vmap(
-            state_source_map.params, state_target_potential.params, params_geometry, base_samples
+            state_source_map.params, 
+            state_target_potential.params, 
+            params_geometry, 
+            base_samples
         ).solution
 
         ax.scatter(
@@ -273,14 +270,17 @@ class ManifoldW2NeuralDual:
                 label=label_transport,
                 **scatter_kwargs,
         )
-        paths = self.path_jit_vmap(params_geometry, base_samples, transported_samples)
+        paths = self.path_jit_vmap(
+            params_geometry, 
+            base_samples, 
+            transported_samples
+        )
 
-        # Plot paths individually with corresponding source color
         for i in range(N):
             ax.plot(
                 paths[i, :, 0],
                 paths[i, :, 1],
-                color=base_colors[i], # Use the color of the i-th source point
+                color=base_colors[i], 
                 alpha=0.3,
                 lw=1,
             )

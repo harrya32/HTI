@@ -45,7 +45,8 @@ class MLP(ModelBase):
     is_potential: bool = True
     D: int = 2
     C: int = 0
-    num_categories: Optional[int] = 4 # Number of categories for conditional input (HARDCODED FOR TOY TEST)
+    categorical: Optional[bool] = False 
+    num_categories: Optional[int] = 4 
 
     @nn.compact
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:    # noqa: D102
@@ -54,12 +55,17 @@ class MLP(ModelBase):
             x = jnp.expand_dims(x, 0)
         assert x.ndim == 2, x.ndim
         assert x.shape[1] == self.D + self.C
-        #n_input = x.shape[-1]
 
         x_ambient = x[:, :self.D]
-        category_index = x[:, self.D].astype(jnp.int32) # Ensure integer type
-        category_one_hot = jax.nn.one_hot(category_index, num_classes=self.num_categories)
-        z = jnp.concatenate([x_ambient, category_one_hot], axis=1)
+
+        if self.categorical:
+            category_index = x[:, self.D].astype(jnp.int32)
+            category_one_hot = jax.nn.one_hot(category_index, num_classes=self.num_categories)
+            z = jnp.concatenate([x_ambient, category_one_hot], axis=1)
+        else:
+            c = x[:, self.D:]
+            z = jnp.concatenate([x_ambient, c], axis=1)
+        
         for n_hidden in self.dim_hidden:
             Wx = nn.Dense(n_hidden, use_bias=True)
             z = nn.leaky_relu(Wx(z))
@@ -69,7 +75,8 @@ class MLP(ModelBase):
             z = Wx(z).squeeze(-1)
         else:
             Wx = nn.Dense(self.D, use_bias=True)
-            z = x[:, :self.D] + Wx(z)
+            z = x[:, :self.D] + Wx(z) 
+            
             # Add condition to the end
             z = jnp.concatenate([z, x[:, self.D:]], axis=-1)
 

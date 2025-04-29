@@ -2,14 +2,17 @@ defaults:
   - _self_
 
 # neural_net_metric, neural_net_metric_eig, land_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee
-geometry: 'neural_net_metric_eig'
+geometry: 'neural_net_metric'
 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex
-data: 'scarvelis_conditional_gaussian_complex'
+data: 'scarvelis_circle'
 D: 2
-C: 1
-num_pairs: 4
+C: 0
+categorical: False
+num_categories: 0
+
 seed: 1
+num_pairs: 4
 num_train_iters: 2000
 batch_size: 1024
 potential_lr: 1e-4

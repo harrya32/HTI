@@ -12,13 +12,15 @@ from typing import Any, Optional
 from dataclasses import dataclass
 
 from . import splines, meters, geodesics
+from abc import ABC, abstractmethod
 
 class SplineMLP(nn.Module):
     out_dims: int
     num_hidden: int = 1024
     D: int = 2
     C: int = 0
-    num_categories: Optional[int] = 4 # Number of categories for conditional input (HARDCODED FOR TOY TEST)
+    categorical: Optional[bool] = False 
+    num_categories: Optional[int] = 4
 
     @nn.compact
     def __call__(self, x, y):
@@ -31,18 +33,17 @@ class SplineMLP(nn.Module):
         assert x.shape[-1] == self.D + self.C
         assert y.shape[-1] == self.D + self.C
 
-        x = x[:, :self.D]
-        y = y[:, :self.D]
-        c = x[:, self.D:]
-
         x_ambient = x[:, :self.D]
         y_ambient = y[:, :self.D]
-        category_index = x[:, self.D].astype(jnp.int32) # Ensure integer type
-        category_one_hot = jax.nn.one_hot(category_index, num_classes=self.num_categories)
 
-        #z = jnp.concatenate([x, y, c], axis=1)
-        z = jnp.concatenate([x_ambient, y_ambient, category_one_hot], axis=1)
+        if self.categorical:
+            category_index = x[:, self.D].astype(jnp.int32) 
+            category_one_hot = jax.nn.one_hot(category_index, num_classes=self.num_categories)
+            z = jnp.concatenate([x_ambient, y_ambient, category_one_hot], axis=1)
 
+        else:
+            c = x[:, self.D:]
+            z = jnp.concatenate([x_ambient, y_ambient, c], axis=1)
 
         z = nn.relu(nn.Dense(self.num_hidden)(z))
         z = nn.relu(nn.Dense(self.num_hidden)(z))
@@ -54,7 +55,7 @@ class SplineMLP(nn.Module):
 
 @dataclass
 class SplineAmortizer:
-    geometry: "GeometryBase"
+    geometry: ABC
     spline_geodesic_solver: geodesics.SplineSolver
     D: int = 2
     C: int = 0

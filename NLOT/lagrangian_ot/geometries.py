@@ -32,7 +32,7 @@ class DistanceModes:
     LAGRANGIAN = "lagrangian"
 
 
-def get(name, geometry_kwargs, land_kwargs, samples=None, D=2, C=0):
+def get(name, geometry_kwargs, land_kwargs, samples=None, D=2, C=0, categorical=False, num_categories=0):
     if name == "sq_euclidean":
         return SqEuclidean()
     elif name == "gmm":
@@ -157,15 +157,21 @@ def get(name, geometry_kwargs, land_kwargs, samples=None, D=2, C=0):
             bounds=(-2, 2),
             distance_mode=DistanceModes.SQUARED_GEODESIC,
             metric_initializer_fn=metrics.NeuralNetMetric,
+            D=D,
+            C=C,
+            categorical=categorical,
+            num_categories=num_categories,
             **geometry_kwargs,
         )
     elif name == "neural_net_metric_eig":
         return MetricManifold(
-            bounds=(-4, 4),
+            bounds=(-2, 2),
             distance_mode=DistanceModes.SQUARED_GEODESIC,
             metric_initializer_fn=metrics.NeuralNetMetricEig,
             D=D,
             C=C,
+            categorical=categorical,
+            num_categories=num_categories,
             **geometry_kwargs,
         )
     elif name == "land_metric":
@@ -305,6 +311,7 @@ class SqEuclidean(GeometryBase):
 
 @dataclass
 class MetricManifold(GeometryBase):
+
     distance_mode: DistanceModes = DistanceModes.SQUARED_GEODESIC
     metric_initializer_fn: Callable = metrics.EuclideanMetric
     spline_model_initializer_fn: Callable = spline_amortizer.SplineMLP
@@ -312,32 +319,66 @@ class MetricManifold(GeometryBase):
     spline_solver_kwargs: Optional[Dict] = None
     samples: Optional[jnp.ndarray] = None
     land_kwargs: Optional[Dict] = None
+    categorical: Optional[bool] = False
+    num_categories: Optional[int] = 0
 
     def __post_init__(self):
+
         if self.spline_solver_kwargs is None:
             self.spline_solver_kwargs = {}
+
         self.spline_geodesic_solver = geodesics.SplineSolver(
-            D=self.D, **self.spline_solver_kwargs
+            D=self.D, 
+            **self.spline_solver_kwargs
         )
+
         self.spline_amortizer = spline_amortizer.SplineAmortizer(
-            self, self.spline_geodesic_solver, D=self.D, C=self.C
+            self, 
+            self.spline_geodesic_solver, 
+            D=self.D, 
+            C=self.C
         )
+
         super().__post_init__()
 
     def setup(self):
+
         if self.samples is not None and self.land_kwargs is not None:
-            self.metric_module = self.metric_initializer_fn(D=self.D, C=self.C, samples=self.samples, **self.land_kwargs)
+            self.metric_module = self.metric_initializer_fn(
+                D=self.D,
+                C=self.C, 
+                samples=self.samples, 
+                categorical=self.categorical, 
+                num_categories=self.num_categories, 
+                **self.land_kwargs
+                )
         elif self.samples is not None:
-            self.metric_module = self.metric_initializer_fn(D=self.D, C=self.C, samples=self.samples)
+            self.metric_module = self.metric_initializer_fn(
+                D=self.D, 
+                C=self.C, 
+                samples=self.samples,
+                categorical=self.categorical,
+                num_categories=self.num_categories
+                )
         else:
-            self.metric_module = self.metric_initializer_fn(D=self.D, C=self.C)
+            self.metric_module = self.metric_initializer_fn(
+                D=self.D, 
+                C=self.C,
+                categorical=self.categorical,
+                num_categories=self.num_categories
+                )
+        
         if self.lagrangian_potential_initializer_fn is not None:
             self.lagrangian_potential_module = (
                 self.lagrangian_potential_initializer_fn()
             )
 
         self.spline_model = self.spline_model_initializer_fn(
-            out_dims=self.spline_geodesic_solver.num_spline_params, D=self.D, C=self.C
+            out_dims=self.spline_geodesic_solver.num_spline_params, 
+            D=self.D, 
+            C=self.C, 
+            categorical=self.categorical, 
+            num_categories=self.num_categories
         )
 
     def predict_spline_params(self, x, y):
@@ -356,8 +397,8 @@ class MetricManifold(GeometryBase):
 
         condition = x[self.D:]
         init_spline_params = jax.lax.stop_gradient(self.predict_spline_params(x, y))
-
         initializing = self.is_mutable_collection("params")
+        
         if initializing:
             # don't improve the solution
             # (linen doesn't work well with jax.lax.while_loop)

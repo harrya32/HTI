@@ -14,7 +14,6 @@ from dataclasses import dataclass
 
 from abc import ABC, abstractmethod
 
-
 plot_cache = {}
 
 @dataclass
@@ -76,6 +75,8 @@ class XMetric(ScarvelisMetric):
 class NeuralNetMetric(MetricBase):
     D: int = 2
     C: int = 0
+    categorical: Optional[bool] = False
+    num_categories: Optional[int] = 4
 
     def setup(self):
         assert self.D == 2
@@ -88,8 +89,19 @@ class NeuralNetMetric(MetricBase):
         ])
 
     def __call__(self, x):
-        assert x.ndim == 1 and x.shape[0] == self.D
-        theta = jnp.arctan2(*self.net(x).squeeze())
+        assert x.ndim == 1
+        
+        if self.categorical:
+            assert x.shape[0] == self.D + 1, f"Expected input shape ({self.D + 1},), got {x.shape}"
+            x_ambient = x[:self.D]
+            category_index = x[self.D].astype(jnp.int32) # Ensure integer type
+            category_one_hot = jax.nn.one_hot(category_index, num_classes=self.num_categories)
+            net_input = jnp.concatenate([x_ambient, category_one_hot])
+        else:
+            assert x.shape[0] == self.D + self.C, f"Expected input shape ({self.D + self.C},), got {x.shape}"
+            net_input = x
+
+        theta = jnp.arctan2(*self.net(net_input).squeeze())
         R = jnp.array([[jnp.cos(theta), -jnp.sin(theta)],
                        [jnp.sin(theta), jnp.cos(theta)]])
         Q = jnp.array([[1., 0.],
@@ -131,7 +143,8 @@ class NeuralNetMetricDirect(MetricBase):
 class NeuralNetMetricEig(MetricBase):
     D: int = 2 #ambient dimension
     C: int = 0 #conditional dimension
-    num_categories: Optional[int] = 4 # Number of categories for conditional input (HARDCODED FOR TOY TEST)
+    categorical: Optional[bool] = False
+    num_categories: Optional[int] = 4
     min_eigenvalue: float = 0.1
     max_eigenvalue: float = 1
     temperature: float = 1.0
@@ -157,7 +170,7 @@ class NeuralNetMetricEig(MetricBase):
     def __call__(self, x):
         assert x.ndim == 1
         # If num_categories is set, expect D ambient dims + 1 categorical index
-        if self.num_categories is not None:
+        if self.categorical:
             assert x.shape[0] == self.D + 1, f"Expected input shape ({self.D + 1},), got {x.shape}"
             x_ambient = x[:self.D]
             category_index = x[self.D].astype(jnp.int32) # Ensure integer type

@@ -62,11 +62,13 @@ class Workspace:
 
         self.geometry = geometries.get(
             self.cfg.geometry, 
-            self.cfg.geometry_kwargs, 
-            self.cfg.land_kwargs,
+            self.cfg.get('geometry_kwargs', {}),
+            self.cfg.get('land_kwargs', {}),
             samples=jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)),
-            D=self.cfg.D,
-            C=self.cfg.C
+            D=self.cfg.get('D', 2),
+            C=self.cfg.get('C', 0),
+            categorical=self.cfg.get('categorical', False),
+            num_categories=self.cfg.get('num_categories', 0),
         )
 
         if 'euclidean' in self.cfg.geometry or 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry:
@@ -78,12 +80,14 @@ class Workspace:
         if self.has_reference_geometry:
             self.reference_geometry = geometries.get(
                 self.cfg.geometry, 
-                self.cfg.geometry_kwargs, 
-                self.cfg.land_kwargs,
+                self.cfg.get('geometry_kwargs', {}),
+                self.cfg.get('land_kwargs', {}),
                 samples=jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)),
-                D=self.cfg.D,
-                C=self.cfg.C
-                )
+                D=self.cfg.get('D', 2),
+                C=self.cfg.get('C', 0),
+                categorical=self.cfg.get('categorical', False),
+                num_categories=self.cfg.get('num_categories', 0),
+            )
 
         if self.cfg.data is None:
             self.cfg.data = self.cfg.geometry
@@ -112,16 +116,21 @@ class Workspace:
         target_potential = models.MLP(
             dim_hidden=self.cfg.target_potential_dim_hidden,
             is_potential=True,
-            D=self.cfg.D,
-            C=self.cfg.C
-            )
+            D=self.cfg.get('D', 2),
+            C=self.cfg.get('C', 0),
+            categorical=self.cfg.get('categorical', False),
+            num_categories=self.cfg.get('num_categories', 0),
+        )
         
         source_map = models.MLP(
             dim_hidden=self.cfg.source_map_dim_hidden,
             is_potential=False,
-            D=self.cfg.D,
-            C=self.cfg.C
-            )
+            D=self.cfg.get('D', 2),
+            C=self.cfg.get('C', 0),
+            categorical=self.cfg.get('categorical', False),
+            num_categories=self.cfg.get('num_categories', 0),
+        )
+        
         ctransform_solver = hydra.utils.instantiate(self.cfg.ctransform_solver)
 
         self.neural_dual_solver = neuraldual.ManifoldW2NeuralDual(
@@ -219,8 +228,7 @@ class Workspace:
 
         new_states, infos = zip(*out)
         new_states = zip(*new_states)
-        mean_info = type(infos[0])(
-            *[jnp.array(x).mean() for x in list(zip(*infos))])
+        mean_info = type(infos[0])(*[jnp.array(x).mean() for x in list(zip(*infos))])
         return new_states, mean_info
 
     def sample_all_batches(self, samplers):
@@ -232,9 +240,7 @@ class Workspace:
             })
         return batches
 
-    def geometry_loss(self, params_geometry,
-                      state_target_potentials, state_source_maps,
-                      batches, key):
+    def geometry_loss(self, params_geometry, state_target_potentials, state_source_maps, batches, key):
         metric_fn = lambda x: self.geometry.apply(
             {'params': params_geometry},
             x, method=self.geometry.metric)
@@ -252,34 +258,30 @@ class Workspace:
             _, info_t = self.neural_dual_solver.loss_fn(
                 state_target_potentials[t].params,
                 state_source_maps[t].params,
-                params_geometry, batch)
+                params_geometry, 
+                batch
+            )
             dual_losses.append(-info_t.dual_loss)
-
-            # Only calculate Frobenius regularization if the weight is non-zero
+            
             if self.frobenius_weight:
+                # Scarvelis regularization
                 source_points = batch['source']
                 target_points = batch['target'] 
 
-                # 2. Sample t' ~ U(0, 1) for each point
                 batch_size = source_points.shape[0]
                 t_key, reg_key = jax.random.split(reg_key)
-                times = jax.random.uniform(t_key, shape=(batch_size, 1)) # Shape (batch_size, 1) for broadcasting
+                times = jax.random.uniform(t_key, shape=(batch_size, 1))
 
-                # 3. Calculate points along straight line: sigma(t') = (1-t')*x0 + t'*x1
+                # Calculate points along straight line: sigma(t') = (1-t')*x0 + t'*x1
                 path_points = (1.0 - times) * source_points + times * target_points
 
-                # 4. Evaluate inverse metric G^-1(sigma(t'))
-                #    Use vmapped inverse function for batch processing
-                inv_metrics_at_path = inv_metric_vmap(path_points) # Shape (batch_size, dim, dim)
+                # Evaluate inverse metric G^-1(sigma(t'))
+                inv_metrics_at_path = inv_metric_vmap(path_points)
 
-                # 5. Calculate squared Frobenius norm ||G^-1(sigma(t'))||^2_F = Tr((G^-1)^T G^-1) = Tr(G^-2)
-                #    Use vmap again for batch processing the trace calculation
-                frobenius_sq_norms = jax.vmap(lambda m: jnp.trace(m @ m))(inv_metrics_at_path) # Shape (batch_size,)
-
-                # 6. Average over the batch
+                # Calculate squared Frobenius norm ||G^-1(sigma(t'))||^2_F = Tr((G^-1)^T G^-1) = Tr(G^-2)
+                frobenius_sq_norms = jax.vmap(lambda m: jnp.trace(m @ m))(inv_metrics_at_path)
                 mean_frobenius_reg = jnp.mean(frobenius_sq_norms)
                 frobenius_regs.append(mean_frobenius_reg)
-
 
         mean_dual_loss = jnp.mean(jnp.stack(dual_losses)) 
 
@@ -292,14 +294,15 @@ class Workspace:
         return total_loss
 
     @functools.partial(jax.jit, static_argnums=[0])
-    def update_geometry(self, params_geometry, state_geometry,
-                        state_target_potentials, state_source_maps,
-                        batches, key):
+    def update_geometry(self, params_geometry, state_geometry, state_target_potentials, state_source_maps, batches, key):
         geometry_grad_fn = jax.value_and_grad(self.geometry_loss)
         loss, grads = geometry_grad_fn(
             params_geometry,
-            state_target_potentials, state_source_maps,
-            batches, key)
+            state_target_potentials, 
+            state_source_maps,
+            batches, 
+            key
+        )
 
         # TODO: could remove 'spline_model' from updates
         # (currently grads are all zero)
@@ -325,8 +328,10 @@ class Workspace:
             start = time.time()
             batches = self.sample_all_batches(self.samplers)
             new_states, info = self.update_all_states(
-                self.state_target_potentials, self.state_source_maps,
-                batches)
+                self.state_target_potentials,
+                self.state_source_maps,
+                batches
+            )
             self.state_target_potentials, self.state_source_maps = new_states
 
             update_step_time = time.time() - start
@@ -336,9 +341,13 @@ class Workspace:
                 start = time.time()
                 k1, self.key = jax.random.split(self.key)
                 new_params_geometry, new_state_geometry, geom_loss = self.update_geometry(
-                    self.params_geometry, self.state_geometry,
-                    self.state_target_potentials, self.state_source_maps,
-                    batches, k1)
+                    self.params_geometry, 
+                    self.state_geometry,
+                    self.state_target_potentials, 
+                    self.state_source_maps,
+                    batches, 
+                    k1
+                )
                 self.params_geometry, self.state_geometry = new_params_geometry, new_state_geometry
                 update_metric_time = time.time() - start
                 self.elapsed_time += update_metric_time
@@ -374,7 +383,6 @@ class Workspace:
                     and self.train_step < self.cfg.num_train_iters - 1000:
                 self.fit_spline_amortizer(samplers=self.samplers, init=False)
 
-            # Check if plotting is disabled before attempting any plotting/evaluation steps
             if not self.cfg.plotting.get('disable', False):
                 if self.train_step % self.cfg.plot_frequency == 0:
                     self.plot_all_pairs()
@@ -408,16 +416,15 @@ class Workspace:
             self.geometry.xbounds, self.geometry.ybounds, 100)
         xflat = jnp.asarray(xflat)
 
-        # Add default condition if C > 0 for metric evaluation
         if self.cfg.C > 0:
-            # Assume default condition is 0 for alignment evaluation
+            # assume default condition is 0 for alignment evaluation
             default_condition = jnp.zeros((xflat.shape[0], self.cfg.C))
             x_eval = jnp.concatenate([xflat, default_condition], axis=-1)
         else:
             x_eval = xflat
 
         if not hasattr(self, 'true_eigvecs') or not hasattr(self, 'learned_eigvecs'):
-            # Create separate functions for each geometry to avoid comparison issues
+            # create separate functions for each geometry to avoid comparison issues
             @functools.partial(jax.jit)
             @functools.partial(jax.vmap, in_axes=(None, 0))
             def true_eigvecs(params_geometry, x):
@@ -471,15 +478,14 @@ class Workspace:
         cols = math.ceil(self.num_pairs / rows)
         fig, axs = plt.subplots(rows, cols, figsize=(cols * 3, rows * 3))
         
-        # Handle case when there's only one pair (axs is a single Axes object, not an array)
+        
         if self.num_pairs == 1:
-            axs = [axs]  # Convert single Axes to a list with one element
+            axs = [axs]
         else:
             axs = axs.flatten()
 
-        # Determine the number of points to plot
-        num_plot_points = self.cfg.plotting.get('num_pairs_plot', 50) # Default to 50 if not specified
-        plot_key = jax.random.PRNGKey(self.cfg.seed + 1) # Use a fixed key for reproducibility
+        num_plot_points = self.cfg.plotting.get('num_pairs_plot', 100) 
+        plot_key = jax.random.PRNGKey(self.cfg.seed + 1) 
 
         for t in range(self.num_pairs):
             self._setup_ax(axs[t])
@@ -487,7 +493,6 @@ class Workspace:
             source_samples = self.eval_samples[t]
             target_samples = self.eval_samples[t+1]
 
-            # Subsample points if necessary
             if source_samples.shape[0] > num_plot_points:
                 k1, plot_key = jax.random.split(plot_key) 
                 num_to_sample = min(num_plot_points, source_samples.shape[0], target_samples.shape[0])
@@ -495,18 +500,16 @@ class Workspace:
                 source_samples_plot = source_samples[indices]
                 target_samples_plot = target_samples[indices] 
             else:
-                # Use all points if there are fewer than num_plot_points
                 source_samples_plot = source_samples
                 target_samples_plot = target_samples
 
             self.neural_dual_solver.plot_forward_map(
-                source_samples_plot, # Use subsampled points
-                target_samples_plot, # Use subsampled points
+                source_samples_plot, 
+                target_samples_plot, 
                 self.state_source_maps[t],
                 self.state_target_potentials[t],
                 self.params_geometry,
                 ax=axs[t],
-                # Remove legend=False
             )
 
         for i in range(self.num_pairs, len(axs)):
@@ -514,7 +517,6 @@ class Workspace:
 
         fig.tight_layout()
         fig.savefig('all_pairs.png')
-        # Log the combined plot to wandb
         wandb.log({"plots/all_pairs": wandb.Image('all_pairs.png')}, step=self.train_step)
         plt.close(fig)
 
