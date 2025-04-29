@@ -4,11 +4,11 @@ defaults:
 # neural_net_metric, neural_net_metric_eig, land_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee
 geometry: 'neural_net_metric_eig'
 
-# scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, scarvelis_conditional_gaussian
-data: 'scarvelis_conditional_gaussian'
+# scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex
+data: 'scarvelis_conditional_gaussian_complex'
 D: 2
 C: 1
-num_pairs: 2
+num_pairs: 4
 seed: 1
 num_train_iters: 2000
 batch_size: 1024
@@ -45,7 +45,7 @@ geometry_kwargs:
 ctransform_solver:
   _target_: lagrangian_ot.ctransform_solvers.CTransformLBFGS
   gtol: 1e-5
-  max_iter: 20
+  max_iter: 10
   max_linesearch_iter: 20
   linesearch_type: "backtracking"
 

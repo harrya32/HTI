@@ -167,7 +167,130 @@ def generate_conditional_gaussian_data(num_points_per_condition: int, variance: 
 
     return final_data
 
+def generate_conditional_gaussian_data_5t(num_points_per_condition: int, variance: float = 0.1):
+    """
+    Generates a 2D conditional dataset with 5 time points and 4 conditions.
+    Each condition follows a specific path defined by Gaussian means at each time point.
+    c=0: (0,0), (1,-1), (0,-2), (1,-3), (0,-4)
+    c=1: (0,0), (-1,1), (0,-2), (-1,-3), (0,-4)
+    c=2: (0,0), (-1,1), (-2,2), (-3,3), (-4,4)
+    c=3: (0,0), (1,1), (2,0), (3,1), (4,0)
+
+    Returns:
+        torch.Tensor: Data tensor of shape (5, num_points_total, 3),
+                      where the dimensions are (time, sample, [x, y, condition]).
+    """
+    num_conditions = 4
+    num_time_points = 5
+
+    # Define means for each condition at each time point
+    # Shape: (num_conditions, num_time_points, 2)
+    means = torch.zeros((num_conditions, num_time_points, 2), dtype=torch.float32, device=DEVICE)
+
+    # Condition 0: (0,0), (1,-1), (0,-2), (-1,-3), (0,-4)
+    means[0, 1] = torch.tensor([1, -1])
+    means[0, 2] = torch.tensor([0, -2])
+    means[0, 3] = torch.tensor([-1, -3])
+    means[0, 4] = torch.tensor([0, -4])
+
+    # Condition 1: (0,0), (-1,-1), (0,-2), (1,-3), (0,-4)
+    means[1, 1] = torch.tensor([-1, -1])
+    means[1, 2] = torch.tensor([0, -2])
+    means[1, 3] = torch.tensor([1, -3])
+    means[1, 4] = torch.tensor([0, -4])
+
+    # Condition 2: (0,0), (-1,1), (-2,2), (-3,3), (-4,4)
+    means[2, 1] = torch.tensor([-1, 1])
+    means[2, 2] = torch.tensor([-2, 2])
+    means[2, 3] = torch.tensor([-3, 3])
+    means[2, 4] = torch.tensor([-4, 4])
+
+    # Condition 3: (0,0), (1,1), (2,0), (3,1), (4,0)
+    means[3, 1] = torch.tensor([1, 1])
+    means[3, 2] = torch.tensor([2, 0])
+    means[3, 3] = torch.tensor([3, 1])
+    means[3, 4] = torch.tensor([4, 0])
+
+    covariance = torch.eye(2, device=DEVICE) * variance
+    sqrt_covariance = torch.linalg.cholesky(covariance) # For sampling: mean + sqrt_cov @ randn
+
+    all_data_t = [[] for _ in range(num_time_points)] # List of lists for each time point
+
+    for c in range(num_conditions):
+        # Create condition vector once per condition
+        condition_vec = torch.full((num_points_per_condition, 1), float(c), device=DEVICE)
+
+        for t in range(num_time_points):
+            # Sample data for time t: N(mean_c_t, variance*I)
+            z = torch.randn(num_points_per_condition, 2, device=DEVICE)
+            samples_t = means[c, t] + z @ sqrt_covariance.T
+
+            # Append [x, y, condition]
+            all_data_t[t].append(torch.cat((samples_t, condition_vec), dim=1))
+
+    # Concatenate across conditions for each time point
+    final_data_t = [torch.cat(all_data_t[t], dim=0) for t in range(num_time_points)]
+
+    # Stack time points
+    final_data = torch.stack(final_data_t, dim=0) # Stack all time points
+
+    return final_data
+
 if __name__ == "__main__":
+
+    #----------------------------#
+    #  COMPLEX CONDITIONAL DATA  #
+    #----------------------------#
+    num_points_per_cond_5t = 500
+    variance_5t = 0.05
+    conditional_data_5t = generate_conditional_gaussian_data_5t( 
+        num_points_per_condition=num_points_per_cond_5t,
+        variance=variance_5t
+    )
+    total_points_5t = num_points_per_cond_5t * 4
+    print(f"Generated 5T conditional data shape: {conditional_data_5t.shape}") # Should be (5, total_points, 3)
+
+    # Save the conditional data
+    save_path_5t = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_gaussians_complex.pt')
+    torch.save(conditional_data_5t, save_path_5t)
+    print(f"5T Conditional data saved to {save_path_5t}")
+
+    # --- Plotting 5T Conditional Data ---
+    num_time_points_plot = 5
+    fig_5t, axs_5t = plt.subplots(1, num_time_points_plot, figsize=(5 * num_time_points_plot, 5), sharex=True, sharey=True)
+    colors_5t = plt.cm.viridis(np.linspace(0, 1, 4)) # 4 conditions
+
+    for t in range(num_time_points_plot):
+        data_t = conditional_data_5t[t].cpu().numpy()
+        conditions_t = data_t[:, 2].astype(int)
+        axs_5t[t].set_title(f"Time t={t}")
+        for c in range(4): # 4 conditions
+            mask = conditions_t == c
+            axs_5t[t].scatter(data_t[mask, 0], data_t[mask, 1], color=colors_5t[c], label=f'Cond {c}' if t == 0 else "", alpha=0.6, s=10)
+        axs_5t[t].set_xlabel("x")
+        if t == 0:
+            axs_5t[t].set_ylabel("y")
+            axs_5t[t].legend()
+        axs_5t[t].set_aspect('equal', adjustable='box')
+        axs_5t[t].grid(True)
+
+    # Determine shared axis limits
+    all_x = conditional_data_5t[:, :, 0].cpu().numpy().flatten()
+    all_y = conditional_data_5t[:, :, 1].cpu().numpy().flatten()
+    x_min, x_max = np.min(all_x), np.max(all_x)
+    y_min, y_max = np.min(all_y), np.max(all_y)
+    padding = 1.0 # Add some padding
+    axs_5t[0].set_xlim(x_min - padding, x_max + padding)
+    axs_5t[0].set_ylim(y_min - padding, y_max + padding)
+
+
+    plt.suptitle("Generated Complex Conditional Gaussian Data")
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plot_save_path_5t = os.path.join(SCRIPT_PATH, 'conditional_gaussians_complex_plot.png')
+    plt.savefig(plot_save_path_5t)
+    print(f"5T Plot saved to {plot_save_path_5t}")
+    plt.close(fig_5t) # Close the figure to free memory
+
 
     #--------------------#
     #  CONDITIONAL DATA  #
@@ -179,8 +302,8 @@ if __name__ == "__main__":
 
     # Save the conditional data
     save_path = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_gaussians_3t.pt') # Changed filename
-    torch.save(conditional_data, save_path)
-    print(f"Conditional data saved to {save_path}")
+    #torch.save(conditional_data, save_path)
+    #print(f"Conditional data saved to {save_path}")
 
     # --- Plotting Conditional Data ---
     fig, axs = plt.subplots(1, 3, figsize=(15, 5), sharex=True, sharey=True) # Changed to 1x3 grid and figsize
@@ -224,8 +347,8 @@ if __name__ == "__main__":
     plt.suptitle("Generated Conditional Gaussian Data (3 Time Steps)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plot_save_path = os.path.join(SCRIPT_PATH, 'conditional_gaussians_3t_plot.png') # Changed filename
-    plt.savefig(plot_save_path)
-    print(f"Plot saved to {plot_save_path}")
+    #plt.savefig(plot_save_path)
+    #print(f"Plot saved to {plot_save_path}")
 
     #-------------#
     #  ARCH DATA  #

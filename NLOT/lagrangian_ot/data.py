@@ -51,6 +51,9 @@ def get_bounds(name):
     elif name == "scarvelis_conditional_gaussian":
         bounds = (-4, 4)
         xbounds = ybounds = bounds
+    elif name == "scarvelis_conditional_gaussian_complex":
+        bounds = (-5,5)
+        xbounds = ybounds = bounds
     else:
         raise ValueError(f"Invalid data choice: {name}")
 
@@ -144,6 +147,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         "scarvelis_xpath": "data_xpath_std_0p1_100_samples_8_intermediate.pt",
         "scarvelis_arch": "arch_data.pt",
         "scarvelis_conditional_gaussian": "conditional_gaussians_3t.pt",
+        "scarvelis_conditional_gaussian_complex": "conditional_gaussians_complex.pt",
     }
     if geometry_str not in paths:
         raise ValueError(f"Invalid geometry choice: {geometry_str}")
