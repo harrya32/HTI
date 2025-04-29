@@ -202,16 +202,29 @@ class ManifoldW2NeuralDual:
             legend: bool = True,
             scatter_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Tuple["plt.Figure", "plt.Axes"]:
-        if mpl is None:
-            raise RuntimeError("Please install `matplotlib` first.")
 
         if scatter_kwargs is None:
             scatter_kwargs = {"alpha": 0.5}
 
-        # Get colormap for conditions
-        num_conditions = int(jnp.max(source[:, -1])) + 1 if self.geometry.C > 0 else 1
-        cmap = plt.get_cmap('viridis', num_conditions)
-        norm = mpl.colors.Normalize(vmin=0, vmax=num_conditions - 1)
+        # Determine unique conditions from source data if C > 0
+        if self.geometry.C > 0:
+            source_condition_vectors = source[:, self.geometry.D:]
+            unique_conditions, source_condition_indices = jnp.unique(source_condition_vectors, axis=0, return_inverse=True)
+            num_unique_conditions = unique_conditions.shape[0]
+            # Also get target conditions for coloring target points, if needed
+            target_condition_vectors = target[:, self.geometry.D:]
+            # Map target conditions to the indices found in source for consistent coloring
+            # This requires a way to map target vectors to the unique source indices. 
+            # For simplicity, we'll assume target conditions are represented similarly and use their raw values for coloring.
+            target_conditions_raw = target[:, self.geometry.D].astype(int)
+        else:
+            num_unique_conditions = 1
+            source_condition_indices = jnp.zeros(source.shape[0], dtype=int)
+            target_conditions_raw = jnp.zeros(target.shape[0], dtype=int)
+
+        # Setup colormap based on the actual number of unique conditions found
+        cmap = plt.get_cmap('viridis', num_unique_conditions)
+        norm = mpl.colors.Normalize(vmin=0, vmax=num_unique_conditions - 1)
 
         if ax is None:
             fig = plt.figure(facecolor="white")
@@ -219,13 +232,11 @@ class ManifoldW2NeuralDual:
         else:
             fig = ax.get_figure()
 
-        # Extract conditions if C > 0
-        source_conditions = source[:, self.geometry.D].astype(int) if self.geometry.C > 0 else jnp.zeros(source.shape[0], dtype=int)
-        target_conditions = target[:, self.geometry.D].astype(int) if self.geometry.C > 0 else jnp.zeros(target.shape[0], dtype=int)
-
-        # Map conditions to colors
-        source_colors = cmap(norm(source_conditions))
-        target_colors = cmap(norm(target_conditions))
+        # Map condition indices (from unique) to colors for source
+        source_colors = cmap(norm(source_condition_indices))
+        # Use raw target condition values for target colors (assuming they map reasonably)
+        # Clamp target conditions to be within the norm range to avoid errors
+        target_colors = cmap(norm(jnp.clip(target_conditions_raw, 0, num_unique_conditions - 1)))
 
         # plot the source and target samples
         label_transport = r"transported"
@@ -233,21 +244,20 @@ class ManifoldW2NeuralDual:
         ax.scatter(
                 source[:, 0],
                 source[:, 1],
-                c=source_colors,
+                c=source_colors, # Use colors based on unique condition index
                 label="source",
                 **scatter_kwargs,
         )
         ax.scatter(
                 target[:, 0],
                 target[:, 1],
-                c=target_colors,
+                c=target_colors, # Use colors based on raw target condition
                 label="target",
-                **scatter_kwargs,
+                **scatter_kwargs
         )
 
         # plot the transported samples
         base_samples = source
-        base_conditions = source_conditions # Assuming condition is preserved by transport
         base_colors = source_colors # Use the source colors for transported points and paths
 
         N = base_samples.shape[0]

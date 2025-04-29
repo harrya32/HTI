@@ -7,7 +7,7 @@ import optax
 import flax
 from flax import linen as nn
 
-from typing import Any
+from typing import Any, Optional
 
 from dataclasses import dataclass
 
@@ -18,6 +18,7 @@ class SplineMLP(nn.Module):
     num_hidden: int = 1024
     D: int = 2
     C: int = 0
+    num_categories: Optional[int] = 4 # Number of categories for conditional input (HARDCODED FOR TOY TEST)
 
     @nn.compact
     def __call__(self, x, y):
@@ -34,7 +35,14 @@ class SplineMLP(nn.Module):
         y = y[:, :self.D]
         c = x[:, self.D:]
 
-        z = jnp.concatenate([x, y, c], axis=1)
+        x_ambient = x[:, :self.D]
+        y_ambient = y[:, :self.D]
+        category_index = x[:, self.D].astype(jnp.int32) # Ensure integer type
+        category_one_hot = jax.nn.one_hot(category_index, num_classes=self.num_categories)
+
+        #z = jnp.concatenate([x, y, c], axis=1)
+        z = jnp.concatenate([x_ambient, y_ambient, category_one_hot], axis=1)
+
 
         z = nn.relu(nn.Dense(self.num_hidden)(z))
         z = nn.relu(nn.Dense(self.num_hidden)(z))

@@ -551,71 +551,82 @@ class Workspace:
             sp.set_color('k')
             sp.set_linewidth(3)
 
-    def plot_pushforward(self, ax=None, fname='pushforward.png', num_samples=100):
-        if ax is None:
-            fig, ax = plt.subplots(figsize=(4, 4))
-
-        self._setup_ax(ax)
-        cmap = plt.get_cmap('viridis', self.cfg.C + 1)
-        norm = mpl.colors.Normalize(vmin=0, vmax=self.cfg.C)
-
-        # colors = plt.style.library['bmh']['axes.prop_cycle'].by_key()['color']
-
-        # cmap = plt.get_cmap('Blues')
-        #     # cmap_idx = 1-i/N
-        #     # cmap_idx = cmap_idx/0.9 + 0.1
-        #     # color = cmap(cmap_idx)
-        # # def get_color(i):
-        #     # import ipdb; ipdb.set_trace()
-        # colors = cmap(np.linspace(1., 0.1, self.num_pairs+1))
-
-        init_xs = jax.random.choice(
+    def plot_pushforward(self, num_samples=100):
+        # Sample initial points ONCE
+        all_init_xs = jax.random.choice(
             jax.random.PRNGKey(0), self.eval_samples[0], shape=(num_samples,), replace=False)
-        
-        for i in range(num_samples):
-            init_x = init_xs[i]
 
-            # Determine color based on initial condition
-            init_condition = init_x[self.cfg.D].astype(int) if self.cfg.C > 0 else 0
-            init_color = cmap(norm(init_condition))
+        if self.cfg.C > 0:
+            # Extract condition vectors and find unique ones
+            condition_vectors = all_init_xs[:, self.cfg.D:]
+            unique_conditions = jnp.unique(condition_vectors, axis=0)
+            num_conditions = unique_conditions.shape[0]
+        else:
+            # No conditions, treat as one condition
+            unique_conditions = None # No specific conditions to compare against
+            num_conditions = 1
 
-            ax.scatter([init_x[0]], [init_x[1]], s=20, alpha=1,
-                        zorder=10, c=jnp.array([init_color]))
+        # Set up colormap based on the actual number of unique conditions
+        cmap = plt.get_cmap('viridis', num_conditions)
+        norm = mpl.colors.Normalize(vmin=0, vmax=num_conditions - 1)
 
-            x = init_x
-            for t in range(self.num_pairs):
-                prev_x = x
-                # x = self.neural_dual_solver.source_map_apply_jit(
-                #     {'params': self.state_source_maps[t].params}, x)
-                x = self.neural_dual_solver.pushforward_jit(
-                    self.state_source_maps[t].params,
-                    self.state_target_potentials[t].params,
-                    self.params_geometry,
-                    x
-                ).solution
+        # Loop through each unique condition index
+        for c_idx in range(num_conditions):
+            fig, ax = plt.subplots(figsize=(4, 4))
+            self._setup_ax(ax)
+            # Determine the color for this specific condition's plot using its index
+            plot_color = cmap(norm(c_idx))
 
-                path = self.neural_dual_solver.path_jit(
-                    self.params_geometry, prev_x, x)
+            # Filter samples belonging to the current unique condition
+            if self.cfg.C > 0:
+                current_condition = unique_conditions[c_idx]
+                # Compare entire condition vectors for equality
+                condition_matches = jnp.all(condition_vectors == current_condition, axis=1)
+                condition_indices = jnp.where(condition_matches)[0]
+            else:
+                # If no conditions (C=0), all samples belong to the single plot (c_idx=0)
+                condition_indices = jnp.arange(all_init_xs.shape[0])
+            
+            init_xs_condition = all_init_xs[condition_indices]
 
-                ax.plot(
-                    path[:, 0], path[:, 1],
-                    color=init_color,
-                    alpha=0.5,
-                    lw=3,
-                )
+            # Plot only the samples for this condition on this plot
+            for i in range(init_xs_condition.shape[0]):
+                init_x = init_xs_condition[i]
 
-        self._clean_axis(ax)
+                # Plot initial point - use the viridis color. Pass color directly to scatter.
+                ax.scatter([init_x[0]], [init_x[1]], s=20, alpha=1,
+                            zorder=10, c=[plot_color])
 
-        if fname is not None:
-            fig = ax.get_figure()
+                x = init_x
+                for t in range(self.num_pairs):
+                    prev_x = x
+
+                    x = self.neural_dual_solver.pushforward_jit(
+                        self.state_source_maps[t].params,
+                        self.state_target_potentials[t].params,
+                        self.params_geometry,
+                        x
+                    ).solution
+
+                    path = self.neural_dual_solver.path_jit(
+                        self.params_geometry, prev_x, x)
+
+                    # Plot path - use the viridis color
+                    ax.plot(
+                        path[:, 0], path[:, 1],
+                        color=plot_color, # Use the viridis color
+                        alpha=0.5,
+                        lw=3,
+                    )
+
+            # Finalize and save this condition's plot using its index
+            self._clean_axis(ax)
+            # Use c_idx for filename and logging to ensure unique names 0, 1, 2...
+            fname = f'pushforward_condition_{c_idx}.png' 
             print(f'saving to {fname}')
             fig.savefig(fname, bbox_inches='tight', pad_inches=0)
-
-            # Log the  plot to wandb
-            wandb.log({"plots/pushforward": wandb.Image(fname)}, step=self.train_step)
+            wandb.log({f"plots/pushforward_condition_{c_idx}": wandb.Image(fname)}, step=self.train_step)
             plt.close(fig)
-            
-
 
     def save(self, tag="latest"):
         path = os.path.join(self.work_dir, f"{tag}.pkl")
