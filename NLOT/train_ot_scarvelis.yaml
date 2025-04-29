@@ -12,8 +12,8 @@ categorical: False
 num_categories: 0
 
 seed: 1
-num_pairs: 4
-num_train_iters: 2000
+num_pairs: 1
+num_train_iters: 51
 batch_size: 1024
 potential_lr: 1e-4
 wandb: True

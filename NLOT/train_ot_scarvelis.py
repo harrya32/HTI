@@ -541,7 +541,6 @@ class Workspace:
                     alpha=0.5,
                 )
 
-
     def _clean_axis(self, ax):
         ax.set_title('')
         ax.set_xticks([])
@@ -645,6 +644,174 @@ class Workspace:
             # Restore samplers
             self.samplers = samplers_backup
 
+##############################
+### UNCERTAINTY ESTIMATION ###
+##############################
+
+    def _compute_geodesic_distance(self, x, y):
+        """
+        Computes geodesic distance d(x, y) using the learned metric.
+        """
+        cost_val = self.geometry.apply(
+            {'params': self.params_geometry},
+            x,
+            y,
+            method=self.geometry.cost
+        )
+        distance = jnp.sqrt(2 * cost_val)
+        return distance
+
+    @functools.partial(jax.jit, static_argnums=(0,))
+    def _compute_pair_uncertainty(self, x_i, x_i_plus_1):
+        """Computes uncertainty heuristic for a single pair (x_i, x_{i+1})."""
+        # 1. Compute geodesic path
+        path = self.neural_dual_solver.path_jit(
+            self.params_geometry, x_i, x_i_plus_1
+        )
+        num_path_points = path.shape[0]
+        if num_path_points < 3:
+             # Cannot find an intermediate point, return 0 uncertainty, s*=0.5 (midpoint)
+             return 0.5, 0.0
+
+        dist_to_start_fn = jax.vmap(lambda p: self._compute_geodesic_distance(p, x_i))
+        dist_to_end_fn = jax.vmap(lambda p: self._compute_geodesic_distance(p, x_i_plus_1))
+
+        # 3. Compute distances for all intermediate points
+        intermediate_path = path[1:-1] # Exclude exact start and end points
+        dists_to_start = dist_to_start_fn(intermediate_path)
+        dists_to_end = dist_to_end_fn(intermediate_path)
+
+        # 4. Find point maximizing min(dist_to_start, dist_to_end)
+        min_dists = jnp.minimum(dists_to_start, dists_to_end)
+        max_min_dist_idx = jnp.argmax(min_dists)
+        max_min_dist_val = min_dists[max_min_dist_idx] # This is U_pair
+
+        # 5. Calculate corresponding s* (time along the path)
+        s_star = (max_min_dist_idx + 1) / (num_path_points - 1)
+
+        return s_star, max_min_dist_val
+
+    def find_most_uncertain_time(self, num_pairs_per_interval=100, key=None):
+        """
+        Finds the time point t in [0, 1] estimated to be most uncertain based on
+        the heuristic of maximizing the minimum geodesic distance to endpoints along paths.
+
+        Args:
+            num_pairs_per_interval: Number of random pairs to sample per interval/condition.
+            key: JAX PRNGKey for sampling.
+
+        Returns:
+            A tuple (most_uncertain_time, max_average_uncertainty).
+            Returns (None, 0.0) if computation fails.
+        """
+        if key is None:
+            key = jax.random.PRNGKey(int(time.time()))
+
+        # Pre-compile the vmapped version of the pair uncertainty function
+        vmapped_pair_uncertainty = jax.vmap(self._compute_pair_uncertainty)
+
+        all_interval_results = [] # Stores (interval_idx, avg_s_star, avg_uncertainty, condition_idx)
+
+        # Assume time points are equally spaced in [0, 1] (WILL NEED TO CHANGE ONCE CONDUCTING SELECTION)
+        time_points = jnp.linspace(0, 1, self.num_pairs + 1)
+        time_step_duration = 1.0 / self.num_pairs if self.num_pairs > 0 else 1.0
+
+        for t in range(self.num_pairs):
+            print(f"Analyzing interval {t} -> {t+1} (Time {time_points[t]:.2f} -> {time_points[t+1]:.2f})...")
+            X_i = self.eval_samples[t]
+            X_i_plus_1 = self.eval_samples[t+1]
+
+            # --- Handle Conditions ---
+            if self.cfg.C > 0:
+                conditions_i = X_i[:, self.cfg.D:]
+                # Find unique condition vectors and map samples to them
+                unique_conditions, condition_map_i = jnp.unique(conditions_i, axis=0, return_inverse=True)
+                num_conditions = unique_conditions.shape[0]
+                print(f"  Found {num_conditions} unique conditions.")
+            else:
+                unique_conditions = [None] # Placeholder
+                num_conditions = 1
+                condition_map_i = jnp.zeros(X_i.shape[0], dtype=int) # All samples belong to condition 0
+
+            for c_idx in range(num_conditions):
+                current_condition_vector = unique_conditions[c_idx]
+                if self.cfg.C > 0:
+                    indices_i = jnp.where(condition_map_i == c_idx)[0]
+                    # Find matching samples in X_{i+1} based on the condition vector
+                    condition_matches_i_plus_1 = jnp.all(X_i_plus_1[:, self.cfg.D:] == current_condition_vector, axis=1)
+                    indices_i_plus_1 = jnp.where(condition_matches_i_plus_1)[0]
+                else:
+                    indices_i = jnp.arange(X_i.shape[0])
+                    indices_i_plus_1 = jnp.arange(X_i_plus_1.shape[0])
+
+                if len(indices_i) == 0 or len(indices_i_plus_1) == 0:
+                    print(f"    Skipping condition {c_idx}: No samples found in one or both time points.")
+                    continue
+
+                X_i_c = X_i[indices_i]
+                X_i_plus_1_c = X_i_plus_1[indices_i_plus_1]
+
+                # --- Sample Pairs ---
+                n_samples_i = X_i_c.shape[0]
+                n_samples_i_plus_1 = X_i_plus_1_c.shape[0]
+                num_to_sample = min(num_pairs_per_interval, n_samples_i, n_samples_i_plus_1)
+
+                if num_to_sample == 0:
+                     print(f"    Skipping condition {c_idx}: Not enough samples ({n_samples_i}, {n_samples_i_plus_1}) to form pairs.")
+                     continue
+
+                key, subkey1, subkey2 = jax.random.split(key, 3)
+                # Sample indices without replacement
+                idx1 = jax.random.choice(subkey1, n_samples_i, shape=(num_to_sample,), replace=False)
+                idx2 = jax.random.choice(subkey2, n_samples_i_plus_1, shape=(num_to_sample,), replace=False)
+
+                sampled_x_i = X_i_c[idx1]
+                sampled_x_i_plus_1 = X_i_plus_1_c[idx2]
+
+                # --- Compute Uncertainty for Sampled Pairs ---
+                try:
+                    # Apply the vmapped function to the batch of pairs
+                    s_stars, uncertainties = vmapped_pair_uncertainty(sampled_x_i, sampled_x_i_plus_1)
+
+                    # Filter out potential NaNs or Infs if distance/path computation failed for some pairs
+                    valid_mask = jnp.isfinite(s_stars) & jnp.isfinite(uncertainties)
+                    if jnp.sum(valid_mask) == 0:
+                        print(f"    Warning: No valid uncertainty pairs found for condition {c_idx}.")
+                        avg_s_star = 0.0
+                        avg_uncertainty = 0.0
+                    else:
+                        avg_s_star = jnp.mean(s_stars[valid_mask])
+                        avg_uncertainty = jnp.mean(uncertainties[valid_mask])
+
+                    print(f"    Avg s*: {avg_s_star:.4f}, Avg Uncertainty: {avg_uncertainty:.4f} ({jnp.sum(valid_mask)}/{num_to_sample} valid pairs)")
+                    all_interval_results.append((t, avg_s_star, avg_uncertainty, c_idx))
+
+                except Exception as e:
+                     # Catch potential errors during JIT compilation or execution
+                     print(f"    Error during uncertainty computation for condition {c_idx}: {e}")
+                     # Optionally log or handle the error, maybe append placeholder results
+                     # all_interval_results.append((t, 0.0, 0.0, c_idx))
+
+
+        # --- Find Overall Maximum Uncertainty ---
+        if not all_interval_results:
+            print("\nError: No uncertainty values could be computed for any interval/condition.")
+            return None, 0.0
+
+        # Find the entry with the maximum average uncertainty (THIS IS CURRENTLY THE CONDITION/TIME PERIOD WITH MAXIMUM UNCERTAINTY, DOESNT AVERAGE OVER CONDITIONS YET)
+        best_result_idx = jnp.argmax(jnp.array([res[2] for res in all_interval_results]))
+        best_interval_t_idx, best_s_star, max_uncertainty, best_condition_idx = all_interval_results[best_result_idx]
+
+        # Calculate the final uncertain time t \in [0, 1]
+        most_uncertain_time = time_points[best_interval_t_idx] + best_s_star * time_step_duration
+
+        print(f"\nMost uncertain time estimated at t = {most_uncertain_time:.4f}")
+        print(f"  (Based on interval {best_interval_t_idx} -> {best_interval_t_idx+1}, Condition Index {best_condition_idx})")
+        print(f"  Max average uncertainty value: {max_uncertainty:.4f}")
+        print(f"  Corresponding average s* for max uncertainty interval/condition: {best_s_star:.4f}")
+
+        return most_uncertain_time, max_uncertainty
+
 
 @hydra.main(config_path=".", config_name="train_ot_scarvelis.yaml", version_base="1.1")
 def main(cfg):
@@ -665,6 +832,14 @@ def main(cfg):
         workspace = W(cfg)
 
     workspace.run()
+
+    # Example uncertainty usage after running workspace through training cycle:
+    uncertain_time, uncertainty_value = workspace.find_most_uncertain_time()
+    if uncertain_time is not None:
+        print(f"Suggest sampling next at time: {uncertain_time}")
+    #     # Add logic here to use uncertain_time for active learning
+    else:
+        print("Could not determine most uncertain time.")
 
 if __name__ == '__main__':
     main()
