@@ -8,7 +8,7 @@ geometry: 'neural_net_metric_eig'
 data: 'scarvelis_conditional_gaussian'
 D: 2
 C: 1
-num_pairs: 5
+num_pairs: 2
 seed: 1
 num_train_iters: 2000
 batch_size: 1024
@@ -20,6 +20,7 @@ save_frequency: ${plot_frequency}
 
 plotting:
   disable: False
+  num_pairs_plot: 100
 
 land_kwargs:
   alpha: 1

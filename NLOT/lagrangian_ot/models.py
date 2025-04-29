@@ -54,7 +54,6 @@ class MLP(ModelBase):
         assert x.ndim == 2, x.ndim
         assert x.shape[1] == self.D + self.C
         #n_input = x.shape[-1]
-
         z = x
         for n_hidden in self.dim_hidden:
             Wx = nn.Dense(n_hidden, use_bias=True)

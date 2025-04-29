@@ -116,31 +116,38 @@ def generate_arch_data(num_points: int = 5000):
 
 def generate_conditional_gaussian_data(num_points_per_condition: int, variance: float = 0.1):
     """
-    Generates a 2D conditional dataset with 2 time points and 4 conditions.
+    Generates a 2D conditional dataset with 3 time points and 4 conditions.
     t=0: N((0,0), variance*I) for all conditions.
-    t=1: N(mean_c, variance*I) where mean_c is one of {(1,1), (1,-1), (-1,1), (-1,-1)}.
+    t=1: N(mean_c_t1, variance*I) where mean_c_t1 is one of {(1,1), (1,-1), (-1,1), (-1,-1)}.
+    t=2: N(mean_c_t2, variance*I) where mean_c_t2 is one of {(2,2), (2,-2), (-2,2), (-2,-2)}.
 
     Returns:
-        torch.Tensor: Data tensor of shape (2, num_points_total, 3),
+        torch.Tensor: Data tensor of shape (3, num_points_total, 3),
                       where the dimensions are (time, sample, [x, y, condition]).
     """
     num_conditions = 4
     means_t0 = torch.zeros((num_conditions, 2), device=DEVICE)
     means_t1 = torch.tensor([[1, 1], [1, -1], [-1, 1], [-1, -1]], dtype=torch.float32, device=DEVICE)
+    means_t2 = means_t1 * 2 # Double the means for t=2
     covariance = torch.eye(2, device=DEVICE) * variance
     sqrt_covariance = torch.linalg.cholesky(covariance) # For sampling: mean + sqrt_cov @ randn
 
     all_data_t0 = []
     all_data_t1 = []
+    all_data_t2 = [] # Add list for t=2 data
 
     for c in range(num_conditions):
-        # Sample t=0 data: N(0, 0.1*I)
+        # Sample t=0 data: N(0, variance*I)
         z0 = torch.randn(num_points_per_condition, 2, device=DEVICE)
         samples_t0 = means_t0[c] + z0 @ sqrt_covariance.T
 
-        # Sample t=1 data: N(mean_c, 0.1*I)
+        # Sample t=1 data: N(mean_c_t1, variance*I)
         z1 = torch.randn(num_points_per_condition, 2, device=DEVICE)
         samples_t1 = means_t1[c] + z1 @ sqrt_covariance.T
+
+        # Sample t=2 data: N(mean_c_t2, variance*I)
+        z2 = torch.randn(num_points_per_condition, 2, device=DEVICE)
+        samples_t2 = means_t2[c] + z2 @ sqrt_covariance.T
 
         # Create condition vector
         condition_vec = torch.full((num_points_per_condition, 1), float(c), device=DEVICE)
@@ -148,13 +155,15 @@ def generate_conditional_gaussian_data(num_points_per_condition: int, variance: 
         # Append [x, y, condition]
         all_data_t0.append(torch.cat((samples_t0, condition_vec), dim=1))
         all_data_t1.append(torch.cat((samples_t1, condition_vec), dim=1))
+        all_data_t2.append(torch.cat((samples_t2, condition_vec), dim=1)) # Append t=2 data
 
     # Concatenate across conditions
     final_data_t0 = torch.cat(all_data_t0, dim=0)
     final_data_t1 = torch.cat(all_data_t1, dim=0)
+    final_data_t2 = torch.cat(all_data_t2, dim=0) # Concatenate t=2 data
 
     # Stack time points
-    final_data = torch.stack([final_data_t0, final_data_t1], dim=0)
+    final_data = torch.stack([final_data_t0, final_data_t1, final_data_t2], dim=0) # Stack all three time points
 
     return final_data
 
@@ -164,18 +173,20 @@ if __name__ == "__main__":
     #  CONDITIONAL DATA  #
     #--------------------#
     num_points_per_cond = 500
-    conditional_data = generate_conditional_gaussian_data(num_points_per_condition=num_points_per_cond, variance=0.05) 
+    conditional_data = generate_conditional_gaussian_data(num_points_per_condition=num_points_per_cond, variance=0.05)
     total_points = num_points_per_cond * 4
-    print(f"Generated conditional data shape: {conditional_data.shape}") # Should be (2, total_points, 3)
+    print(f"Generated conditional data shape: {conditional_data.shape}") # Should be (3, total_points, 3)
 
     # Save the conditional data
-    save_path = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_gaussians.pt')
+    save_path = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_gaussians_3t.pt') # Changed filename
     torch.save(conditional_data, save_path)
     print(f"Conditional data saved to {save_path}")
 
     # --- Plotting Conditional Data ---
-    fig, axs = plt.subplots(1, 2, figsize=(10, 5), sharex=True, sharey=True)
+    fig, axs = plt.subplots(1, 3, figsize=(15, 5), sharex=True, sharey=True) # Changed to 1x3 grid and figsize
     colors = plt.cm.viridis(np.linspace(0, 1, 4))
+
+    # Plot t=0
     data_t0 = conditional_data[0].cpu().numpy()
     conditions_t0 = data_t0[:, 2].astype(int)
     axs[0].set_title("Time t=0")
@@ -187,6 +198,8 @@ if __name__ == "__main__":
     axs[0].set_ylabel("y")
     axs[0].set_aspect('equal', adjustable='box')
     axs[0].grid(True)
+
+    # Plot t=1
     data_t1 = conditional_data[1].cpu().numpy()
     conditions_t1 = data_t1[:, 2].astype(int)
     axs[1].set_title("Time t=1")
@@ -197,10 +210,20 @@ if __name__ == "__main__":
     axs[1].set_aspect('equal', adjustable='box')
     axs[1].grid(True)
 
+    # Plot t=2
+    data_t2 = conditional_data[2].cpu().numpy() # Get t=2 data
+    conditions_t2 = data_t2[:, 2].astype(int)
+    axs[2].set_title("Time t=2") # Set title for t=2
+    for c in range(4):
+        mask = conditions_t2 == c
+        axs[2].scatter(data_t2[mask, 0], data_t2[mask, 1], color=colors[c], label=f'Cond {c}', alpha=0.6, s=10)
+    axs[2].set_xlabel("x")
+    axs[2].set_aspect('equal', adjustable='box')
+    axs[2].grid(True)
 
-    plt.suptitle("Generated Conditional Gaussian Data")
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95]) 
-    plot_save_path = os.path.join(SCRIPT_PATH, 'conditional_gaussians_plot.png')
+    plt.suptitle("Generated Conditional Gaussian Data (3 Time Steps)")
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plot_save_path = os.path.join(SCRIPT_PATH, 'conditional_gaussians_3t_plot.png') # Changed filename
     plt.savefig(plot_save_path)
     print(f"Plot saved to {plot_save_path}")
 

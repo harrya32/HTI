@@ -477,11 +477,31 @@ class Workspace:
         else:
             axs = axs.flatten()
 
+        # Determine the number of points to plot
+        num_plot_points = self.cfg.plotting.get('num_pairs_plot', 50) # Default to 50 if not specified
+        plot_key = jax.random.PRNGKey(self.cfg.seed + 1) # Use a fixed key for reproducibility
+
         for t in range(self.num_pairs):
             self._setup_ax(axs[t])
+            
+            source_samples = self.eval_samples[t]
+            target_samples = self.eval_samples[t+1]
+
+            # Subsample points if necessary
+            if source_samples.shape[0] > num_plot_points:
+                k1, plot_key = jax.random.split(plot_key) 
+                num_to_sample = min(num_plot_points, source_samples.shape[0], target_samples.shape[0])
+                indices = jax.random.choice(k1, source_samples.shape[0], shape=(num_to_sample,), replace=False)
+                source_samples_plot = source_samples[indices]
+                target_samples_plot = target_samples[indices] 
+            else:
+                # Use all points if there are fewer than num_plot_points
+                source_samples_plot = source_samples
+                target_samples_plot = target_samples
+
             self.neural_dual_solver.plot_forward_map(
-                self.eval_samples[t],
-                self.eval_samples[t+1],
+                source_samples_plot, # Use subsampled points
+                target_samples_plot, # Use subsampled points
                 self.state_source_maps[t],
                 self.state_target_potentials[t],
                 self.params_geometry,
@@ -536,15 +556,9 @@ class Workspace:
             fig, ax = plt.subplots(figsize=(4, 4))
 
         self._setup_ax(ax)
+        cmap = plt.get_cmap('viridis', self.cfg.C + 1)
+        norm = mpl.colors.Normalize(vmin=0, vmax=self.cfg.C)
 
-        # Use a consistent colormap for conditions (e.g., viridis)
-        # Ensure this handles the case where C=0 gracefully
-        source_samples_for_cond = self.eval_samples[0]
-        num_conditions = int(jnp.max(source_samples_for_cond[:, -1])) + 1 if self.cfg.C > 0 else 1
-        cmap = plt.get_cmap('viridis', num_conditions)
-        norm = mpl.colors.Normalize(vmin=0, vmax=num_conditions - 1)
-
-        num_samples = 50
         # colors = plt.style.library['bmh']['axes.prop_cycle'].by_key()['color']
 
         # cmap = plt.get_cmap('Blues')
@@ -556,7 +570,8 @@ class Workspace:
         # colors = cmap(np.linspace(1., 0.1, self.num_pairs+1))
 
         init_xs = jax.random.choice(
-            jax.random.PRNGKey(0), self.eval_samples[0], shape=(num_samples,))
+            jax.random.PRNGKey(0), self.eval_samples[0], shape=(num_samples,), replace=False)
+        
         for i in range(num_samples):
             init_x = init_xs[i]
 
@@ -565,7 +580,7 @@ class Workspace:
             init_color = cmap(norm(init_condition))
 
             ax.scatter([init_x[0]], [init_x[1]], s=20, alpha=1,
-                        zorder=10, c=jnp.array([init_color])) # Use condition color, ensure 2D for single point
+                        zorder=10, c=jnp.array([init_color]))
 
             x = init_x
             for t in range(self.num_pairs):
@@ -584,7 +599,7 @@ class Workspace:
 
                 ax.plot(
                     path[:, 0], path[:, 1],
-                    color=init_color, # Color path by initial condition
+                    color=init_color,
                     alpha=0.5,
                     lw=3,
                 )

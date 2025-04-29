@@ -55,6 +55,8 @@ class SplineSolver(SolverBase):
         def F(params):
             xs = splines.compute_spline(
                 x=x0[:self.D], y=x1[:self.D], basis=self.spline_basis, params=params, ts=ts)
+            condition_repeated = jnp.tile(x0[self.D:].reshape(1, -1), (xs.shape[0], 1))
+            xs = jnp.concatenate([xs, condition_repeated], axis=-1)
             E = energy_fn(xs)
             return E
 
@@ -88,4 +90,6 @@ class SplineSolver(SolverBase):
             ts = jnp.linspace(0., 1., num=num_final_points)
         xs = splines.compute_spline(
             x=x0[:self.D], y=x1[:self.D], basis=self.spline_basis, params=params, ts=ts)
+        condition_repeated = jnp.tile(x0[self.D:].reshape(1, -1), (xs.shape[0], 1))
+        xs = jnp.concatenate([xs, condition_repeated], axis=-1)
         return SolverOut(mu=xs, dmu=None, num_iter=num_iter, cost=E)
