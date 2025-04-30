@@ -113,29 +113,35 @@ class NeuralNetMetric(MetricBase):
 
 @dataclass
 class NeuralNetMetricDirect(MetricBase):
-    D = 2
+    D: int = 2
+    C: int = 0
+    categorical: Optional[bool] = False
+    num_categories: Optional[int] = 4
+    eta: Optional[float] = 1e-3
 
     def setup(self):
-        assert self.D == 2
         self.net = nn.Sequential([
             nn.Dense(128),
             nn.leaky_relu,
-            nn.Dense(4)
+            nn.Dense(128),
+            nn.leaky_relu,
+            nn.Dense(self.D * self.D)
         ])
 
-    def __call__(self, x, eta = 1e-3):
-        assert x.ndim == 1 and x.shape[0] == self.D
+    def __call__(self, x):
+        assert x.ndim == 1 and x.shape[0] == self.D + self.C
+
+        if self.categorical:
+            x_ambient = x[:self.D]
+            category_index = x[self.D].astype(jnp.int32)
+            category_one_hot = jax.nn.one_hot(category_index, num_classes=self.num_categories)
+            net_input = jnp.concatenate([x_ambient, category_one_hot])
+        else:
+            net_input = x
         
-        nn_out = self.net(x)
-        a = nn_out[0]
-        b = nn_out[1]
-        c = nn_out[2]
-        d = nn_out[3]
-
-        Q = jnp.array([[a, b], 
-                       [c, d]])
-
-        A = Q.T @ Q + eta * jnp.eye(2)
+        nn_out = self.net(net_input)
+        Q = jnp.reshape(nn_out, (self.D, self.D))
+        A = Q.T @ Q + self.eta * jnp.eye(self.D)
 
         return A
 

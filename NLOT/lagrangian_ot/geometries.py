@@ -174,6 +174,17 @@ def get(name, geometry_kwargs, land_kwargs, samples=None, D=2, C=0, categorical=
             num_categories=num_categories,
             **geometry_kwargs,
         )
+    elif name == "neural_net_metric_direct":
+        return MetricManifold(
+            bounds=(-2, 2),
+            distance_mode=DistanceModes.SQUARED_GEODESIC,
+            metric_initializer_fn=metrics.NeuralNetMetricDirect,
+            D=D,
+            C=C,
+            categorical=categorical,
+            num_categories=num_categories,
+            **geometry_kwargs,
+        )
     elif name == "land_metric":
         return MetricManifold(
             bounds=(-2, 2),
