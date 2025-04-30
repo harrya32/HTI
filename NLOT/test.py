@@ -167,7 +167,7 @@ def generate_conditional_gaussian_data(num_points_per_condition: int, variance: 
 
     return final_data
 
-def generate_conditional_gaussian_data_5t(num_points_per_condition: int, variance: float = 0.1):
+def generate_complex_conditional_gaussian_data(num_points_per_condition: int, variance: float = 0.1):
     """
     Generates a 2D conditional dataset with 5 time points and 4 conditions.
     Each condition follows a specific path defined by Gaussian means at each time point.
@@ -243,17 +243,16 @@ if __name__ == "__main__":
     #----------------------------#
     num_points_per_cond_5t = 500
     variance_5t = 0.05
-    conditional_data_5t = generate_conditional_gaussian_data_5t( 
+    conditional_data_5t = generate_complex_conditional_gaussian_data( 
         num_points_per_condition=num_points_per_cond_5t,
         variance=variance_5t
     )
-    total_points_5t = num_points_per_cond_5t * 4
     print(f"Generated 5T conditional data shape: {conditional_data_5t.shape}") # Should be (5, total_points, 3)
-
+    print(conditional_data_5t[0])
     # Save the conditional data
-    save_path_5t = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_gaussians_complex.pt')
-    torch.save(conditional_data_5t, save_path_5t)
-    print(f"5T Conditional data saved to {save_path_5t}")
+    #save_path_5t = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_gaussians_complex.pt')
+    #torch.save(conditional_data_5t, save_path_5t)
+    #print(f"5T Conditional data saved to {save_path_5t}")
 
     # --- Plotting 5T Conditional Data ---
     num_time_points_plot = 5
@@ -287,8 +286,8 @@ if __name__ == "__main__":
     plt.suptitle("Generated Complex Conditional Gaussian Data")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plot_save_path_5t = os.path.join(SCRIPT_PATH, 'conditional_gaussians_complex_plot.png')
-    plt.savefig(plot_save_path_5t)
-    print(f"5T Plot saved to {plot_save_path_5t}")
+    #plt.savefig(plot_save_path_5t)
+    #print(f"5T Plot saved to {plot_save_path_5t}")
     plt.close(fig_5t) # Close the figure to free memory
 
 

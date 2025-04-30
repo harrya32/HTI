@@ -10,3 +10,8 @@ Many machine learning models have hyperparameters that significantly affect thei
 *   Developing deeper understanding of model behaviour at different hyperparameter settings, without retraining.
 
 Our method uses guided conditional flow matching, matching geodesic velocities estimated via an actively learned conditional Riemannian metric approach, to address the HTI problem and model these trajectories efficiently and accurately.
+
+## TODO
+- Diabetes simulator, get RL working, examine/plot inputs/outputs
+- Write down/check how our acq. fn. is working/averaging across pairs/conditions
+- HIV/sepsis sims
