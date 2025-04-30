@@ -14,4 +14,5 @@ Our method uses guided conditional flow matching, matching geodesic velocities e
 ## TODO
 - Diabetes simulator, get RL working, examine/plot inputs/outputs
 - Write down/check how our acq. fn. is working/averaging across pairs/conditions
+- Implement RBF metric into NLOT
 - HIV/sepsis sims

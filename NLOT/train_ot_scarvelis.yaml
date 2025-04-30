@@ -2,18 +2,18 @@ defaults:
   - _self_
 
 # neural_net_metric, neural_net_metric_eig, neural_net_metric_direct, land_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee
-geometry: 'neural_net_metric_direct'
+geometry: 'neural_net_metric_eig'
 
-# scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex
-data: 'scarvelis_conditional_gaussian_complex'
-D: 2
-C: 1
-categorical: True
-num_categories: 4
+# scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data
+data: 'sphere_data'
+D: 3
+C: 0
+categorical: False
+num_categories: 1
 
 seed: 0
 num_pairs: 5
-num_train_iters: 101
+num_train_iters: 1000
 batch_size: 1024
 potential_lr: 1e-4
 wandb: True
@@ -22,7 +22,7 @@ plot_frequency: 50
 save_frequency: ${plot_frequency}
 
 plotting:
-  disable: False
+  disable: True
   num_pairs_plot: 100
 
 land_kwargs:
