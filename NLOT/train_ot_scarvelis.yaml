@@ -1,12 +1,12 @@
 defaults:
   - _self_
 
-# neural_net_metric, neural_net_metric_eig, neural_net_metric_direct, land_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee
-geometry: 'neural_net_metric_eig'
+# neural_net_metric, neural_net_metric_eig, neural_net_metric_direct, land_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee, rbf_metric
+geometry: 'rbf_metric'
 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data
-data: 'sphere_data'
-D: 3
+data: 'scarvelis_arch'
+D: 2
 C: 0
 categorical: False
 num_categories: 1

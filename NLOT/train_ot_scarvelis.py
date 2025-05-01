@@ -64,6 +64,7 @@ class Workspace:
             self.cfg.geometry, 
             self.cfg.get('geometry_kwargs', {}),
             self.cfg.get('land_kwargs', {}),
+            self.cfg.get('rbf_kwargs', {}),
             samples=jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)),
             D=self.cfg.get('D', 2),
             C=self.cfg.get('C', 0),
@@ -82,6 +83,7 @@ class Workspace:
                 self.cfg.geometry, 
                 self.cfg.get('geometry_kwargs', {}),
                 self.cfg.get('land_kwargs', {}),
+                self.cfg.get('rbf_kwargs', {}),
                 samples=jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)),
                 D=self.cfg.get('D', 2),
                 C=self.cfg.get('C', 0),
@@ -107,10 +109,13 @@ class Workspace:
             learning_rate=self.cfg.metric.lr)
 
         k1, self.key = jax.random.split(self.key)
+
+    
         self.params_geometry = self.geometry.init(
             k1, self.eval_samples[0][0], self.eval_samples[1][0],
             method=self.geometry.cost
         ).get('params', {})
+
 
         self.params_geometry = FrozenDict(self.params_geometry)
         self.state_geometry = self.optimizer_geom.init(self.params_geometry)

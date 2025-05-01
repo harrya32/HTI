@@ -32,7 +32,17 @@ class DistanceModes:
     LAGRANGIAN = "lagrangian"
 
 
-def get(name, geometry_kwargs, land_kwargs, samples=None, D=2, C=0, categorical=False, num_categories=0):
+def get(
+    name, 
+    geometry_kwargs, 
+    land_kwargs, 
+    rbf_kwargs, 
+    samples=None, 
+    D=2, 
+    C=0, 
+    categorical=False, 
+    num_categories=0):
+    
     if name == "sq_euclidean":
         return SqEuclidean()
     elif name == "gmm":
@@ -194,6 +204,19 @@ def get(name, geometry_kwargs, land_kwargs, samples=None, D=2, C=0, categorical=
             land_kwargs=land_kwargs,
             **geometry_kwargs,
         )
+    elif name == "rbf_metric":
+        return MetricManifold(
+            bounds=(-2, 2),
+            distance_mode=DistanceModes.SQUARED_GEODESIC,
+            metric_initializer_fn=metrics.RBFMetric,
+            D=D,
+            C=C,
+            categorical=categorical,
+            num_categories=num_categories,
+            samples=samples,
+            rbf_kwargs=rbf_kwargs,
+            **geometry_kwargs,
+        )
     else:
         raise ValueError(f"Unknown geometry: {name}")
 
@@ -322,7 +345,6 @@ class SqEuclidean(GeometryBase):
 
 @dataclass
 class MetricManifold(GeometryBase):
-
     distance_mode: DistanceModes = DistanceModes.SQUARED_GEODESIC
     metric_initializer_fn: Callable = metrics.EuclideanMetric
     spline_model_initializer_fn: Callable = spline_amortizer.SplineMLP
@@ -330,6 +352,7 @@ class MetricManifold(GeometryBase):
     spline_solver_kwargs: Optional[Dict] = None
     samples: Optional[jnp.ndarray] = None
     land_kwargs: Optional[Dict] = None
+    rbf_kwargs: Optional[Dict] = None
     categorical: Optional[bool] = False
     num_categories: Optional[int] = 0
 
@@ -363,13 +386,14 @@ class MetricManifold(GeometryBase):
                 num_categories=self.num_categories, 
                 **self.land_kwargs
                 )
-        elif self.samples is not None:
+        elif self.samples is not None and self.rbf_kwargs is not None:
             self.metric_module = self.metric_initializer_fn(
                 D=self.D, 
                 C=self.C, 
                 samples=self.samples,
                 categorical=self.categorical,
-                num_categories=self.num_categories
+                num_categories=self.num_categories,
+                **self.rbf_kwargs
                 )
         else:
             self.metric_module = self.metric_initializer_fn(
@@ -400,6 +424,24 @@ class MetricManifold(GeometryBase):
 
     def lagrangian_potential(self, x):
         return self.lagrangian_potential_module(x)
+
+    def run_metric_center_calculation(self, verbose: bool = True):
+        self.metric_module.calculate_centers(verbose=verbose)
+
+    def run_metric_weight_calculation(self, 
+                                      key: jax.random.PRNGKey, 
+                                      lr: float = 1e-2,
+                                      epochs: int = 100,
+                                      batch_size: int = 64,
+                                      verbose: bool = True):
+        
+        self.metric_module.calculate_and_set_weights(
+            key=key,
+            learning_rate=lr,
+            epochs=epochs,
+            batch_size=batch_size,
+            verbose=verbose
+        )
 
     def path(self, x, y, num_points=20):
         assert x.ndim == 1 and y.ndim == 1

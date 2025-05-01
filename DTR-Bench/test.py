@@ -1,4 +1,5 @@
 import gymnasium as gym
+from gymnasium.core import RewardWrapper
 import DTRGym  
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,23 +9,68 @@ from stable_baselines3.common.env_util import make_vec_env
 
 # --- Parameters ---
 ENV_NAME = 'GhaffariCancerEnv-continuous'
-TOTAL_TRAINING_TIMESTEPS = 100000  
-NUM_EVAL_EPISODES = 10         
+TOTAL_TRAINING_TIMESTEPS = 50000  
+NUM_EVAL_EPISODES = 20         
 MODEL_SAVE_PATH = "ppo_ghaffari_cancer_model"
 PLOT_DIR = "rl_agent_plots"
 ACTION_PLOT_DIR = os.path.join(PLOT_DIR, "action_scatter_plots")
 REWARD_PLOT_DIR = os.path.join(PLOT_DIR, "reward_plots")
-# --- End Parameters ---
-
-
 os.makedirs(ACTION_PLOT_DIR, exist_ok=True)
 os.makedirs(REWARD_PLOT_DIR, exist_ok=True)
 
-env = make_vec_env(ENV_NAME, n_envs=1)
+# --- Custom Reward Wrapper ---
+class CustomRewardWrapper(RewardWrapper):
+    """
+    Wrapper that modifies the reward according to custom rules.
+    """
+    
+    def __init__(self, env, reward_shaping_factor=0.1):
+        super().__init__(env)
+        self.reward_shaping_factor = reward_shaping_factor
+        
+    def reward(self, reward):
+        """
+        Modify the reward value.
+        """
+        # Example 1: Scale the reward
+        # return reward * 2.0
+        
+        # Example 2: Add reward shaping based on state
+        #observation = self.unwrapped._get_reward()  # Access the current state
+        #shaping_reward = self.reward_shaping_factor * (observation[0]**2)  # Example shaping
+        # return reward + shaping_reward
+        
+        # Example 3: Sparse rewards - only give non-zero rewards at specific milestones
+        if reward > 50:
+            return 1
+        elif reward < -50:
+            return -1
+        else:
+            return self.reward_shaping_factor * reward  # Scale the reward based on tumour size decrease
+        
+        # Pick one of the examples above or implement your own logic
+        return reward  # Default: return unmodified reward
+
+
+
+# --- Create Environment ---
+reward_shaping_factor = 0.4
+def make_env():
+    env = gym.make(ENV_NAME)
+    env = CustomRewardWrapper(env, reward_shaping_factor=reward_shaping_factor)
+    return env
+
+env = make_vec_env(make_env, n_envs=1)
 
 # --- Define and Train the Agent ---
 print(f"--- Training PPO Agent on {ENV_NAME} ---")
-model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=os.path.join(PLOT_DIR, "tensorboard_logs"))
+gamma = 0.99
+model = PPO("MlpPolicy", 
+            env, 
+            verbose=1, 
+            tensorboard_log=os.path.join(PLOT_DIR, "tensorboard_logs"), 
+            gamma=gamma
+)
 
 # Train the agent
 model.learn(total_timesteps=TOTAL_TRAINING_TIMESTEPS, progress_bar=True)
@@ -38,6 +84,7 @@ obs = env.reset()
 eval_actions = []
 eval_episode_rewards = []        
 eval_per_timestep_rewards = [] 
+
 
 for episode in range(NUM_EVAL_EPISODES):
     done = False
@@ -82,10 +129,10 @@ if action_dim == 2:
     plt.scatter(eval_actions[:, 0], eval_actions[:, 1], alpha=0.6, s=20)
     plt.xlabel("Action Dimension 1")
     plt.ylabel("Action Dimension 2")
-    plt.title(f"Trained Agent Actions (Deterministic) across {NUM_EVAL_EPISODES} Eval Episodes")
+    plt.title(f"Trained Agent Actions across {NUM_EVAL_EPISODES} Eval Episodes")
     plt.grid(True)
     plt.axis('equal')
-    plt.savefig(os.path.join(ACTION_PLOT_DIR, "trained_agent_eval_scatter.png"))
+    plt.savefig(os.path.join(ACTION_PLOT_DIR, f"trained_agent_eval_scatter_gamma{gamma}_rs{reward_shaping_factor}.png"))
     plt.close()
     print(f"Saved evaluation action scatter plot (assuming 2D action space).")
 elif action_dim == 1:
@@ -111,7 +158,7 @@ plt.ylabel("Total Reward")
 plt.title("Total Reward per Episode (Trained Agent)")
 plt.grid(True)
 plt.tight_layout()
-plt.savefig(os.path.join(REWARD_PLOT_DIR, "trained_agent_total_rewards.png"))
+plt.savefig(os.path.join(REWARD_PLOT_DIR, f"trained_agent_total_rewards_gamma{gamma}_rs{reward_shaping_factor}.png"))
 plt.close()
 
 # --- REWARD PLOT 2: Per-timestep reward curves during evaluation ---
@@ -124,13 +171,11 @@ plt.title("Reward at Each Timestep per Episode (Trained Agent)")
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
-plt.savefig(os.path.join(REWARD_PLOT_DIR, "trained_agent_per_timestep_rewards.png"))
+plt.savefig(os.path.join(REWARD_PLOT_DIR, f"trained_agent_per_timestep_rewards_gamma{gamma}_rs{reward_shaping_factor}.png"))
 plt.close()
 
 print(f"Saved evaluation reward plots to {REWARD_PLOT_DIR}")
 
 # --- Tensorboard ---
 print("\n--- Training Logs ---")
-print(f"You can view detailed training logs using TensorBoard:")
-print(f"tensorboard --logdir {os.path.join(PLOT_DIR, 'tensorboard_logs')}")
-print("Install TensorBoard if you haven't: pip install tensorboard")
+print(f"You can view detailed training logs using tensorboard --logdir {os.path.join(PLOT_DIR, 'tensorboard_logs')}")
