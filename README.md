@@ -12,7 +12,8 @@ Many machine learning models have hyperparameters that significantly affect thei
 Our method uses guided conditional flow matching, matching geodesic velocities estimated via an actively learned conditional Riemannian metric approach, to address the HTI problem and model these trajectories efficiently and accurately.
 
 ## TODO
-- Diabetes simulator, get RL working, examine/plot inputs/outputs
+- Cancer sim. is the best for our requirements so far --> install, set up agent training, examine output distributions
 - Write down/check how our acq. fn. is working/averaging across pairs/conditions
 - Implement RBF metric into NLOT
-- HIV/sepsis sims
+- Adversarial robustness in time series forecasting example, ideally on MIMIC data
+- HIV/diabetes/sepsis sims are secondary options which need varying adaptations to get into out setting
