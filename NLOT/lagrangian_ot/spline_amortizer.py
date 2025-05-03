@@ -21,6 +21,7 @@ class SplineMLP(nn.Module):
     C: int = 0
     categorical: Optional[bool] = False 
     num_categories: Optional[int] = 4
+    use_film: Optional[bool] = True
 
     @nn.compact
     def __call__(self, x, y):
@@ -35,17 +36,36 @@ class SplineMLP(nn.Module):
 
         x_ambient = x[:, :self.D]
         y_ambient = y[:, :self.D]
+        spatial_combined = jnp.concatenate([x_ambient, y_ambient], axis=1)
+
+        if self.use_film and not self.categorical:
+            c = x[:, self.D:]
+            h_spatial = nn.Dense(self.num_hidden, name='spatial_dense_0')(spatial_combined)
+
+            film_hidden_dim = max(16, self.num_hidden // 4)
+            film_params = nn.Dense(film_hidden_dim, name='film_dense_0')(c)
+            film_params = nn.relu(film_params)
+            film_params = nn.Dense(2 * self.num_hidden, name='film_dense_1')(film_params)
+            gamma = film_params[:, :self.num_hidden]
+            beta = film_params[:, self.num_hidden:]
+
+            z = gamma * h_spatial + beta
+            z = nn.relu(z)
+
 
         if self.categorical:
             category_index = x[:, self.D].astype(jnp.int32) 
             category_one_hot = jax.nn.one_hot(category_index, num_classes=self.num_categories)
             z = jnp.concatenate([x_ambient, y_ambient, category_one_hot], axis=1)
+            z = nn.Dense(self.num_hidden)(z)
+            z = nn.relu(z)
 
         else:
             c = x[:, self.D:]
             z = jnp.concatenate([x_ambient, y_ambient, c], axis=1)
+            z = nn.Dense(self.num_hidden)(z)
+            z = nn.relu(z)
 
-        z = nn.relu(nn.Dense(self.num_hidden)(z))
         z = nn.relu(nn.Dense(self.num_hidden)(z))
         z = nn.Dense(self.out_dims)(z)
         if squeeze:

@@ -62,12 +62,8 @@ class MLP(ModelBase):
 
         if self.use_film and not self.categorical:
             conditional_features = x[:, self.D:]
-            # Process spatial features (e.g., first hidden layer)
             h_spatial = nn.Dense(self.dim_hidden[0], name="spatial_dense_0")(x_ambient)
-            # Potentially add activation/norm here if desired before modulation
 
-            # FiLM generator network
-            # Adjust hidden size/layers as needed
             film_hidden_dim = max(16, self.dim_hidden[0] // 4) # Example size
             film_params = nn.Dense(film_hidden_dim, name="film_dense_0")(conditional_features)
             film_params = nn.relu(film_params)
@@ -82,9 +78,6 @@ class MLP(ModelBase):
             # Add broadcast dimension if needed, e.g., if h_spatial has more dims
             h = gamma * h_spatial + beta
             h = nn.relu(h) # Apply activation after modulation
-            # --- End FiLM ---
-
-            # Process remaining layers
             current_hidden_idx = 1
 
         elif self.categorical:
@@ -103,10 +96,10 @@ class MLP(ModelBase):
             h = nn.Dense(dim_out, name=f"common_dense_{i}")(h)
             h = nn.relu(h)
 
-         # Final output layer (adjust based on is_potential, etc.)
+         # Final output layer
         if self.is_potential:
             output_dim = 1
-        else: # is map
+        else:
             output_dim = self.D
 
         output = nn.Dense(output_dim, name="output_dense")(h)
