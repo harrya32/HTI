@@ -564,7 +564,7 @@ class Workspace:
         all_init_xs = jax.random.choice(
             jax.random.PRNGKey(0), self.eval_samples[0], shape=(num_samples,), replace=False)
 
-        if self.cfg.C > 0:
+        if self.cfg.C > 0 and self.cfg.categorical:
             # Extract condition vectors and find unique ones
             condition_vectors = all_init_xs[:, self.cfg.D:]
             unique_conditions = jnp.unique(condition_vectors, axis=0)
@@ -586,7 +586,7 @@ class Workspace:
             plot_color = cmap(norm(c_idx))
 
             # Filter samples belonging to the current unique condition
-            if self.cfg.C > 0:
+            if unique_conditions is not None:
                 current_condition = unique_conditions[c_idx]
                 # Compare entire condition vectors for equality
                 condition_matches = jnp.all(condition_vectors == current_condition, axis=1)

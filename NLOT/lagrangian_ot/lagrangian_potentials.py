@@ -49,6 +49,32 @@ class LagrangianPotentialBase(flax.linen.Module):
         return new_params
 
 
+class CancerPotential(LagrangianPotentialBase):
+    xmin_left: float = -5
+    xmax_left: float = -0.001
+    ymin_left: float = -5
+    ymax_left: float = 15
+
+    xmin_bottom: float = -5
+    xmax_bottom: float = 15
+    ymin_bottom: float = -5
+    ymax_bottom: float = -0.001
+
+    def __call__(self, x):
+        assert x.ndim == 1 and x.shape[0] == self.D
+        Ux_left = (nn.sigmoid((x[0] - self.xmin_left) / self.temp) - \
+              nn.sigmoid((x[0] - self.xmax_left) / self.temp))
+        Uy_left = (nn.sigmoid((x[1] - self.ymin_left) / self.temp) - \
+              nn.sigmoid((x[1] - self.ymax_left) / self.temp))
+        
+        Ux_bottom = (nn.sigmoid((x[0] - self.xmin_bottom) / self.temp) - \
+              nn.sigmoid((x[0] - self.xmax_bottom) / self.temp))
+        Uy_bottom = (nn.sigmoid((x[1] - self.ymin_bottom) / self.temp) - \
+              nn.sigmoid((x[1] - self.ymax_bottom) / self.temp))
+        
+        U = -Ux_left * Uy_left - Ux_bottom * Uy_bottom
+        return 100 * U #self.M*U
+
 # https://github.com/take-koshizuka/NLSB/blob/main/models/potential_2d.py
 class BoxPotential(LagrangianPotentialBase):
     xmin: float = -0.5
@@ -80,7 +106,7 @@ class SlitPotential(LagrangianPotentialBase):
         Uy = (nn.sigmoid((x[1] - self.ymin) / self.temp) - \
                 nn.sigmoid((x[1] - self.ymax) / self.temp)) - 1.
         U = Ux * Uy
-        return self.M*U
+        return U
 
 class BabyMazePotential(LagrangianPotentialBase):
     xmin1: float = -0.5

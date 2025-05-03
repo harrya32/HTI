@@ -11,7 +11,7 @@ import time
 
 # --- Parameters ---
 ENV_NAME = 'GhaffariCancerEnv-continuous'
-TOTAL_TRAINING_TIMESTEPS = 5000
+TOTAL_TRAINING_TIMESTEPS = 200000
 NUM_EVAL_EPISODES = 50  # Run 50 evaluation episodes
 REWARD_SHAPING_FACTORS = [0, 0.25, 0.75, 1.0]  # The four different factors
 MODEL_SAVE_DIR = "reward_shaping_models"
@@ -108,23 +108,27 @@ def main():
         print(f"Starting evaluation episode {episode + 1}/{NUM_EVAL_EPISODES}")
         
         while not done:
-            # Get actions from all models for the current state
-            actions = []
+            # Get 10 actions per model, but organize them by model
+            actions_by_model = []
             for model in models:
-                action, _ = model.predict(obs, deterministic=False)
-                actions.append(action)
+                model_actions = []
+                for _ in range(10):
+                    action, _ = model.predict(obs, deterministic=False)
+                    model_actions.append(action)
+                actions_by_model.append(model_actions)
             
-            # Step the environment using the first model's action
-            next_obs, reward, done_array, info = eval_env.step(actions[0])
-            
+            # Step the environment using the first model's first action
+            next_obs, reward, done_array, info = eval_env.step(actions_by_model[0][0])
+                
             # Process the state and actions
             state = obs[0]
-            for i, action in enumerate(actions):
-                # Extract the action from vectorized form for storage
-                action_flat = action.flatten()  # Flatten to handle any action shape
-                # Combine state and action
-                state_action = np.concatenate([state, action_flat])
-                state_action_data[i].append(state_action)
+            for i, model_actions in enumerate(actions_by_model):
+                for action in model_actions:
+                    # Extract the action from vectorized form for storage
+                    action_flat = action.flatten()  # Flatten to handle any action shape
+                    # Combine state and action
+                    state_action = np.concatenate([state, action_flat])
+                    state_action_data[i].append(state_action)
             
             obs = next_obs
             done = done_array[0]
@@ -133,7 +137,7 @@ def main():
             
             if done:
                 print(f"Episode {episode + 1} completed in {episode_steps} steps")
-    
+
     print(f"\nTotal steps across all episodes: {total_steps}")
     
     # Convert data to tensor and reshape

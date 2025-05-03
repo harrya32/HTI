@@ -34,6 +34,8 @@ from ott.geometry import costs
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import colorsys
 
 from lagrangian_ot import ctransform_solvers, models, geometries
 
@@ -45,6 +47,38 @@ Potential_t = Callable[[jnp.ndarray], float]
 Info = collections.namedtuple("Info", "dual_loss amor_loss num_ctransform_iter target_hat")
 UpdateOut = collections.namedtuple("UpdateOut", "states info")
 
+
+def darken_color(color, factor=0.7):
+        """
+        Darkens the given color by multiplying the lightness by the given factor (0-1).
+        """
+        rgb = mcolors.to_rgb(color)
+        h, l, s = colorsys.rgb_to_hls(*rgb)
+        l = max(0, min(1, l * factor))
+        dark_rgb = colorsys.hls_to_rgb(h, l, s)
+        return dark_rgb
+
+def lighten_color(color, factor=0.7):
+        """
+        Lightens the given color by multiplying the lightness by the given factor (0-1).
+        """
+        rgb = mcolors.to_rgb(color)
+        h, l, s = colorsys.rgb_to_hls(*rgb)
+        l = min(1, l * (1 + factor))
+        light_rgb = colorsys.hls_to_rgb(h, l, s)
+        return light_rgb
+
+def darken_colors(colors, factor=0.7):
+    """
+    Apply darken_color to a list of colors.
+    """
+    return [darken_color(c, factor=factor) for c in colors]
+
+def lighten_colors(colors, factor=0.7):
+    """
+    Apply lighten_color to a list of colors.
+    """
+    return [lighten_color(c, factor=factor) for c in colors]
 
 class ManifoldW2NeuralDual:
     def __init__(
@@ -211,7 +245,7 @@ class ManifoldW2NeuralDual:
         if scatter_kwargs is None:
             scatter_kwargs = {"alpha": 0.5}
 
-        if self.geometry.C > 0:
+        if self.geometry.C > 0 and self.geometry.categorical:
             source_condition_vectors = source[:, self.geometry.D:]
             unique_conditions, source_condition_indices = jnp.unique(source_condition_vectors, axis=0, return_inverse=True)
             num_unique_conditions = unique_conditions.shape[0]
@@ -236,6 +270,8 @@ class ManifoldW2NeuralDual:
 
         label_transport = r"transported"
 
+        target_colors = darken_colors(source_colors, factor=0.5)
+
         ax.scatter(
                 source[:, 0],
                 source[:, 1],
@@ -252,7 +288,7 @@ class ManifoldW2NeuralDual:
         )
 
         base_samples = source
-        base_colors = source_colors # Use the source colors for transported points and paths
+        base_colors = lighten_colors(source_colors, factor=0.5)
 
         N = base_samples.shape[0]
 

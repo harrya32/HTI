@@ -57,6 +57,9 @@ def get_bounds(name):
     elif name == "sphere_data":
         bounds = (-2,2)
         xbounds = ybounds = bounds
+    elif name == "agent_data":
+        bounds = (-1, 9)
+        xbounds = ybounds = bounds
     else:
         raise ValueError(f"Invalid data choice: {name}")
 
@@ -152,6 +155,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         "scarvelis_conditional_gaussian": "conditional_gaussians_3t.pt",
         "scarvelis_conditional_gaussian_complex": "conditional_gaussians_complex.pt",
         "sphere_data": "sphere_data.pt",
+        "agent_data": "agent_state_action_dataset_no_zeros.pt",
     }
     if geometry_str not in paths:
         raise ValueError(f"Invalid geometry choice: {geometry_str}")
@@ -166,6 +170,14 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
             f.write(r.content)
 
     dataset = th.load(fname, map_location="cpu", weights_only=False).detach()
+
+    if geometry_str == "agent_data":
+        dataset = dataset[:, :, :]
+        #normalise the dataset
+        #dataset[:,:,2:] = (dataset[:,:,2:] - dataset[:,:,2:].mean(axis=0)) / dataset[:,:,2:].std(axis=0)
+
+
+    print('Dataset shape:', dataset.shape)
     dataset = jnp.asarray(dataset)
     if geometry_str == "scarvelis_xpath":
         assert dataset.shape[0] == 2

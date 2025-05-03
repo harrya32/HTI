@@ -423,7 +423,7 @@ class MetricManifold(GeometryBase):
         return self.metric_module(x)
 
     def lagrangian_potential(self, x):
-        return self.lagrangian_potential_module(x)
+        return self.lagrangian_potential_module(x[:self.D])
 
     def run_metric_center_calculation(self, verbose: bool = True):
         self.metric_module.calculate_centers(verbose=verbose)
@@ -489,11 +489,8 @@ class MetricManifold(GeometryBase):
             kinetic = 0.5 * v @ M @ v
 
         #this is only if we have a lagrangian potential, e.g. obstacle avoidance
-        lagrangian_potential = (
-            self.lagrangian_potential(x)
-            if self.lagrangian_potential_initializer_fn is not None
-            else 0.0
-        )
+        lagrangian_potential = (self.lagrangian_potential(x) if self.lagrangian_potential_initializer_fn is not None else 0.0)
+
         return kinetic - lagrangian_potential
 
     def curve_energy(self, xs):
