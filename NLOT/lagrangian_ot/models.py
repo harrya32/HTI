@@ -60,7 +60,7 @@ class MLP(ModelBase):
 
         x_ambient = x[:, :self.D]
 
-        if self.use_film and not self.categorical:
+        if self.C > 0 and self.use_film and not self.categorical:
             conditional_features = x[:, self.D:]
             h_spatial = nn.Dense(self.dim_hidden[0], name="spatial_dense_0")(x_ambient)
 
@@ -107,7 +107,7 @@ class MLP(ModelBase):
         if self.is_potential:
             output = output.squeeze(-1)
         else:
-            output = x[:, :self.D] + output
+            #output = x[:, :self.D] + output
             
             # Add condition to the end
             output = jnp.concatenate([output, x[:, self.D:]], axis=-1)

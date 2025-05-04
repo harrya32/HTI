@@ -12,6 +12,8 @@ Many machine learning models have hyperparameters that significantly affect thei
 Our method uses guided conditional flow matching, matching geodesic velocities estimated via an actively learned conditional Riemannian metric approach, to address the HTI problem and model these trajectories efficiently and accurately.
 
 ## TODO
+- Synthetic conditional dataset, with continuous conditions, to show as first experiment
+- Implement flow matching using gradients from splines, and norms with learned metric
 - Produce a few cancer datasets, and train NLOT on them to see if it can learn (unconditionally/conditionally)
 - Write down/check how our acq. fn. is working/averaging across pairs/conditions
 - HIV/diabetes/sepsis sims are secondary options which need varying adaptations to get into our setting. Start with HIV, doing similar reward shaping to cancer example.

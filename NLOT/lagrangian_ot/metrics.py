@@ -78,8 +78,10 @@ class XMetric(ScarvelisMetric):
 class NeuralNetMetric(MetricBase):
     D: int = 2
     C: int = 0
+    hidden_dim: int = 128
     categorical: Optional[bool] = False
     num_categories: Optional[int] = 4
+    use_film: Optional[bool] = True 
 
     def setup(self):
         assert self.D == 2
@@ -91,27 +93,68 @@ class NeuralNetMetric(MetricBase):
             nn.Dense(2)
         ])
 
+    @nn.compact
     def __call__(self, x):
         assert x.ndim == 1
-        
-        if self.categorical:
-            assert x.shape[0] == self.D + 1, f"Expected input shape ({self.D + 1},), got {x.shape}"
-            x_ambient = x[:self.D]
-            category_index = x[self.D].astype(jnp.int32) # Ensure integer type
-            category_one_hot = jax.nn.one_hot(category_index, num_classes=self.num_categories)
-            net_input = jnp.concatenate([x_ambient, category_one_hot])
-        else:
-            assert x.shape[0] == self.D + self.C, f"Expected input shape ({self.D + self.C},), got {x.shape}"
-            net_input = x
+        assert self.D == 2
 
-        theta = jnp.arctan2(*self.net(net_input).squeeze())
+        if self.categorical:
+            assert x.shape[0] == self.D + 1, f"Expected categorical input shape ({self.D + 1},), got {x.shape}"
+            x_ambient = x[:self.D]
+            category_index = x[self.D].astype(jnp.int32)
+            category_one_hot = jax.nn.one_hot(category_index, num_classes=self.num_categories)
+            embedding_dim = max(16, self.hidden_dim // 4)
+            cat_embedding = nn.Embed(num_embeddings=self.num_categories, features=embedding_dim)(category_one_hot)
+            
+            h_spatial = nn.Dense(self.hidden_dim, name="spatial_dense_0")(x_ambient)
+            h_spatial = nn.leaky_relu(h_spatial)
+            h = jnp.concatenate([h_spatial, cat_embedding], axis=-1)
+            h = nn.Dense(self.hidden_dim, name="combine_dense")(h)
+            h = nn.leaky_relu(h)
+            current_hidden_idx = 1
+
+        elif self.C > 0 and self.use_film and not self.categorical:
+            assert x.shape[0] == self.D + self.C, f"Expected continuous conditional input shape ({self.D + self.C},), got {x.shape}"
+            x_ambient = x[:self.D]
+            c = x[self.D:]
+
+            # --- FiLM ---
+            h_spatial = nn.Dense(self.hidden_dim, name="spatial_dense_0")(x_ambient)
+            film_hidden_dim = max(16, self.hidden_dim // 4)
+            film_params = nn.Dense(film_hidden_dim, name="film_dense_0")(c)
+            film_params = nn.leaky_relu(film_params)
+            # Output size is 2 * target activation size (gamma and beta)
+            film_params = nn.Dense(2 * self.hidden_dim, name="film_dense_1")(film_params)
+
+            gamma = film_params[:self.hidden_dim]
+            beta = film_params[self.hidden_dim:]
+
+            # Apply FiLM
+            h = gamma * h_spatial + beta
+            h = nn.leaky_relu(h)
+            # --- End FiLM ---
+            current_hidden_idx = 1
+
+        else: #just simple concatenation for condition
+            assert x.shape[0] == self.D + self.C, f"Expected concatenated input shape ({self.D + self.C},), got {x.shape}"
+            net_input = x
+            h = nn.Dense(self.hidden_dim, name="dense_0")(net_input)
+            h = nn.leaky_relu(h)
+            current_hidden_idx = 1
+
+
+        h = nn.Dense(self.hidden_dim, name=f"dense_{current_hidden_idx}")(h)
+        h = nn.leaky_relu(h)
+        nn_out = nn.Dense(2, name="output_dense")(h)
+
+        theta = jnp.arctan2(*nn_out.squeeze())
         R = jnp.array([[jnp.cos(theta), -jnp.sin(theta)],
                        [jnp.sin(theta), jnp.cos(theta)]])
         Q = jnp.array([[1., 0.],
                        [0., 0.1]])
-
         A = R.T @ Q @ R
         return A
+
 
 
 @dataclass
@@ -192,7 +235,7 @@ class NeuralNetMetricEig(MetricBase):
             h = nn.leaky_relu(h)
             current_hidden_idx = 1
 
-        elif self.use_film and not self.categorical:
+        elif self.C > 0 and self.use_film and not self.categorical:
             assert x.shape[0] == self.D + self.C, f"Expected continuous conditional input shape ({self.D + self.C},), got {x.shape}"
             x_ambient = x[:self.D]
             c = x[self.D:]

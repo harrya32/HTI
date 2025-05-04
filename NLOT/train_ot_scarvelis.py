@@ -16,6 +16,7 @@ import optax
 import cloudpickle as pkl
 from copy import copy
 from flax.core import FrozenDict
+from scipy.optimize import linear_sum_assignment # For the assignment problem
 
 
 import dataclasses
@@ -394,6 +395,7 @@ class Workspace:
                 if self.train_step % self.cfg.plot_frequency == 0:
                     self.plot_all_pairs()
                     self.plot_pushforward()
+                    self.plot_assignment_paths()
 
                 if self.train_step % self.cfg.plot_frequency == 0 and self.has_reference_geometry:
                     alignment, true_eigen_vals, learned_eigen_vals = self.eval_alignment()
@@ -808,6 +810,133 @@ class Workspace:
         print(f"  Corresponding average s* for max uncertainty interval/condition: {best_s_star:.4f}")
 
         return most_uncertain_time, max_uncertainty
+
+    def predictor_map_for_assignment(self, x_batch, t = 0):
+        
+        params_source_map = self.state_source_maps[t].params
+
+        return self.neural_dual_solver.source_map_apply_jit(
+            {'params': params_source_map},
+            x_batch
+        )
+
+    @staticmethod
+    @jax.jit
+    def _compute_cost_matrix(y_hats, ys):
+        """
+        Computes the squared Euclidean distance cost matrix.
+        """
+        # y_hats: (N, D), ys: (N, D)
+        # Expand dims for broadcasting: (N, 1, D) and (1, N, D)
+        diff = y_hats[:, None, :] - ys[None, :, :] # Shape (N, N, D)
+        costs_sq = jnp.sum(diff**2, axis=2) # Shape (N, N)
+        return costs_sq
+
+    def assignment_coupling(self, xs, ys, t=0, predict_batch_size: int = None):
+        """
+        Solves the assignment problem between samples xs and ys.
+
+        1. Predicts destinations y_hat_i = c_transform_predictor(x_i) for all x_i.
+        2. Computes the cost matrix C_ij = ||y_hat_i - y_j||^2.
+        3. Solves the assignment problem to find the permutation minimizing sum C_i, sigma(i).
+        4. Returns the list of assigned pairs (x_i, y_sigma(i)).
+
+        Args:
+            xs (jax.numpy.ndarray): Source samples, shape (N, D).
+            ys (jax.numpy.ndarray): Target samples, shape (N, D).
+            c_transform_predictor (callable): A JAX-compatible function or model
+                                            that takes source samples (batch, D)
+                                            and returns predicted targets (batch, D).
+                                            It should ideally be vmappable or handle batches.
+            predict_batch_size (int, optional): If predictor cannot handle all N samples
+                                                at once, process in batches. Defaults to None (process all).
+
+        Returns:
+            list[tuple[Array, Array]]: A list of N pairs (x_i, y_j) representing the
+                                    optimal assignment based on predicted locations.
+                                    Returns an empty list if N=0.
+        """
+        num_samples = xs.shape[0]
+        dim = xs.shape[1]
+
+        if num_samples == 0:
+            return []
+
+        if num_samples != ys.shape[0]:
+            raise ValueError(f"xs and ys must have the same number of samples, but got {num_samples} and {ys.shape[0]}")
+        if xs.shape[1] != ys.shape[1]:
+            raise ValueError(f"xs and ys must have the same dimension D, but got {xs.shape[1]} and {ys.shape[1]}")
+        if len(xs.shape) != 2 or len(ys.shape) != 2:
+            raise ValueError("xs and ys must be 2D arrays (N, D).")
+
+
+        y_hats_list = []
+
+        try:
+            y_hats = self.predictor_map_for_assignment(xs, t=t)
+            if y_hats.shape != xs.shape:
+                raise ValueError(f"Predictor output shape {y_hats.shape} does not match input shape {xs.shape}")
+        except Exception as e:
+            print(f"Error calling c_transform_predictor on full batch: {e}")
+            raise e
+
+        cost_matrix_jax = self._compute_cost_matrix(y_hats, ys)
+        cost_matrix_np = np.array(cost_matrix_jax)
+        row_ind, col_ind = linear_sum_assignment(cost_matrix_np)
+        pairs = []
+        assignment = sorted(zip(row_ind, col_ind))
+
+        for r, c in assignment:
+            pairs.append((xs[r], ys[c]))
+
+        return pairs
+    
+    def plot_assignment_paths(self, num_samples=100):
+        """
+        Computes the optimal transport assignment between consecutive time points
+        based on the learned source map predictor and plots the geodesic paths
+        between the assigned pairs.
+        """
+        fig, ax = plt.subplots(figsize=(8, 8))
+        self._setup_ax(ax) 
+        colors = plt.cm.viridis(np.linspace(0, 1, self.num_pairs))
+
+        for t in range(self.num_pairs):
+            source_samples = self.eval_samples[t]
+            target_samples = self.eval_samples[t+1]
+            all_pairs = self.assignment_coupling(source_samples, target_samples, t=t)
+
+            if num_samples is not None and len(all_pairs) > num_samples:
+                pairs_to_plot = all_pairs[:num_samples] 
+            else:
+                pairs_to_plot = all_pairs
+
+
+            for i, (x_i, y_j) in enumerate(pairs_to_plot):
+                path = self.neural_dual_solver.path_jit(
+                    self.params_geometry, x_i, y_j
+                )
+
+                ax.plot(
+                    path[:, 0], path[:, 1], 
+                    color=colors[t],
+                    alpha=0.5, 
+                    lw=0.8      
+                )
+                ax.scatter(x_i[0], x_i[1], color=colors[t], s=10, alpha=0.7)
+                ax.scatter(y_j[0], y_j[1], color='red', s=10, alpha=0.7) 
+                
+        ax.set_title(f"Geodesic Paths from OT Assignment (Step {self.train_step})")
+        self._clean_axis(ax) 
+        fig.tight_layout()
+
+        fname = 'assignment_paths.png'
+        print(f"Saving assignment paths plot to {fname}")
+        fig.savefig(fname, bbox_inches='tight', pad_inches=0.1)
+        wandb.log({"plots/assignment_paths": wandb.Image(fname)}, step=self.train_step)
+        plt.close(fig)
+
+
 
 
 @hydra.main(config_path=".", config_name="train_ot_scarvelis.yaml", version_base="1.1")

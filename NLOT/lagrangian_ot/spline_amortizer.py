@@ -38,7 +38,7 @@ class SplineMLP(nn.Module):
         y_ambient = y[:, :self.D]
         spatial_combined = jnp.concatenate([x_ambient, y_ambient], axis=1)
 
-        if self.use_film and not self.categorical:
+        if self.C > 0 and self.use_film and not self.categorical:
             c = x[:, self.D:]
             h_spatial = nn.Dense(self.num_hidden, name='spatial_dense_0')(spatial_combined)
 

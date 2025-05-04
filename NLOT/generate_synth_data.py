@@ -3,6 +3,7 @@ import os
 from torchcfm.optimal_transport import OTPlanSampler
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 # Define the device
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -236,7 +237,205 @@ def generate_complex_conditional_gaussian_data(num_points_per_condition: int, va
 
     return final_data
 
+def generate_velocity_conditioned_data(num_conditions: int, num_points_per_condition: int, timesteps: list[float], variance: float = 0.05):
+    """
+    Generates 2D data where trajectories move along the x-axis at different speeds.
+    - Samples `num_conditions` distinct speed conditions c ~ Uniform(0, 1).
+    - For each condition, generates `num_points_per_condition` points.
+    - Mean at time t for condition c: (c * t, 0)
+    - Data at time t: N((c*t, 0), variance*I)
+
+    Args:
+        num_conditions (int): Number of distinct speed conditions to sample.
+        num_points_per_condition (int): Number of points per condition.
+        timesteps (list[float]): List of time values to sample data at.
+        variance (float): Variance of the Gaussian noise.
+
+    Returns:
+        torch.Tensor: Data tensor of shape (len(timesteps), num_conditions * num_points_per_condition, 3),
+                      where the dimensions are (time, sample, [x, y, condition_c]).
+    """
+    total_points = num_conditions * num_points_per_condition
+    num_timesteps = len(timesteps)
+    timesteps_tensor = torch.tensor(timesteps, dtype=torch.float32, device=DEVICE).view(-1, 1, 1) # Shape (T, 1, 1)
+
+    distinct_conditions_c = torch.rand(1, num_conditions, 1, device=DEVICE)
+    conditions_c = distinct_conditions_c.repeat_interleave(num_points_per_condition, dim=1) # Shape (1, N_total, 1)
+
+    # Calculate means for all points at all timesteps
+    # Mean_x = c * t
+    # Mean_y = 0
+    means_x = conditions_c * timesteps_tensor
+    means_y = torch.zeros_like(means_x)       
+    means = torch.cat((means_x, means_y), dim=2)
+
+    covariance = torch.eye(2, device=DEVICE) * variance
+    sqrt_covariance = torch.linalg.cholesky(covariance)
+
+    z = torch.randn(num_timesteps, total_points, 2, device=DEVICE)
+    samples = means + torch.matmul(z, sqrt_covariance.T)
+    conditions_expanded = conditions_c.expand(num_timesteps, -1, -1)
+    final_data = torch.cat((samples, conditions_expanded), dim=2)
+
+    return final_data
+
+def generate_rotation_conditioned_data(num_conditions: int, num_points_per_condition: int, timesteps: list[float],
+                                       base_radius_speed: float = 1.0,
+                                       base_angular_speed: float = math.pi,
+                                       condition_range: tuple[float, float] = (-math.pi / 2, math.pi / 2),
+                                       variance: float = 0.05):
+    """
+    Generates 2D data following spiral paths with condition-dependent rotation speed.
+    - Samples `num_conditions` distinct angular speed offsets c ~ Uniform(condition_range).
+    - For each condition, generates `num_points_per_condition` points.
+    - Base path is a spiral: radius = base_radius_speed * t, angle = base_angular_speed * t.
+    - Total angular speed = base_angular_speed + c.
+    - Mean at time t: (r(t)*cos(theta_total(t)), r(t)*sin(theta_total(t)))
+    - Data at time t: N(mean(t), variance*I)
+
+    Args:
+        num_conditions (int): Number of distinct angular speed conditions.
+        num_points_per_condition (int): Number of points per condition.
+        timesteps (list[float]): List of time values to sample data at.
+        base_radius_speed (float): Speed at which the spiral radius increases.
+        base_angular_speed (float): Base speed of rotation (radians per unit time).
+        condition_range (tuple[float, float]): Min and max for the uniform condition sampling.
+        variance (float): Variance of the Gaussian noise.
+
+    Returns:
+        torch.Tensor: Data tensor of shape (len(timesteps), num_conditions * num_points_per_condition, 3),
+                      where the dimensions are (time, sample, [x, y, condition_c]).
+    """
+    total_points = num_conditions * num_points_per_condition
+    num_timesteps = len(timesteps)
+    timesteps_tensor = torch.tensor(timesteps, dtype=torch.float32, device=DEVICE).view(-1, 1, 1)
+    c_min, c_max = condition_range
+    distinct_conditions_c = torch.rand(1, num_conditions, 1, device=DEVICE) * (c_max - c_min) + c_min
+    conditions_c = distinct_conditions_c.repeat_interleave(num_points_per_condition, dim=1) 
+
+    # Calculate radius and total angle for all points at all timesteps
+    radius = base_radius_speed * timesteps_tensor
+    total_angular_speed = base_angular_speed + conditions_c
+    total_angle = total_angular_speed * timesteps_tensor
+
+    means_x = radius * torch.cos(total_angle)
+    means_y = radius * torch.sin(total_angle)
+    means = torch.cat((means_x, means_y), dim=2)
+
+    covariance = torch.eye(2, device=DEVICE) * variance
+    sqrt_covariance = torch.linalg.cholesky(covariance) 
+
+    z = torch.randn(num_timesteps, total_points, 2, device=DEVICE) 
+    samples = means + torch.matmul(z, sqrt_covariance.T)
+
+    conditions_expanded = conditions_c.expand(num_timesteps, -1, -1)
+    final_data = torch.cat((samples, conditions_expanded), dim=2) 
+    return final_data
+
+
 if __name__ == "__main__":
+
+    #-----------------------------#
+    #  VELOCITY CONDITIONED DATA  #
+    #-----------------------------#
+
+    print("\n--- Velocity Conditioned Data ---")
+    num_cond_vel = 100
+    num_points_per_cond_vel = 10
+    total_points_vel = num_cond_vel * num_points_per_cond_vel
+    timesteps_vel = [0, 0.25, 0.5, 0.75, 1.0]
+    variance_vel = 0.01
+    velocity_data = generate_velocity_conditioned_data(
+        num_conditions=num_cond_vel,
+        num_points_per_condition=num_points_per_cond_vel,
+        timesteps=timesteps_vel,
+        variance=variance_vel
+    )
+    print(f"Generated velocity conditioned data shape: {velocity_data.shape}") # Should be (5, total_points_vel, 3)
+
+    #save
+    save_path_vel = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_velocity.pt')
+    torch.save(velocity_data, save_path_vel)
+    print(f"Velocity conditioned data saved to {save_path_vel}")
+
+    fig_vel, axs_vel = plt.subplots(1, len(timesteps_vel), figsize=(5 * len(timesteps_vel), 5), sharex=True, sharey=True)
+    conditions_vel = velocity_data[0, :, 2].cpu().numpy() # Conditions are same across time
+    norm_vel = plt.Normalize(conditions_vel.min(), conditions_vel.max())
+    cmap_vel = plt.cm.viridis
+
+    for i, t in enumerate(timesteps_vel):
+        data_t = velocity_data[i].cpu().numpy()
+        points = axs_vel[i].scatter(data_t[:, 0], data_t[:, 1], c=conditions_vel, cmap=cmap_vel, norm=norm_vel, alpha=0.6, s=10)
+        axs_vel[i].set_title(f"Time t={t:.2f}")
+        axs_vel[i].set_xlabel("x")
+        if i == 0:
+            axs_vel[i].set_ylabel("y")
+        axs_vel[i].set_aspect('equal', adjustable='box')
+        axs_vel[i].grid(True)
+
+    fig_vel.colorbar(points, ax=axs_vel, label='Condition (Speed)')
+    plt.suptitle(f"Velocity Conditioned Data ({num_cond_vel} Speeds, {num_points_per_cond_vel} Pts/Speed)")
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plot_save_path_vel = os.path.join(SCRIPT_PATH, 'velocity_conditioned_plot.png')
+    plt.savefig(plot_save_path_vel)
+    plt.close(fig_vel)
+
+    #-----------------------------#
+    #  ROTATION CONDITIONED DATA  #
+    #-----------------------------#    
+    
+    print("\n--- Rotation Conditioned Data ---")
+    num_cond_rot = 10 # Number of distinct rotation offsets
+    num_points_per_cond_rot = 100 # Points per offset
+    total_points_rot = num_cond_rot * num_points_per_cond_rot
+    timesteps_rot = [0, 0.25, 0.5, 0.75, 1.0]
+    variance_rot = 0.03
+    rotation_data = generate_rotation_conditioned_data(
+        num_conditions=num_cond_rot,
+        num_points_per_condition=num_points_per_cond_rot,
+        timesteps=timesteps_rot,
+        base_radius_speed=0.5,
+        base_angular_speed=math.pi,
+        condition_range=(0, math.pi),
+        variance=variance_rot
+    )
+    print(f"Generated rotation conditioned data shape: {rotation_data.shape}") # Should be (5, total_points_rot, 3)
+
+    #save
+    save_path_rot = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_rotation.pt')
+    torch.save(rotation_data, save_path_rot)
+    print(f"Rotation conditioned data saved to {save_path_rot}")
+
+    # Plotting Rotation Data (logic remains similar)
+    fig_rot, axs_rot = plt.subplots(1, len(timesteps_rot), figsize=(5 * len(timesteps_rot), 5), sharex=True, sharey=True)
+    conditions_rot = rotation_data[0, :, 2].cpu().numpy() # Conditions are same across time
+    norm_rot = plt.Normalize(conditions_rot.min(), conditions_rot.max())
+    cmap_rot = plt.cm.plasma
+
+    for i, t in enumerate(timesteps_rot):
+        data_t = rotation_data[i].cpu().numpy()
+        points = axs_rot[i].scatter(data_t[:, 0], data_t[:, 1], c=conditions_rot, cmap=cmap_rot, norm=norm_rot, alpha=0.6, s=10)
+        axs_rot[i].set_title(f"Time t={t:.2f}")
+        axs_rot[i].set_xlabel("x")
+        if i == 0:
+            axs_rot[i].set_ylabel("y")
+        axs_rot[i].set_aspect('equal', adjustable='box')
+        axs_rot[i].grid(True)
+
+    all_x_rot = rotation_data[:, :, 0].cpu().numpy().flatten()
+    all_y_rot = rotation_data[:, :, 1].cpu().numpy().flatten()
+    x_min_rot, x_max_rot = np.min(all_x_rot), np.max(all_x_rot)
+    y_min_rot, y_max_rot = np.min(all_y_rot), np.max(all_y_rot)
+    padding_rot = max(abs(x_min_rot), abs(x_max_rot), abs(y_min_rot), abs(y_max_rot)) * 0.1
+    axs_rot[0].set_xlim(x_min_rot - padding_rot, x_max_rot + padding_rot)
+    axs_rot[0].set_ylim(y_min_rot - padding_rot, y_max_rot + padding_rot)
+
+    fig_rot.colorbar(points, ax=axs_rot, label='Condition (Angular Speed Offset)')
+    plt.suptitle(f"Rotation Conditioned Data ({num_cond_rot} Offsets, {num_points_per_cond_rot} Pts/Offset)")
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plot_save_path_rot = os.path.join(SCRIPT_PATH, 'rotation_conditioned_plot.png')
+    plt.savefig(plot_save_path_rot)
+    plt.close(fig_rot)
 
     #----------------------------#
     #  COMPLEX CONDITIONAL DATA  #

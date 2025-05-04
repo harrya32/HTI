@@ -172,7 +172,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
     dataset = th.load(fname, map_location="cpu", weights_only=False).detach()
 
     if geometry_str == "agent_data":
-        dataset = dataset[:, :, :]
+        dataset = dataset[:, :1000, :]
         #normalise the dataset
         #dataset[:,:,2:] = (dataset[:,:,2:] - dataset[:,:,2:].mean(axis=0)) / dataset[:,:,2:].std(axis=0)
 
