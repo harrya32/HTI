@@ -249,16 +249,13 @@ class ManifoldW2NeuralDual:
         if scatter_kwargs is None:
             scatter_kwargs = {"alpha": 0.5}
 
-        if self.geometry.C > 0 and self.geometry.categorical:
+        if self.geometry.C > 0:# and self.geometry.categorical:
             source_condition_vectors = source[:, self.geometry.D:]
-            unique_conditions, source_condition_indices = jnp.unique(source_condition_vectors, axis=0, return_inverse=True)
+            unique_conditions, condition_indices = jnp.unique(source_condition_vectors, axis=0, return_inverse=True)
             num_unique_conditions = unique_conditions.shape[0]
-            target_condition_vectors = target[:, self.geometry.D:]
-            target_conditions_raw = target[:, self.geometry.D].astype(int)
         else:
             num_unique_conditions = 1
-            source_condition_indices = jnp.zeros(source.shape[0], dtype=int)
-            target_conditions_raw = jnp.zeros(target.shape[0], dtype=int)
+            condition_indices = jnp.zeros(source.shape[0], dtype=int)
 
         cmap = plt.get_cmap('viridis', num_unique_conditions)
         norm = mpl.colors.Normalize(vmin=0, vmax=num_unique_conditions - 1)
@@ -269,8 +266,8 @@ class ManifoldW2NeuralDual:
         else:
             fig = ax.get_figure()
 
-        source_colors = cmap(norm(source_condition_indices))
-        target_colors = cmap(norm(jnp.clip(target_conditions_raw, 0, num_unique_conditions - 1)))
+        source_colors = cmap(norm(condition_indices))
+        target_colors = cmap(norm(condition_indices))
 
         label_transport = r"transported"
 
@@ -279,14 +276,14 @@ class ManifoldW2NeuralDual:
         ax.scatter(
                 source[:, 0],
                 source[:, 1],
-                c=source_colors, # Use colors based on unique condition index
+                c=source_colors,
                 label="source",
                 **scatter_kwargs,
         )
         ax.scatter(
                 target[:, 0],
                 target[:, 1],
-                c=target_colors, # Use colors based on target condition
+                c=target_colors, 
                 label="target",
                 **scatter_kwargs
         )
@@ -306,7 +303,7 @@ class ManifoldW2NeuralDual:
         ax.scatter(
                 transported_samples[:, 0],
                 transported_samples[:, 1],
-                c=base_colors, # Color transported points same as source
+                c=base_colors, 
                 label=label_transport,
                 **scatter_kwargs,
         )

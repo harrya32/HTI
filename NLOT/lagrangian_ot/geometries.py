@@ -41,7 +41,8 @@ def get(
     D=2, 
     C=0, 
     categorical=False, 
-    num_categories=0):
+    num_categories=0,
+    lagrangian_potential_initializer_fn=None):
     
     if name == "sq_euclidean":
         return SqEuclidean()
@@ -182,6 +183,7 @@ def get(
             C=C,
             categorical=categorical,
             num_categories=num_categories,
+            lagrangian_potential_initializer_fn=lagrangian_potential_initializer_fn, #add in potential
             **geometry_kwargs,
         )
     elif name == "neural_net_metric_direct":
@@ -404,9 +406,10 @@ class MetricManifold(GeometryBase):
                 )
         
         if self.lagrangian_potential_initializer_fn is not None:
-            self.lagrangian_potential_module = (
-                self.lagrangian_potential_initializer_fn()
-            )
+            #self.lagrangian_potential_module = (
+            #    self.lagrangian_potential_initializer_fn()
+            #)
+            self.lagrangian_potential_module = self.lagrangian_potential_initializer_fn
 
         self.spline_model = self.spline_model_initializer_fn(
             out_dims=self.spline_geodesic_solver.num_spline_params, 
@@ -539,12 +542,9 @@ class MetricManifold(GeometryBase):
     
         
 
-    def add_plot_background(self, params, axs, xlims, ylims=None, alpha=1.0):
+    def add_plot_background(self, params, axs, xlims, ylims=None, alpha=1.0, condition=None):
         if not isinstance(axs, np.ndarray):
             axs = np.array([axs])
-
-        # Determine if we need to handle conditional dimensions for plotting
-        plot_with_condition = self.C > 0
 
         if issubclass(
             self.metric_initializer_fn, metrics.ScarvelisMetric
@@ -566,17 +566,17 @@ class MetricManifold(GeometryBase):
                 def eigs_vmap(params, x):
                     A = self.apply({"params": params}, x, method=self.metric)
                     vals, vecs = jnp.linalg.eigh(A)
-                    # Return only spatial eigenvectors for 2D plotting
-                    return vals, vecs[:self.D, :self.D].T 
+                    return vals, vecs.T 
 
                 self.eigs_vmap_jit = jax.jit(eigs_vmap)
 
             xflat, x1, x2 = _get_grid(xlims, ylims, grid_size)
 
-            # Prepare input for metric evaluation, adding default condition if C > 0
-            if plot_with_condition:
-                # Assume default condition is 0 for plotting background
-                default_condition = jnp.zeros((xflat.shape[0], self.C))
+            if self.C:
+                if condition is not None:
+                    default_condition = jnp.tile(condition, (xflat.shape[0], 1))
+                else:
+                    default_condition = jnp.zeros((xflat.shape[0], self.C))
                 x_eval = jnp.concatenate([xflat, default_condition], axis=-1)
             else:
                 x_eval = xflat
@@ -611,11 +611,11 @@ class MetricManifold(GeometryBase):
 
             xflat, x1, x2 = _get_grid(xlims, ylims, grid_size)
 
-            # Prepare input for potential evaluation, adding default condition if C > 0
-            if plot_with_condition:
-                # Assume default condition is 0 for plotting background
-                default_condition = jnp.zeros((xflat.shape[0], self.C))
-                x_eval = jnp.concatenate([xflat, default_condition], axis=-1)
+            if self.C:
+                if condition is not None:
+                    default_condition = jnp.tile(condition, (xflat.shape[0], 1))
+                else:
+                    default_condition = jnp.zeros((xflat.shape[0], self.C))
             else:
                 x_eval = xflat
 
@@ -623,9 +623,6 @@ class MetricManifold(GeometryBase):
 
             for ax in axs:
                 CS = ax.contourf(x1, x2, vals, cmap="Blues")
-                # fig = ax.get_figure()
-                # fig.colorbar(CS, ax=ax)
-
                 ax.set_xlim(*xlims)
                 ax.set_ylim(*ylims)
 

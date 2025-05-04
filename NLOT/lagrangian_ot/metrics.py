@@ -218,11 +218,11 @@ class NeuralNetMetricEig(MetricBase):
             assert x.shape[0] == self.D + 1, f"Expected categorical input shape ({self.D + 1},), got {x.shape}"
             x_ambient = x[:self.D]
             category_index = x[self.D].astype(jnp.int32)
-            category_one_hot = jax.nn.one_hot(category_index, num_classes=self.num_categories)
+            #category_one_hot = jax.nn.one_hot(category_index, num_classes=self.num_categories)
             # Embed category and concatenate with spatial features
             # Adjust embedding_dim as needed
             embedding_dim = max(16, self.hidden_dim // 4)
-            cat_embedding = nn.Embed(num_embeddings=self.num_categories, features=embedding_dim)(category_one_hot)
+            cat_embedding = nn.Embed(num_embeddings=self.num_categories, features=embedding_dim)(category_index)
             
             # Process spatial features separately first
             h_spatial = nn.Dense(self.hidden_dim, name="spatial_dense_0")(x_ambient)

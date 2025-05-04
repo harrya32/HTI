@@ -351,7 +351,7 @@ if __name__ == "__main__":
         timesteps=timesteps_vel,
         variance=variance_vel
     )
-    print(f"Generated velocity conditioned data shape: {velocity_data.shape}") # Should be (5, total_points_vel, 3)
+    print(f"Generated velocity conditioned data shape: {velocity_data.shape}")
 
     #save
     save_path_vel = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_velocity.pt')
@@ -359,7 +359,7 @@ if __name__ == "__main__":
     print(f"Velocity conditioned data saved to {save_path_vel}")
 
     fig_vel, axs_vel = plt.subplots(1, len(timesteps_vel), figsize=(5 * len(timesteps_vel), 5), sharex=True, sharey=True)
-    conditions_vel = velocity_data[0, :, 2].cpu().numpy() # Conditions are same across time
+    conditions_vel = velocity_data[0, :, 2].cpu().numpy()
     norm_vel = plt.Normalize(conditions_vel.min(), conditions_vel.max())
     cmap_vel = plt.cm.viridis
 
@@ -385,8 +385,8 @@ if __name__ == "__main__":
     #-----------------------------#    
     
     print("\n--- Rotation Conditioned Data ---")
-    num_cond_rot = 10 # Number of distinct rotation offsets
-    num_points_per_cond_rot = 100 # Points per offset
+    num_cond_rot = 10 
+    num_points_per_cond_rot = 100 
     total_points_rot = num_cond_rot * num_points_per_cond_rot
     timesteps_rot = np.linspace(0, 1, 21)
     variance_rot = 0.03
@@ -445,9 +445,10 @@ if __name__ == "__main__":
         num_points_per_condition=num_points_per_cond_5t,
         variance=variance_5t
     )
-    print(f"Generated 5T conditional data shape: {conditional_data_5t.shape}") # Should be (5, total_points, 3)
+    print(f"Generated 5T conditional data shape: {conditional_data_5t.shape}")
     print(conditional_data_5t[0])
-    # Save the conditional data
+
+    #save
     #save_path_5t = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_gaussians_complex.pt')
     #torch.save(conditional_data_5t, save_path_5t)
     #print(f"5T Conditional data saved to {save_path_5t}")
@@ -455,13 +456,13 @@ if __name__ == "__main__":
     # --- Plotting 5T Conditional Data ---
     num_time_points_plot = 5
     fig_5t, axs_5t = plt.subplots(1, num_time_points_plot, figsize=(5 * num_time_points_plot, 5), sharex=True, sharey=True)
-    colors_5t = plt.cm.viridis(np.linspace(0, 1, 4)) # 4 conditions
+    colors_5t = plt.cm.viridis(np.linspace(0, 1, 4))
 
     for t in range(num_time_points_plot):
         data_t = conditional_data_5t[t].cpu().numpy()
         conditions_t = data_t[:, 2].astype(int)
         axs_5t[t].set_title(f"Time t={t}")
-        for c in range(4): # 4 conditions
+        for c in range(4):
             mask = conditions_t == c
             axs_5t[t].scatter(data_t[mask, 0], data_t[mask, 1], color=colors_5t[c], label=f'Cond {c}' if t == 0 else "", alpha=0.6, s=10)
         axs_5t[t].set_xlabel("x")
@@ -471,12 +472,12 @@ if __name__ == "__main__":
         axs_5t[t].set_aspect('equal', adjustable='box')
         axs_5t[t].grid(True)
 
-    # Determine shared axis limits
+
     all_x = conditional_data_5t[:, :, 0].cpu().numpy().flatten()
     all_y = conditional_data_5t[:, :, 1].cpu().numpy().flatten()
     x_min, x_max = np.min(all_x), np.max(all_x)
     y_min, y_max = np.min(all_y), np.max(all_y)
-    padding = 1.0 # Add some padding
+    padding = 1.0
     axs_5t[0].set_xlim(x_min - padding, x_max + padding)
     axs_5t[0].set_ylim(y_min - padding, y_max + padding)
 
@@ -486,7 +487,7 @@ if __name__ == "__main__":
     plot_save_path_5t = os.path.join(SCRIPT_PATH, 'conditional_gaussians_complex_plot.png')
     #plt.savefig(plot_save_path_5t)
     #print(f"5T Plot saved to {plot_save_path_5t}")
-    plt.close(fig_5t) # Close the figure to free memory
+    plt.close(fig_5t)
 
 
     #--------------------#
@@ -495,15 +496,15 @@ if __name__ == "__main__":
     num_points_per_cond = 500
     conditional_data = generate_conditional_gaussian_data(num_points_per_condition=num_points_per_cond, variance=0.05)
     total_points = num_points_per_cond * 4
-    print(f"Generated conditional data shape: {conditional_data.shape}") # Should be (3, total_points, 3)
+    print(f"Generated conditional data shape: {conditional_data.shape}") 
 
-    # Save the conditional data
-    save_path = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_gaussians_3t.pt') # Changed filename
+    # save
+    save_path = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_gaussians_3t.pt')
     #torch.save(conditional_data, save_path)
     #print(f"Conditional data saved to {save_path}")
 
     # --- Plotting Conditional Data ---
-    fig, axs = plt.subplots(1, 3, figsize=(15, 5), sharex=True, sharey=True) # Changed to 1x3 grid and figsize
+    fig, axs = plt.subplots(1, 3, figsize=(15, 5), sharex=True, sharey=True)
     colors = plt.cm.viridis(np.linspace(0, 1, 4))
 
     # Plot t=0
@@ -531,9 +532,9 @@ if __name__ == "__main__":
     axs[1].grid(True)
 
     # Plot t=2
-    data_t2 = conditional_data[2].cpu().numpy() # Get t=2 data
+    data_t2 = conditional_data[2].cpu().numpy()
     conditions_t2 = data_t2[:, 2].astype(int)
-    axs[2].set_title("Time t=2") # Set title for t=2
+    axs[2].set_title("Time t=2") 
     for c in range(4):
         mask = conditions_t2 == c
         axs[2].scatter(data_t2[mask, 0], data_t2[mask, 1], color=colors[c], label=f'Cond {c}', alpha=0.6, s=10)
@@ -543,7 +544,7 @@ if __name__ == "__main__":
 
     plt.suptitle("Generated Conditional Gaussian Data (3 Time Steps)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plot_save_path = os.path.join(SCRIPT_PATH, 'conditional_gaussians_3t_plot.png') # Changed filename
+    plot_save_path = os.path.join(SCRIPT_PATH, 'conditional_gaussians_3t_plot.png') 
     #plt.savefig(plot_save_path)
     #print(f"Plot saved to {plot_save_path}")
 
@@ -553,11 +554,9 @@ if __name__ == "__main__":
     num_points = 1000
     arch_points, labels, unique_labels = generate_arch_data(num_points=num_points)
     print("arch points shape:", arch_points.shape)
-
-    #group into shape (num_labels, num_points, 2)
     arch_points = np.reshape(arch_points, (len(unique_labels), num_points, 2))
 
-    #save as .pt
+    #save
     arch_points = torch.tensor(arch_points)
     arch_points = arch_points[[0,2]]
     print("arch points shape:", arch_points.shape)

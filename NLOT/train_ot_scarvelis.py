@@ -25,7 +25,7 @@ from typing import Iterator
 import hydra
 from omegaconf import OmegaConf
 
-from lagrangian_ot import models, neuraldual, metrics, geodesics, geometries, data
+from lagrangian_ot import models, neuraldual, metrics, geodesics, geometries, data, lagrangian_potentials
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -61,6 +61,15 @@ class Workspace:
             num_pairs_requested=self.cfg.get('num_pairs', None)
         )
 
+        if self.cfg.get('include_land_potential', False):
+            lagrangian_potential_initializer_fn = lagrangian_potentials.LandPotential(
+                samples = jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)),
+                bandwidth = self.cfg.get('bandwidth', 1.0),
+                lambda_weight=self.cfg.get('lambda_weight', 0.01),
+            )
+        else:
+            lagrangian_potential_initializer_fn = None
+
         self.geometry = geometries.get(
             self.cfg.geometry, 
             self.cfg.get('geometry_kwargs', {}),
@@ -71,6 +80,7 @@ class Workspace:
             C=self.cfg.get('C', 0),
             categorical=self.cfg.get('categorical', False),
             num_categories=self.cfg.get('num_categories', 0),
+            lagrangian_potential_initializer_fn=lagrangian_potential_initializer_fn
         )
 
         if 'euclidean' in self.cfg.geometry or 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry:
@@ -90,6 +100,7 @@ class Workspace:
                 C=self.cfg.get('C', 0),
                 categorical=self.cfg.get('categorical', False),
                 num_categories=self.cfg.get('num_categories', 0),
+                lagrangian_potential_initializer_fn=lagrangian_potential_initializer_fn
             )
 
         if self.cfg.data is None:
@@ -529,7 +540,7 @@ class Workspace:
         wandb.log({"plots/all_pairs": wandb.Image('all_pairs.png')}, step=self.train_step)
         plt.close(fig)
 
-    def _setup_ax(self, ax): 
+    def _setup_ax(self, ax, condition = None): 
         if hasattr(self.geometry, 'xbounds'):
             xlims = self.geometry.xbounds
             ylims = self.geometry.ybounds
@@ -538,10 +549,9 @@ class Workspace:
 
         ax.set_xlim(xlims)
         ax.set_ylim(ylims)
-        # ax.set_aspect('equal')
 
         self.geometry.add_plot_background(
-            self.params_geometry, ax, xlims=xlims, ylims=ylims)
+            self.params_geometry, ax, xlims=xlims, ylims=ylims, condition=condition)
 
         if 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry:
             if self.cfg.data in ['scarvelis_xpath','scarvelis_vee','scarvelis_circle','scarvelis_arch']:
@@ -562,48 +572,39 @@ class Workspace:
             sp.set_linewidth(3)
 
     def plot_pushforward(self, num_samples=100):
-        # Sample initial points ONCE
         all_init_xs = jax.random.choice(
             jax.random.PRNGKey(0), self.eval_samples[0], shape=(num_samples,), replace=False)
 
-        if self.cfg.C > 0 and self.cfg.categorical:
-            # Extract condition vectors and find unique ones
+        if self.cfg.C > 0: #and self.cfg.categorical:
             condition_vectors = all_init_xs[:, self.cfg.D:]
             unique_conditions = jnp.unique(condition_vectors, axis=0)
             num_conditions = unique_conditions.shape[0]
         else:
-            # No conditions, treat as one condition
-            unique_conditions = None # No specific conditions to compare against
+            unique_conditions = None 
             num_conditions = 1
 
-        # Set up colormap based on the actual number of unique conditions
         cmap = plt.get_cmap('viridis', num_conditions)
         norm = mpl.colors.Normalize(vmin=0, vmax=num_conditions - 1)
 
-        # Loop through each unique condition index
         for c_idx in range(num_conditions):
-            fig, ax = plt.subplots(figsize=(4, 4))
-            self._setup_ax(ax)
-            # Determine the color for this specific condition's plot using its index
-            plot_color = cmap(norm(c_idx))
 
-            # Filter samples belonging to the current unique condition
+            fig, ax = plt.subplots(figsize=(4, 4))
+            
             if unique_conditions is not None:
                 current_condition = unique_conditions[c_idx]
-                # Compare entire condition vectors for equality
                 condition_matches = jnp.all(condition_vectors == current_condition, axis=1)
                 condition_indices = jnp.where(condition_matches)[0]
+                self._setup_ax(ax, condition=current_condition)
             else:
-                # If no conditions (C=0), all samples belong to the single plot (c_idx=0)
                 condition_indices = jnp.arange(all_init_xs.shape[0])
-            
+                self._setup_ax(ax)
+
+            plot_color = cmap(norm(c_idx))
+
             init_xs_condition = all_init_xs[condition_indices]
 
-            # Plot only the samples for this condition on this plot
             for i in range(init_xs_condition.shape[0]):
                 init_x = init_xs_condition[i]
-
-                # Plot initial point - use the viridis color. Pass color directly to scatter.
                 ax.scatter([init_x[0]], [init_x[1]], s=20, alpha=1,
                             zorder=10, c=[plot_color])
 
@@ -621,17 +622,14 @@ class Workspace:
                     path = self.neural_dual_solver.path_jit(
                         self.params_geometry, prev_x, x)
 
-                    # Plot path - use the viridis color
                     ax.plot(
                         path[:, 0], path[:, 1],
-                        color=plot_color, # Use the viridis color
+                        color=plot_color, 
                         alpha=0.5,
                         lw=3,
                     )
 
-            # Finalize and save this condition's plot using its index
             self._clean_axis(ax)
-            # Use c_idx for filename and logging to ensure unique names 0, 1, 2...
             fname = f'pushforward_condition_{c_idx}.png' 
             print(f'saving to {fname}')
             fig.savefig(fname, bbox_inches='tight', pad_inches=0)

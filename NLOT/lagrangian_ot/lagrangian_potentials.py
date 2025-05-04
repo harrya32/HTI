@@ -48,33 +48,6 @@ class LagrangianPotentialBase(flax.linen.Module):
         }
         return new_params
 
-
-class CancerPotential(LagrangianPotentialBase):
-    xmin_left: float = -5
-    xmax_left: float = -0.001
-    ymin_left: float = -5
-    ymax_left: float = 15
-
-    xmin_bottom: float = -5
-    xmax_bottom: float = 15
-    ymin_bottom: float = -5
-    ymax_bottom: float = -0.001
-
-    def __call__(self, x):
-        assert x.ndim == 1 and x.shape[0] == self.D
-        Ux_left = (nn.sigmoid((x[0] - self.xmin_left) / self.temp) - \
-              nn.sigmoid((x[0] - self.xmax_left) / self.temp))
-        Uy_left = (nn.sigmoid((x[1] - self.ymin_left) / self.temp) - \
-              nn.sigmoid((x[1] - self.ymax_left) / self.temp))
-        
-        Ux_bottom = (nn.sigmoid((x[0] - self.xmin_bottom) / self.temp) - \
-              nn.sigmoid((x[0] - self.xmax_bottom) / self.temp))
-        Uy_bottom = (nn.sigmoid((x[1] - self.ymin_bottom) / self.temp) - \
-              nn.sigmoid((x[1] - self.ymax_bottom) / self.temp))
-        
-        U = -Ux_left * Uy_left - Ux_bottom * Uy_bottom
-        return 100 * U #self.M*U
-
 # https://github.com/take-koshizuka/NLSB/blob/main/models/potential_2d.py
 class BoxPotential(LagrangianPotentialBase):
     xmin: float = -0.5
@@ -203,3 +176,51 @@ class GSB_STunnel_Potential(LagrangianPotentialBase):
         V -= self.M * nn.sigmoid((self.c - d) / self.temp)
 
         return V
+
+class CancerPotential(LagrangianPotentialBase):
+    xmin_left: float = -5
+    xmax_left: float = -0.001
+    ymin_left: float = -5
+    ymax_left: float = 15
+
+    xmin_bottom: float = -5
+    xmax_bottom: float = 15
+    ymin_bottom: float = -5
+    ymax_bottom: float = -0.001
+
+    def __call__(self, x):
+        assert x.ndim == 1 and x.shape[0] == self.D
+        Ux_left = (nn.sigmoid((x[0] - self.xmin_left) / self.temp) - \
+              nn.sigmoid((x[0] - self.xmax_left) / self.temp))
+        Uy_left = (nn.sigmoid((x[1] - self.ymin_left) / self.temp) - \
+              nn.sigmoid((x[1] - self.ymax_left) / self.temp))
+        
+        Ux_bottom = (nn.sigmoid((x[0] - self.xmin_bottom) / self.temp) - \
+              nn.sigmoid((x[0] - self.xmax_bottom) / self.temp))
+        Uy_bottom = (nn.sigmoid((x[1] - self.ymin_bottom) / self.temp) - \
+              nn.sigmoid((x[1] - self.ymax_bottom) / self.temp))
+        
+        U = -Ux_left * Uy_left - Ux_bottom * Uy_bottom
+        return self.M*U
+    
+
+class LandPotential(LagrangianPotentialBase):
+    """
+    U(x) = -λ * log p̂(x),     p̂(x) = 1/N ∑_i ϕ((x - samples[i])/bandwidth)
+    """
+    samples: jnp.ndarray = None         # shape (N, D)
+    bandwidth: float = 1.0              # KDE bandwidth
+    lambda_weight: float = 0.01         # weight on the potential
+
+    def __call__(self, x):
+        assert x.ndim == 1 and x.shape[0] == self.D
+        # 1) compute squared distances to each sample
+        diffs = (self.samples - x[None, :]) / self.bandwidth              # (N, D)
+        sq_norms = jnp.sum(diffs**2, axis=1)                              # (N,)
+        # 2) approximate log p(x) via Gaussian KDE
+        log_kernel = -0.5 * sq_norms                                      # (N,)
+        log_sum = jax.scipy.special.logsumexp(log_kernel)                # scalar
+        log_norm = -0.5 * self.D * jnp.log(2*jnp.pi*self.bandwidth**2) - jnp.log(self.samples.shape[0])
+        logp = log_sum + log_norm                                         # log p̂(x)
+        # 3) return U = -λ · log p̂(x)
+        return - self.lambda_weight * logp
