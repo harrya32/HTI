@@ -355,8 +355,8 @@ if __name__ == "__main__":
 
     #save
     save_path_vel = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_velocity.pt')
-    torch.save(velocity_data, save_path_vel)
-    print(f"Velocity conditioned data saved to {save_path_vel}")
+    #torch.save(velocity_data, save_path_vel)
+    #print(f"Velocity conditioned data saved to {save_path_vel}")
 
     fig_vel, axs_vel = plt.subplots(1, len(timesteps_vel), figsize=(5 * len(timesteps_vel), 5), sharex=True, sharey=True)
     conditions_vel = velocity_data[0, :, 2].cpu().numpy()
@@ -377,7 +377,7 @@ if __name__ == "__main__":
     plt.suptitle(f"Velocity Conditioned Data ({num_cond_vel} Speeds, {num_points_per_cond_vel} Pts/Speed)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plot_save_path_vel = os.path.join(SCRIPT_PATH, 'velocity_conditioned_plot.png')
-    plt.savefig(plot_save_path_vel)
+    #plt.savefig(plot_save_path_vel)
     plt.close(fig_vel)
 
     #-----------------------------#
@@ -403,8 +403,8 @@ if __name__ == "__main__":
 
     #save
     save_path_rot = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_rotation.pt')
-    torch.save(rotation_data, save_path_rot)
-    print(f"Rotation conditioned data saved to {save_path_rot}")
+    #torch.save(rotation_data, save_path_rot)
+    #print(f"Rotation conditioned data saved to {save_path_rot}")
 
     fig_rot, axs_rot = plt.subplots(1, len(timesteps_rot), figsize=(5 * len(timesteps_rot), 5), sharex=True, sharey=True)
     conditions_rot = rotation_data[0, :, 2].cpu().numpy()
@@ -433,7 +433,7 @@ if __name__ == "__main__":
     plt.suptitle(f"Rotation Conditioned Data ({num_cond_rot} Offsets, {num_points_per_cond_rot} Pts/Offset)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plot_save_path_rot = os.path.join(SCRIPT_PATH, 'rotation_conditioned_plot.png')
-    plt.savefig(plot_save_path_rot)
+    #plt.savefig(plot_save_path_rot)
     plt.close(fig_rot)
 
     #----------------------------#
@@ -551,7 +551,7 @@ if __name__ == "__main__":
     #-------------#
     #  ARCH DATA  #
     #-------------#
-    num_points = 1000
+    num_points = 5000
     arch_points, labels, unique_labels = generate_arch_data(num_points=num_points)
     print("arch points shape:", arch_points.shape)
     arch_points = np.reshape(arch_points, (len(unique_labels), num_points, 2))
@@ -560,7 +560,7 @@ if __name__ == "__main__":
     arch_points = torch.tensor(arch_points)
     arch_points = arch_points[[0,2]]
     print("arch points shape:", arch_points.shape)
-    #torch.save(arch_points, 'scarvelis_data/arch_data.pt')
+    torch.save(arch_points, 'scarvelis_data/arch_data.pt')
 
     #---------------#
     #  SPHERE DATA  #
