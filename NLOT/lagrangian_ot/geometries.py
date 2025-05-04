@@ -509,7 +509,35 @@ class MetricManifold(GeometryBase):
         return E
 
     def project(self, x):
-        return jnp.clip(x, *self.bounds)
+        x_ambient = x[:self.D]
+        clipped_x = jnp.clip(x_ambient, *self.bounds)
+
+        #add back the condition
+        if self.C > 0:
+            condition = x[self.D:]
+            return jnp.concatenate([clipped_x, condition], axis=-1)
+        else:
+            return clipped_x
+        
+    #project for a batch of points
+    def batch_project(self, x):
+        x_ambient = x[:, :self.D]
+        clipped_x = jnp.clip(x_ambient, *self.bounds)
+
+        #add back the condition
+        if self.C > 0:
+            condition = x[:, self.D:]
+            return jnp.concatenate([clipped_x, condition], axis=-1)
+        else:
+            return clipped_x
+    
+    def get_ambient_dims(self, x):
+        assert x.ndim == 2
+        assert x.shape[1] == self.D + self.C
+        return x[:, :self.D]
+
+    
+        
 
     def add_plot_background(self, params, axs, xlims, ylims=None, alpha=1.0):
         if not isinstance(axs, np.ndarray):

@@ -182,7 +182,8 @@ class ManifoldW2NeuralDual:
             target_hat_detach = jax.lax.stop_gradient(out.solution)
             num_ctransform_iter = jnp.mean(out.num_iter)
             if hasattr(self.geometry, 'bounds'):
-                target_hat_detach = jnp.clip(target_hat_detach, *self.geometry.bounds)
+                target_hat_detach = self.geometry.batch_project(target_hat_detach)
+                #target_hat_detach = jnp.clip(target_hat_detach, *self.geometry.bounds)
         else:
             target_hat_detach = init_target_hat
             num_ctransform_iter = 0
@@ -196,7 +197,10 @@ class ManifoldW2NeuralDual:
         dual_loss = -dual_source - dual_target
 
         if self.amortization_loss == "regression":
-            amor_loss = ((init_target_hat - target_hat_detach) ** 2).mean()
+            #should only calculate loss between ambient dimensions
+            amor_loss = ((self.geometry.get_ambient_dims(init_target_hat) -
+                          self.geometry.get_ambient_dims(target_hat_detach)) ** 2).mean()
+            #amor_loss = ((init_target_hat - target_hat_detach) ** 2).mean()
         elif self.amortization_loss == "objective":
             import ipdb; ipdb.set_trace()
             batch_dot = jax.vmap(jnp.dot)

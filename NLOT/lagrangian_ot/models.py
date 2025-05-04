@@ -107,7 +107,7 @@ class MLP(ModelBase):
         if self.is_potential:
             output = output.squeeze(-1)
         else:
-            #output = x[:, :self.D] + output
+            output = x[:, :self.D] + output
             
             # Add condition to the end
             output = jnp.concatenate([output, x[:, self.D:]], axis=-1)

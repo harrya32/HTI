@@ -237,7 +237,7 @@ def generate_complex_conditional_gaussian_data(num_points_per_condition: int, va
 
     return final_data
 
-def generate_velocity_conditioned_data(num_conditions: int, num_points_per_condition: int, timesteps: list[float], variance: float = 0.05):
+def generate_velocity_conditioned_data(num_conditions: int, num_points_per_condition: int, timesteps: list[float], variance: float = 0.05, base_speed = 2.0):
     """
     Generates 2D data where trajectories move along the x-axis at different speeds.
     - Samples `num_conditions` distinct speed conditions c ~ Uniform(0, 1).
@@ -265,7 +265,7 @@ def generate_velocity_conditioned_data(num_conditions: int, num_points_per_condi
     # Calculate means for all points at all timesteps
     # Mean_x = c * t
     # Mean_y = 0
-    means_x = conditions_c * timesteps_tensor
+    means_x = conditions_c * timesteps_tensor * base_speed
     means_y = torch.zeros_like(means_x)       
     means = torch.cat((means_x, means_y), dim=2)
 
@@ -340,10 +340,10 @@ if __name__ == "__main__":
     #-----------------------------#
 
     print("\n--- Velocity Conditioned Data ---")
-    num_cond_vel = 100
-    num_points_per_cond_vel = 10
+    num_cond_vel = 10
+    num_points_per_cond_vel = 100
     total_points_vel = num_cond_vel * num_points_per_cond_vel
-    timesteps_vel = [0, 0.25, 0.5, 0.75, 1.0]
+    timesteps_vel = np.linspace(0, 1, 21)
     variance_vel = 0.01
     velocity_data = generate_velocity_conditioned_data(
         num_conditions=num_cond_vel,
@@ -388,7 +388,7 @@ if __name__ == "__main__":
     num_cond_rot = 10 # Number of distinct rotation offsets
     num_points_per_cond_rot = 100 # Points per offset
     total_points_rot = num_cond_rot * num_points_per_cond_rot
-    timesteps_rot = [0, 0.25, 0.5, 0.75, 1.0]
+    timesteps_rot = np.linspace(0, 1, 21)
     variance_rot = 0.03
     rotation_data = generate_rotation_conditioned_data(
         num_conditions=num_cond_rot,
@@ -399,16 +399,15 @@ if __name__ == "__main__":
         condition_range=(0, math.pi),
         variance=variance_rot
     )
-    print(f"Generated rotation conditioned data shape: {rotation_data.shape}") # Should be (5, total_points_rot, 3)
+    print(f"Generated rotation conditioned data shape: {rotation_data.shape}") 
 
     #save
     save_path_rot = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_rotation.pt')
     torch.save(rotation_data, save_path_rot)
     print(f"Rotation conditioned data saved to {save_path_rot}")
 
-    # Plotting Rotation Data (logic remains similar)
     fig_rot, axs_rot = plt.subplots(1, len(timesteps_rot), figsize=(5 * len(timesteps_rot), 5), sharex=True, sharey=True)
-    conditions_rot = rotation_data[0, :, 2].cpu().numpy() # Conditions are same across time
+    conditions_rot = rotation_data[0, :, 2].cpu().numpy()
     norm_rot = plt.Normalize(conditions_rot.min(), conditions_rot.max())
     cmap_rot = plt.cm.plasma
 

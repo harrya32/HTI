@@ -904,14 +904,17 @@ class Workspace:
         for t in range(self.num_pairs):
             source_samples = self.eval_samples[t]
             target_samples = self.eval_samples[t+1]
-            all_pairs = self.assignment_coupling(source_samples, target_samples, t=t)
 
-            if num_samples is not None and len(all_pairs) > num_samples:
-                pairs_to_plot = all_pairs[:num_samples] 
-            else:
-                pairs_to_plot = all_pairs
+            #sample to num_samples
+            if source_samples.shape[0] > num_samples:
+                k1, key = jax.random.split(self.key)
+                num_to_sample = min(num_samples, source_samples.shape[0], target_samples.shape[0])
+                indices = jax.random.choice(k1, source_samples.shape[0], shape=(num_to_sample,), replace=False)
+                source_samples_plot = source_samples[indices]
+                target_samples_plot = target_samples[indices]
 
-
+            pairs_to_plot = self.assignment_coupling(source_samples_plot, target_samples_plot, t=t)
+            
             for i, (x_i, y_j) in enumerate(pairs_to_plot):
                 path = self.neural_dual_solver.path_jit(
                     self.params_geometry, x_i, y_j
