@@ -82,9 +82,13 @@ class MLP(ModelBase):
 
         elif self.categorical:
             category_index = x[:, self.D].astype(jnp.int32)
-            category_one_hot = jax.nn.one_hot(category_index, num_classes=self.num_categories)
-            h = jnp.concatenate([x_ambient, category_one_hot], axis=1)
-            h = nn.Dense(self.dim_hidden[0])(h) 
+            embedding_dim = max(16, self.dim_hidden[0] // 4)
+            cat_embedding = nn.Embed(num_embeddings=self.num_categories, features=embedding_dim)(category_index)
+            h_spatial = nn.Dense(self.dim_hidden[0], name="spatial_dense_0")(x_ambient)
+            h_spatial = nn.relu(h_spatial)
+
+            h = jnp.concatenate([h_spatial, cat_embedding], axis=-1)
+            h = nn.Dense(self.dim_hidden[0], name="combine_dense")(h)
             h = nn.relu(h)
             current_hidden_idx = 1
         else:

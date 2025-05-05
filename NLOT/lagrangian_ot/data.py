@@ -81,6 +81,13 @@ def get_bounds(name):
             jnp.array((xbounds[0], ybounds[0])),
             jnp.array((xbounds[1], ybounds[1])),
         )
+    elif name == "conditional_circles":
+        xbounds = (-2.5, 2.5)
+        ybounds = (-1.5, 1.5)
+        bounds = (
+            jnp.array((xbounds[0], ybounds[0])),
+            jnp.array((xbounds[1], ybounds[1])),
+        )
     else:
         raise ValueError(f"Invalid data choice: {name}")
 
@@ -180,6 +187,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         "conditional_velocity": "conditional_velocity.pt",
         "conditional_rotation": "conditional_rotation.pt",
         "warped_circle": "warped_circle.pt",
+        "conditional_circles": "conditional_circles.pt",
     }
     if geometry_str not in paths:
         raise ValueError(f"Invalid geometry choice: {geometry_str}")

@@ -63,6 +63,8 @@ class Workspace:
 
         if self.cfg.get('include_land_potential', False):
             lagrangian_potential_initializer_fn = lagrangian_potentials.LandPotential(
+                D=self.cfg.get('D', 2),
+                C=self.cfg.get('C', 0),
                 samples = jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)),
                 bandwidth = self.cfg.get('bandwidth', 1.0),
                 lambda_weight=self.cfg.get('lambda_weight', 0.01),

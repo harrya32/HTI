@@ -16,6 +16,7 @@ import flax
 @dataclass
 class LagrangianPotentialBase(flax.linen.Module):
     D: int = 2
+    C: int = 0
 
     M_bounds = (0., 0.01)
     temp_bounds = (1e-1, 1e-2)
@@ -213,13 +214,33 @@ class LandPotential(LagrangianPotentialBase):
     lambda_weight: float = 0.01         
 
     def __call__(self, x):
-        assert x.ndim == 1 and x.shape[0] == self.D
+        assert x.ndim == 1 and x.shape[0] == self.D + self.C
 
-        diffs = (self.samples - x[None, :]) / self.bandwidth
-        sq_norms = jnp.sum(diffs**2, axis=1)              
-        log_kernel = -0.5 * sq_norms                             
-        log_sum = jax.scipy.special.logsumexp(log_kernel)
-        log_norm = -0.5 * self.D * jnp.log(2*jnp.pi*self.bandwidth**2) - jnp.log(self.samples.shape[0])
+        x_ambient = x[:self.D]
+        x_cond = x[self.D:]
+        all_samples_ambient = self.samples[:, :self.D]
+
+        if self.C > 0:
+            mask = jnp.all(self.samples[:, self.D:] == x_cond, axis=1)
+            num_cond_samples = jnp.sum(mask)
+        else:
+            # If no condition, all samples are considered
+            mask = jnp.ones(self.samples.shape[0], dtype=bool)
+            num_cond_samples = jnp.array(self.samples.shape[0])
+            
+        diffs = (all_samples_ambient - x_ambient[None, :]) / self.bandwidth
+        sq_norms = jnp.sum(diffs**2, axis=1)
+        log_kernel = -0.5 * sq_norms  
+
+        # Mask contributions to logsumexp where condition is not met
+        # Add 0.0 where mask is True, -inf where mask is False. This effectively
+        # removes the contribution of non-matching samples in the sum inside logsumexp.
+        logsumexp_contributions = log_kernel + jnp.where(mask, 0.0, -jnp.inf)
+        log_sum = jax.scipy.special.logsumexp(logsumexp_contributions)
+
+        # Normalization term based on the number of samples matching the condition
+        log_norm = -0.5 * self.D * jnp.log(2*jnp.pi*self.bandwidth**2) - jnp.log(num_cond_samples)
         logp = log_sum + log_norm
         potential = - self.lambda_weight * logp
+
         return potential

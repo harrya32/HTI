@@ -5,15 +5,15 @@ defaults:
 geometry: 'neural_net_metric_eig'
 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, 
-# scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, agent_data, conditional_velocity, conditional_rotation, warped_circle
-data: 'warped_circle'
+# scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles
+data: 'conditional_circles'
 D: 2
-C: 0
-categorical: False
-num_categories: 1
+C: 1
+categorical: True
+num_categories: 4
 
 include_land_potential: True
-bandwidth: 0.8
+bandwidth: 1.2
 lambda_weight: 0.01
 
 seed: 0
