@@ -910,6 +910,10 @@ class Workspace:
                 indices = jax.random.choice(k1, source_samples.shape[0], shape=(num_to_sample,), replace=False)
                 source_samples_plot = source_samples[indices]
                 target_samples_plot = target_samples[indices]
+            
+            else:
+                source_samples_plot = source_samples
+                target_samples_plot = target_samples
 
             pairs_to_plot = self.assignment_coupling(source_samples_plot, target_samples_plot, t=t)
             

@@ -172,6 +172,7 @@ def get(
             C=C,
             categorical=categorical,
             num_categories=num_categories,
+            lagrangian_potential_initializer_fn=lagrangian_potential_initializer_fn,
             **geometry_kwargs,
         )
     elif name == "neural_net_metric_eig":
@@ -491,8 +492,7 @@ class MetricManifold(GeometryBase):
         else:
             kinetic = 0.5 * v @ M @ v
 
-        #this is only if we have a lagrangian potential, e.g. obstacle avoidance
-        lagrangian_potential = (self.lagrangian_potential(x) if self.lagrangian_potential_initializer_fn is not None else 0.0)
+        lagrangian_potential = (self.lagrangian_potential(x[:self.D]) if self.lagrangian_potential_initializer_fn is not None else 0.0)
 
         return kinetic - lagrangian_potential
 

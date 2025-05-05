@@ -4,17 +4,10 @@ from torchcfm.optimal_transport import OTPlanSampler
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+from scipy.stats import vonmises, lognorm
 
-# Define the device
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
-paths = {
-        "scarvelis_circle": "data_gic_24_gaussians_radius_1_std_0p1_100_samples_closed.pt",
-        "scarvelis_vee": "data_mass_split_std_1_100_samples_8_intermediate_scale_x10.pt",
-        "scarvelis_xpath": "data_xpath_std_0p1_100_samples_8_intermediate.pt",
-    }
-fname = SCRIPT_PATH + "/scarvelis_data/" + paths['scarvelis_circle']
 
 def generate_sphere_data(num_points: int = 5000):
     time_0_samples = np.abs(
@@ -332,8 +325,114 @@ def generate_rotation_conditioned_data(num_conditions: int, num_points_per_condi
     final_data = torch.cat((samples, conditions_expanded), dim=2) 
     return final_data
 
+def generate_warped_circle_data(num_points_per_time: int,
+                                num_time_points: int = 6,
+                                radius: float = 1.0,
+                                angular_concentration: float = 15.0,
+                                radial_std_dev: float = 0.1,
+                                device: torch.device = DEVICE):
+    """
+    Generates 2D data distributed around a circle at multiple time points,
+    with distributions "warped" by the circular geometry using von Mises (angle)
+    and Log-Normal (radius) distributions.
+
+    Args:
+        num_points_per_time (int): Number of data points for each time step.
+        num_time_points (int): Number of discrete time steps.
+        radius (float): The target mean radius of the circle.
+        angular_concentration (float): Kappa parameter for the von Mises distribution.
+                                      Higher values mean tighter angular clustering.
+        radial_std_dev (float): Standard deviation of the underlying normal distribution
+                                for the Log-Normal radius samples. Controls radial spread.
+        device (torch.device): The device to place the output tensor on.
+
+    Returns:
+        torch.Tensor: Data tensor of shape (num_time_points, num_points_per_time, 2).
+    """
+    all_points_t = []
+    target_angles = np.linspace(0, 2 * np.pi, num_time_points, endpoint=False)
+
+    # Parameters for the Log-Normal distribution to center the median around `radius`
+    # The median of Log-Normal(mu, sigma) is exp(mu). We want exp(mu) = radius.
+    # So, mu = log(radius). Sigma is the radial_std_dev.
+    log_normal_mu = np.log(radius)
+    log_normal_sigma = radial_std_dev
+
+    for t in range(num_time_points):
+        target_angle = target_angles[t]
+
+        # Sample angles using von Mises distribution
+        # scipy.stats.vonmises uses location (mu) and concentration (kappa)
+        sampled_angles = vonmises.rvs(loc=target_angle, kappa=angular_concentration, size=num_points_per_time)
+
+        # Sample radii using Log-Normal distribution
+        # scipy.stats.lognorm uses shape (s=sigma), loc (usually 0), scale (exp(mu))
+        sampled_radii = lognorm.rvs(s=log_normal_sigma, loc=0, scale=np.exp(log_normal_mu), size=num_points_per_time)
+
+        # Convert polar to Cartesian coordinates
+        x = sampled_radii * np.cos(sampled_angles)
+        y = sampled_radii * np.sin(sampled_angles)
+
+        points_t = np.stack((x, y), axis=-1)
+        all_points_t.append(points_t)
+
+    # Combine data from all time points and convert to torch tensor
+    final_data = torch.tensor(np.array(all_points_t), dtype=torch.float32, device=device)
+
+    return final_data
 
 if __name__ == "__main__":
+
+    #------------------------#
+    #   WARPED CIRCLE DATA   #
+    #------------------------#
+    print("\n--- Warped Circle Data ---")
+    num_points_circle = 100
+    num_times_circle = 3
+    angular_conc_circle = 10.0 # Higher value -> more concentrated angle
+    radial_std_circle = 0.08  # Smaller value -> less spread in radius
+
+    warped_circle_data = generate_warped_circle_data(
+        num_points_per_time=num_points_circle,
+        num_time_points=num_times_circle,
+        angular_concentration=angular_conc_circle,
+        radial_std_dev=radial_std_circle,
+        radius=1.0
+    )
+    print(f"Generated warped circle data shape: {warped_circle_data.shape}")
+
+    # save
+    save_path_circle = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'warped_circle.pt')
+    torch.save(warped_circle_data, save_path_circle)
+    print(f"Warped circle data saved to {save_path_circle}")
+
+    # --- Plotting Warped Circle Data ---
+    fig_circle, axs_circle = plt.subplots(1, num_times_circle, figsize=(5 * num_times_circle, 5.5), sharex=True, sharey=True)
+    max_abs_coord = warped_circle_data.abs().max().item() * 1.1 # Get max coordinate for consistent plot limits
+    plot_lim = (-max_abs_coord, max_abs_coord)
+
+    for t in range(num_times_circle):
+        data_t = warped_circle_data[t].cpu().numpy()
+        axs_circle[t].scatter(data_t[:, 0], data_t[:, 1], alpha=0.5, s=5)
+        axs_circle[t].set_title(f"Time t={t}")
+        axs_circle[t].set_xlabel("x")
+        if t == 0:
+            axs_circle[t].set_ylabel("y")
+        axs_circle[t].set_aspect('equal', adjustable='box')
+        axs_circle[t].grid(True)
+        axs_circle[t].set_xlim(plot_lim)
+        axs_circle[t].set_ylim(plot_lim)
+        # Draw unit circle for reference
+        circle_ref = plt.Circle((0, 0), 1.0, color='r', fill=False, linestyle='--', linewidth=1)
+        axs_circle[t].add_patch(circle_ref)
+
+
+    plt.suptitle(f"Warped Circle Data ({num_times_circle} Time Points, {num_points_circle} Pts/Time)")
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plot_save_path_circle = os.path.join(SCRIPT_PATH, 'warped_circle_plot.png')
+    plt.savefig(plot_save_path_circle)
+    print(f"Warped circle plot saved to {plot_save_path_circle}")
+    plt.close(fig_circle) # Close the figure to prevent display if running script
 
     #-----------------------------#
     #  VELOCITY CONDITIONED DATA  #
@@ -560,7 +659,7 @@ if __name__ == "__main__":
     arch_points = torch.tensor(arch_points)
     arch_points = arch_points[[0,2]]
     print("arch points shape:", arch_points.shape)
-    torch.save(arch_points, 'scarvelis_data/arch_data.pt')
+    #torch.save(arch_points, 'scarvelis_data/arch_data.pt')
 
     #---------------#
     #  SPHERE DATA  #

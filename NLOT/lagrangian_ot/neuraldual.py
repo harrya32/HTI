@@ -183,7 +183,6 @@ class ManifoldW2NeuralDual:
             num_ctransform_iter = jnp.mean(out.num_iter)
             if hasattr(self.geometry, 'bounds'):
                 target_hat_detach = self.geometry.batch_project(target_hat_detach)
-                #target_hat_detach = jnp.clip(target_hat_detach, *self.geometry.bounds)
         else:
             target_hat_detach = init_target_hat
             num_ctransform_iter = 0

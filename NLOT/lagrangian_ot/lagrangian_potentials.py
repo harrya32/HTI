@@ -208,19 +208,17 @@ class LandPotential(LagrangianPotentialBase):
     """
     U(x) = -λ * log p̂(x),     p̂(x) = 1/N ∑_i ϕ((x - samples[i])/bandwidth)
     """
-    samples: jnp.ndarray = None         # shape (N, D)
-    bandwidth: float = 1.0              # KDE bandwidth
-    lambda_weight: float = 0.01         # weight on the potential
+    samples: jnp.ndarray = None         
+    bandwidth: float = 1.0             
+    lambda_weight: float = 0.01         
 
     def __call__(self, x):
         assert x.ndim == 1 and x.shape[0] == self.D
-        # 1) compute squared distances to each sample
-        diffs = (self.samples - x[None, :]) / self.bandwidth              # (N, D)
-        sq_norms = jnp.sum(diffs**2, axis=1)                              # (N,)
-        # 2) approximate log p(x) via Gaussian KDE
-        log_kernel = -0.5 * sq_norms                                      # (N,)
-        log_sum = jax.scipy.special.logsumexp(log_kernel)                # scalar
+
+        diffs = (self.samples - x[None, :]) / self.bandwidth
+        sq_norms = jnp.sum(diffs**2, axis=1)              
+        log_kernel = -0.5 * sq_norms                             
+        log_sum = jax.scipy.special.logsumexp(log_kernel)
         log_norm = -0.5 * self.D * jnp.log(2*jnp.pi*self.bandwidth**2) - jnp.log(self.samples.shape[0])
-        logp = log_sum + log_norm                                         # log p̂(x)
-        # 3) return U = -λ · log p̂(x)
+        logp = log_sum + log_norm
         return - self.lambda_weight * logp
