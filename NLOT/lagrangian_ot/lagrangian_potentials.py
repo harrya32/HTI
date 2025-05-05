@@ -221,4 +221,5 @@ class LandPotential(LagrangianPotentialBase):
         log_sum = jax.scipy.special.logsumexp(log_kernel)
         log_norm = -0.5 * self.D * jnp.log(2*jnp.pi*self.bandwidth**2) - jnp.log(self.samples.shape[0])
         logp = log_sum + log_norm
-        return - self.lambda_weight * logp
+        potential = - self.lambda_weight * logp
+        return potential

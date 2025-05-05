@@ -13,11 +13,11 @@ categorical: False
 num_categories: 1
 
 include_land_potential: True
-bandwidth: 0.6
-lambda_weight: 0.02
+bandwidth: 0.8
+lambda_weight: 0.01
 
 seed: 0
-num_pairs: 6
+num_pairs: 3
 num_train_iters: 1000
 batch_size: 1024
 potential_lr: 1e-4

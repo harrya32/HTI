@@ -381,7 +381,143 @@ def generate_warped_circle_data(num_points_per_time: int,
 
     return final_data
 
+def generate_shifted_mirrored_reversed_circle_data(num_points_per_condition: int,
+                                                   num_time_points: int = 6,
+                                                   radius: float = 1.0,
+                                                   angular_concentration: float = 15.0,
+                                                   radial_std_dev: float = 0.1,
+                                                   device: torch.device = DEVICE):
+    """
+    Generates 4 conditions based on a warped circle, all starting near (0,0).
+    1. Generates a base warped circle trajectory.
+    2. Shifts it so t=0 is centered at (0,0) -> Condition 0.
+    3. Time-reverses Condition 0 -> Condition 1.
+    4. Negates x-coordinates of Condition 0 -> Condition 2.
+    5. Time-reverses Condition 2 -> Condition 3.
+
+    Args:
+        num_points_per_condition (int): Number of data points per condition per time step.
+        num_time_points (int): Number of discrete time steps for the base trajectory.
+        radius (float): The target mean radius of the base circle.
+        angular_concentration (float): Kappa parameter for the von Mises distribution.
+        radial_std_dev (float): Standard deviation for the Log-Normal radius samples.
+        device (torch.device): The device to place the output tensor on.
+
+    Returns:
+        torch.Tensor: Data tensor of shape (num_time_points, num_points_per_condition * 4, 3),
+                      where the last dimension is [x, y, condition].
+    """
+
+    base_data = generate_warped_circle_data(
+        num_points_per_time=num_points_per_condition,
+        num_time_points=num_time_points,
+        radius=radius,
+        angular_concentration=angular_concentration,
+        radial_std_dev=radial_std_dev,
+        device=device
+    )
+    base_data = torch.cat((base_data, base_data[0:1]), dim=0) # Wrap around to first time point
+
+    # 2. Shift data so t=0 is centered at (0,0) -> Condition 0
+    #cond0_data = base_data - radius
+    #subtract radius from x-coordinates
+    cond0_data = base_data.clone()
+    cond0_data[..., 0] -= radius
+
+    # 3. Time-reverse Condition 0 -> Condition 1
+    cond1_data = torch.flip(cond0_data, dims=[0])
+
+    # 4. Negate x-coordinates of Condition 0 -> Condition 2
+    cond2_data = cond0_data.clone()
+    cond2_data[..., 0] *= -1
+
+    # 5. Time-reverse Condition 2 -> Condition 3
+    cond3_data = torch.flip(cond2_data, dims=[0])
+
+    all_data_t = []
+    for t in range(num_time_points + 1):
+        data_t_conds = []
+        for c, cond_data in enumerate([cond0_data, cond1_data, cond2_data, cond3_data]):
+            coords_t = cond_data[t]
+            labels_t = torch.full((num_points_per_condition, 1), c, device=device)
+            combined_c_t = torch.cat((coords_t, labels_t), dim=1)
+            data_t_conds.append(combined_c_t)
+
+        data_t_combined = torch.cat(data_t_conds, dim=0)
+        all_data_t.append(data_t_combined)
+
+    final_data = torch.stack(all_data_t, dim=0)
+
+    return final_data[:-1] # Exclude the last time point
+
+
 if __name__ == "__main__":
+
+    #----------------------------------------------------#
+    #  SHIFTED, MIRRORED, REVERSED CIRCLE DATA           #
+    #----------------------------------------------------#
+    print("\n--- Shifted, Mirrored, Reversed Circle Data ---")
+    num_points_per_cond_smr = 100
+    num_times_smr = 3
+    angular_conc_smr = 10.0
+    radial_std_smr = 0.08
+    radius_smr = 1.0 # Base radius before shifting
+
+    smr_circle_data = generate_shifted_mirrored_reversed_circle_data(
+        num_points_per_condition=num_points_per_cond_smr,
+        num_time_points=num_times_smr,
+        angular_concentration=angular_conc_smr,
+        radial_std_dev=radial_std_smr,
+        radius=radius_smr
+    )
+
+    # Save the data
+    print(f"Generated SMR circle data shape: {smr_circle_data.shape}")
+
+    save_path_smr = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'smr_circle.pt')
+    torch.save(smr_circle_data, save_path_smr)
+    print(f"SMR circle data saved to {save_path_smr}")
+
+    # --- Plotting SMR Circle Data ---
+    fig_smr, axs_smr = plt.subplots(1, num_times_smr, figsize=(5 * num_times_smr, 5.5), sharex=True, sharey=True)
+    # Calculate plot limits based on all points across time
+    all_x_smr = smr_circle_data[..., 0].cpu().numpy().flatten()
+    all_y_smr = smr_circle_data[..., 1].cpu().numpy().flatten()
+    max_abs_coord_smr = max(np.abs(all_x_smr).max(), np.abs(all_y_smr).max()) * 1.1
+    plot_lim_smr = (-max_abs_coord_smr, max_abs_coord_smr)
+
+    colors_smr = plt.cm.tab10(np.linspace(0, 1, 4)) # Use tab10 for distinct colors
+
+    for t in range(num_times_smr):
+        data_t = smr_circle_data[t].cpu().numpy()
+        conditions_t = data_t[:, 2].astype(int)
+        axs_smr[t].set_title(f"Time t={t}")
+        for c in range(4): # Iterate through 4 conditions
+            mask = conditions_t == c
+            label = f'Cond {c}' if t == 0 else ""
+            if c == 0: label += " (Base Shifted)"
+            if c == 1: label += " (Time Reversed)"
+            if c == 2: label += " (X-Flipped)"
+            if c == 3: label += " (X-Flipped, Time Reversed)"
+            axs_smr[t].scatter(data_t[mask, 0], data_t[mask, 1], color=colors_smr[c], label=label, alpha=0.5, s=5)
+        axs_smr[t].set_xlabel("x")
+        if t == 0:
+            axs_smr[t].set_ylabel("y")
+            axs_smr[t].legend(markerscale=2, fontsize='small') # Make legend markers bigger
+        axs_smr[t].set_aspect('equal', adjustable='box')
+        axs_smr[t].grid(True)
+        axs_smr[t].set_xlim(plot_lim_smr)
+        axs_smr[t].set_ylim(plot_lim_smr)
+        # Draw origin marker
+        axs_smr[t].scatter([0], [0], marker='x', color='k', s=50, label='Origin' if t==0 else "")
+
+
+    plt.suptitle(f"Shifted, Mirrored, Reversed Circle Data ({num_times_smr} Time Points, {num_points_per_cond_smr} Pts/Cond)")
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plot_save_path_smr = os.path.join(SCRIPT_PATH, 'smr_circle_plot.png')
+    plt.savefig(plot_save_path_smr)
+    print(f"SMR circle plot saved to {plot_save_path_smr}")
+    plt.close(fig_smr) # Close the figure
 
     #------------------------#
     #   WARPED CIRCLE DATA   #
@@ -399,9 +535,11 @@ if __name__ == "__main__":
         radial_std_dev=radial_std_circle,
         radius=1.0
     )
-    print(f"Generated warped circle data shape: {warped_circle_data.shape}")
 
     # save
+    #warped_circle_data = torch.cat((warped_circle_data, warped_circle_data[0:1]), dim=0) # Wrap around to first time point
+    print(f"Generated warped circle data shape: {warped_circle_data.shape}")
+
     save_path_circle = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'warped_circle.pt')
     torch.save(warped_circle_data, save_path_circle)
     print(f"Warped circle data saved to {save_path_circle}")
@@ -430,8 +568,8 @@ if __name__ == "__main__":
     plt.suptitle(f"Warped Circle Data ({num_times_circle} Time Points, {num_points_circle} Pts/Time)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plot_save_path_circle = os.path.join(SCRIPT_PATH, 'warped_circle_plot.png')
-    plt.savefig(plot_save_path_circle)
-    print(f"Warped circle plot saved to {plot_save_path_circle}")
+    #plt.savefig(plot_save_path_circle)
+    #print(f"Warped circle plot saved to {plot_save_path_circle}")
     plt.close(fig_circle) # Close the figure to prevent display if running script
 
     #-----------------------------#
