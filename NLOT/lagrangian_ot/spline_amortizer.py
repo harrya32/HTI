@@ -54,15 +54,21 @@ class SplineMLP(nn.Module):
 
 
         if self.categorical:
-            category_index = x[:, self.D].astype(jnp.int32) 
+            category_index = x[:, self.D].astype(jnp.int32)
             embedding_dim = max(16, self.num_hidden // 4)
-            cat_embedding = nn.Embed(num_embeddings=self.num_categories, features=embedding_dim)(category_index)
+            cat_embedding = nn.Embed(num_embeddings=self.num_categories, features=embedding_dim, name='category_embedding')(category_index)
 
             h_spatial = nn.Dense(self.num_hidden, name='spatial_dense_0')(spatial_combined)
-            h_spatial = nn.relu(h_spatial)
 
-            z = jnp.concatenate([h_spatial, cat_embedding], axis=-1)
-            z = nn.Dense(self.num_hidden, name='combine_dense')(z)
+            film_hidden_dim = max(16, self.num_hidden // 4)
+            film_params = nn.Dense(film_hidden_dim, name='cat_film_dense_0')(cat_embedding)
+            film_params = nn.relu(film_params)
+            film_params = nn.Dense(2 * self.num_hidden, name='cat_film_dense_1')(film_params)
+
+            gamma = film_params[:, :self.num_hidden]
+            beta = film_params[:, self.num_hidden:]
+
+            z = gamma * h_spatial + beta
             z = nn.relu(z)
 
         else:

@@ -832,109 +832,193 @@ class Workspace:
         costs_sq = jnp.sum(diff**2, axis=2) # Shape (N, N)
         return costs_sq
 
-    def assignment_coupling(self, xs, ys, t=0, predict_batch_size: int = None):
+    def assignment_coupling(self, xs, ys, t=0):
         """
-        Solves the assignment problem between samples xs and ys.
+        Solves the assignment problem between samples xs and ys, potentially
+        separating by condition if conditional dimensions exist (C > 0).
 
-        1. Predicts destinations y_hat_i = c_transform_predictor(x_i) for all x_i.
-        2. Computes the cost matrix C_ij = ||y_hat_i - y_j||^2.
-        3. Solves the assignment problem to find the permutation minimizing sum C_i, sigma(i).
-        4. Returns the list of assigned pairs (x_i, y_sigma(i)).
+        1. If C > 0, separates samples by unique condition vectors.
+        2. For each condition (or for all samples if C=0):
+           a. Predicts destinations y_hat_i = predictor_map(x_i) for source samples x_i.
+           b. Computes the cost matrix C_ij = ||y_hat_i - y_j||^2 between predicted
+              and true target samples within the condition.
+           c. Solves the assignment problem to find the permutation minimizing sum C_i, sigma(i).
+        3. Returns the combined list of assigned pairs (x_i, y_sigma(i)) across all conditions.
 
         Args:
-            xs (jax.numpy.ndarray): Source samples, shape (N, D).
-            ys (jax.numpy.ndarray): Target samples, shape (N, D).
-            c_transform_predictor (callable): A JAX-compatible function or model
-                                            that takes source samples (batch, D)
-                                            and returns predicted targets (batch, D).
-                                            It should ideally be vmappable or handle batches.
-            predict_batch_size (int, optional): If predictor cannot handle all N samples
-                                                at once, process in batches. Defaults to None (process all).
+            xs (jax.numpy.ndarray): Source samples, shape (N, D+C).
+            ys (jax.numpy.ndarray): Target samples, shape (N, D+C).
+            t (int): The time interval index for selecting the correct predictor map.
 
         Returns:
-            list[tuple[Array, Array]]: A list of N pairs (x_i, y_j) representing the
-                                    optimal assignment based on predicted locations.
+            list[tuple[jax.numpy.ndarray, jax.numpy.ndarray]]: A list of N pairs (x_i, y_j)
+                                    representing the optimal assignment.
                                     Returns an empty list if N=0.
         """
         num_samples = xs.shape[0]
-        dim = xs.shape[1]
-
         if num_samples == 0:
             return []
 
         if num_samples != ys.shape[0]:
-            raise ValueError(f"xs and ys must have the same number of samples, but got {num_samples} and {ys.shape[0]}")
+            raise ValueError(f"xs ({num_samples}) and ys ({ys.shape[0]}) must have the same number of samples.")
         if xs.shape[1] != ys.shape[1]:
-            raise ValueError(f"xs and ys must have the same dimension D, but got {xs.shape[1]} and {ys.shape[1]}")
+            raise ValueError(f"xs ({xs.shape[1]}) and ys ({ys.shape[1]}) must have the same dimension D+C.")
         if len(xs.shape) != 2 or len(ys.shape) != 2:
-            raise ValueError("xs and ys must be 2D arrays (N, D).")
+            raise ValueError("xs and ys must be 2D arrays (N, D+C).")
 
+        all_assigned_pairs = []
 
-        y_hats_list = []
+        if self.cfg.C > 0:
+            # --- Conditional Assignment ---
+            conditions_xs = xs[:, self.cfg.D:]
+            conditions_ys = ys[:, self.cfg.D:] # Assuming conditions are consistent
 
-        try:
-            y_hats = self.predictor_map_for_assignment(xs, t=t)
-            if y_hats.shape != xs.shape:
-                raise ValueError(f"Predictor output shape {y_hats.shape} does not match input shape {xs.shape}")
-        except Exception as e:
-            print(f"Error calling c_transform_predictor on full batch: {e}")
-            raise e
+            # Find unique condition vectors present in xs (assuming they match ys)
+            unique_conditions, inverse_map_xs = jnp.unique(conditions_xs, axis=0, return_inverse=True)
+            num_conditions = unique_conditions.shape[0]
+            # print(f"Assignment coupling (t={t}): Found {num_conditions} unique conditions.")
 
-        cost_matrix_jax = self._compute_cost_matrix(y_hats, ys)
-        cost_matrix_np = np.array(cost_matrix_jax)
-        row_ind, col_ind = linear_sum_assignment(cost_matrix_np)
-        pairs = []
-        assignment = sorted(zip(row_ind, col_ind))
+            for c_idx in range(num_conditions):
+                current_condition = unique_conditions[c_idx]
+                # print(f"  Processing condition {c_idx}: {current_condition}")
 
-        for r, c in assignment:
-            pairs.append((xs[r], ys[c]))
+                # Get indices for samples matching the current condition
+                indices_xs = jnp.where(inverse_map_xs == c_idx)[0]
+                # Find matching indices in ys (assuming conditions align perfectly)
+                condition_matches_ys = jnp.all(conditions_ys == current_condition, axis=1)
+                indices_ys = jnp.where(condition_matches_ys)[0]
 
-        return pairs
-    
+                xs_c = xs[indices_xs]
+                ys_c = ys[indices_ys]
+                num_samples_c = xs_c.shape[0]
+
+                if num_samples_c == 0:
+                    # print(f"    Skipping condition {c_idx}: No samples.")
+                    continue
+                if xs_c.shape[0] != ys_c.shape[0]:
+                     # This case is assumed not to happen based on the prompt
+                     raise ValueError(f"Condition {c_idx}: Mismatch in sample count for condition {current_condition}. xs: {xs_c.shape[0]}, ys: {ys_c.shape[0]}. This violates the assumption.")
+
+                # Predict destinations for source samples of this condition
+                try:
+                    y_hats_c = self.predictor_map_for_assignment(xs_c, t=t)
+                    if y_hats_c.shape != xs_c.shape:
+                         raise ValueError(f"Predictor output shape {y_hats_c.shape} does not match input shape {xs_c.shape} for condition {c_idx}")
+                except Exception as e:
+                    print(f"Error calling predictor_map_for_assignment for condition {c_idx}: {e}")
+                    raise e
+
+                # Compute cost matrix using only spatial dimensions (D) for distance
+                cost_matrix_jax_c = self._compute_cost_matrix(y_hats_c[:, :self.cfg.D], ys_c[:, :self.cfg.D])
+                cost_matrix_np_c = np.array(cost_matrix_jax_c)
+
+                # Solve assignment for this condition
+                row_ind_c, col_ind_c = linear_sum_assignment(cost_matrix_np_c)
+
+                # Store pairs using original full samples (including condition dims)
+                condition_pairs = []
+                assignment_c = sorted(zip(row_ind_c, col_ind_c))
+                for r, c in assignment_c:
+                    # r is index within xs_c, c is index within ys_c
+                    original_x = xs_c[r]
+                    original_y = ys_c[c]
+                    condition_pairs.append((original_x, original_y))
+
+                all_assigned_pairs.extend(condition_pairs)
+                # print(f"    Assigned {len(condition_pairs)} pairs for condition {c_idx}.")
+
+        else:
+            # --- Unconditional Assignment (Original Logic) ---
+            # print(f"Assignment coupling (t={t}): No conditions (C=0).")
+            try:
+                y_hats = self.predictor_map_for_assignment(xs, t=t)
+                if y_hats.shape != xs.shape:
+                    raise ValueError(f"Predictor output shape {y_hats.shape} does not match input shape {xs.shape}")
+            except Exception as e:
+                print(f"Error calling predictor_map_for_assignment: {e}")
+                raise e
+
+            # Compute cost matrix (implicitly uses all dimensions if C=0)
+            cost_matrix_jax = self._compute_cost_matrix(y_hats, ys)
+            cost_matrix_np = np.array(cost_matrix_jax)
+
+            # Solve assignment
+            row_ind, col_ind = linear_sum_assignment(cost_matrix_np)
+
+            # Store pairs
+            assignment = sorted(zip(row_ind, col_ind))
+            for r, c in assignment:
+                all_assigned_pairs.append((xs[r], ys[c]))
+            # print(f"  Assigned {len(all_assigned_pairs)} pairs.")
+
+        if len(all_assigned_pairs) != num_samples:
+             print(f"Warning: Number of assigned pairs ({len(all_assigned_pairs)}) does not match input sample size ({num_samples}). Check conditional logic.")
+
+        return all_assigned_pairs
+
+    # ... rest of the Workspace class ...
+
     def plot_assignment_paths(self, num_samples=100):
         """
         Computes the optimal transport assignment between consecutive time points
-        based on the learned source map predictor and plots the geodesic paths
-        between the assigned pairs.
+        based on the learned source map predictor (handling conditions internally)
+        and plots the geodesic paths between the assigned pairs.
         """
         fig, ax = plt.subplots(figsize=(8, 8))
-        self._setup_ax(ax) 
+        self._setup_ax(ax) # Setup axis once for the whole plot
         colors = plt.cm.viridis(np.linspace(0, 1, self.num_pairs))
 
+        plot_key = jax.random.PRNGKey(self.cfg.seed + 42) # Use a consistent key for sampling
+
         for t in range(self.num_pairs):
-            source_samples = self.eval_samples[t]
-            target_samples = self.eval_samples[t+1]
+            source_samples_full = self.eval_samples[t]
+            target_samples_full = self.eval_samples[t+1]
 
-            #sample to num_samples
-            if source_samples.shape[0] > num_samples:
-                k1, key = jax.random.split(self.key)
-                num_to_sample = min(num_samples, source_samples.shape[0], target_samples.shape[0])
-                indices = jax.random.choice(k1, source_samples.shape[0], shape=(num_to_sample,), replace=False)
-                source_samples_plot = source_samples[indices]
-                target_samples_plot = target_samples[indices]
-            
+            # --- Sampling Logic (Consistent across conditions if C>0) ---
+            num_available = source_samples_full.shape[0]
+            num_to_sample = min(num_samples, num_available)
+
+            if num_available > num_samples:
+                plot_key, subkey = jax.random.split(plot_key)
+                # Sample indices once, these indices will be used for both source and target
+                # This maintains the implicit pairing assumption if data is ordered by condition
+                indices = jax.random.choice(subkey, num_available, shape=(num_to_sample,), replace=False)
+                source_samples_plot = source_samples_full[indices]
+                target_samples_plot = target_samples_full[indices] # Use same indices for target
             else:
-                source_samples_plot = source_samples
-                target_samples_plot = target_samples
+                source_samples_plot = source_samples_full
+                target_samples_plot = target_samples_full
 
+            # --- Get Assigned Pairs (Handles conditions internally) ---
+            # assignment_coupling now returns pairs for *all* conditions for this time t
             pairs_to_plot = self.assignment_coupling(source_samples_plot, target_samples_plot, t=t)
-            
+
+            if not pairs_to_plot:
+                print(f"Warning: No pairs returned from assignment_coupling for t={t}. Skipping plot for this interval.")
+                continue
+
+            # --- Plotting ---
+            print(f"Plotting {len(pairs_to_plot)} assigned paths for interval t={t}")
             for i, (x_i, y_j) in enumerate(pairs_to_plot):
+                # Compute path using only spatial dimensions for geometry
                 path = self.neural_dual_solver.path_jit(
-                    self.params_geometry, x_i, y_j
+                    self.params_geometry, x_i[:self.cfg.D], y_j[:self.cfg.D] # Use only spatial dims for path
                 )
 
+                # Plot path
                 ax.plot(
-                    path[:, 0], path[:, 1], 
+                    path[:, 0], path[:, 1],
                     color=colors[t],
-                    alpha=0.5, 
-                    lw=0.8      
+                    alpha=0.5,
+                    lw=0.8
                 )
-                ax.scatter(x_i[0], x_i[1], color=colors[t], s=10, alpha=0.7)
-                ax.scatter(y_j[0], y_j[1], color='red', s=10, alpha=0.7) 
-                
+                # Plot start point (spatial dims)
+                ax.scatter(x_i[0], x_i[1], color=colors[t], s=10, alpha=0.7, zorder=5)
+                # Plot assigned end point (spatial dims) - maybe use a different marker/color
+                ax.scatter(y_j[0], y_j[1], color='red', marker='x', s=10, alpha=0.7, zorder=5)
+
         ax.set_title(f"Geodesic Paths from OT Assignment (Step {self.train_step})")
-        self._clean_axis(ax) 
+        self._clean_axis(ax)
         fig.tight_layout()
 
         fname = 'assignment_paths.png'

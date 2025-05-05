@@ -83,12 +83,19 @@ class MLP(ModelBase):
         elif self.categorical:
             category_index = x[:, self.D].astype(jnp.int32)
             embedding_dim = max(16, self.dim_hidden[0] // 4)
-            cat_embedding = nn.Embed(num_embeddings=self.num_categories, features=embedding_dim)(category_index)
-            h_spatial = nn.Dense(self.dim_hidden[0], name="spatial_dense_0")(x_ambient)
-            h_spatial = nn.relu(h_spatial)
+            cat_embedding = nn.Embed(num_embeddings=self.num_categories, features=embedding_dim, name="category_embedding")(category_index)
 
-            h = jnp.concatenate([h_spatial, cat_embedding], axis=-1)
-            h = nn.Dense(self.dim_hidden[0], name="combine_dense")(h)
+            h_spatial = nn.Dense(self.dim_hidden[0], name="spatial_dense_0")(x_ambient)
+
+            film_hidden_dim = max(16, self.dim_hidden[0] // 4)
+            film_params = nn.Dense(film_hidden_dim, name="cat_film_dense_0")(cat_embedding)
+            film_params = nn.relu(film_params)
+            film_params = nn.Dense(2 * self.dim_hidden[0], name="cat_film_dense_1")(film_params)
+
+            gamma = film_params[:, :self.dim_hidden[0]]
+            beta = film_params[:, self.dim_hidden[0]:]
+
+            h = gamma * h_spatial + beta
             h = nn.relu(h)
             current_hidden_idx = 1
         else:

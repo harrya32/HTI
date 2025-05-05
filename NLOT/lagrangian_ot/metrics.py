@@ -219,13 +219,19 @@ class NeuralNetMetricEig(MetricBase):
             x_ambient = x[:self.D]
             category_index = x[self.D].astype(jnp.int32)
             embedding_dim = max(16, self.hidden_dim // 4)
-            cat_embedding = nn.Embed(num_embeddings=self.num_categories, features=embedding_dim)(category_index)
-            
-            h_spatial = nn.Dense(self.hidden_dim, name="spatial_dense_0")(x_ambient)
-            h_spatial = nn.leaky_relu(h_spatial)
+            cat_embedding = nn.Embed(num_embeddings=self.num_categories, features=embedding_dim, name="category_embedding")(category_index)
 
-            h = jnp.concatenate([h_spatial, cat_embedding], axis=-1)
-            h = nn.Dense(self.hidden_dim, name="combine_dense")(h)
+            h_spatial = nn.Dense(self.hidden_dim, name="spatial_dense_0")(x_ambient)
+
+            film_hidden_dim = max(16, self.hidden_dim // 4)
+            film_params = nn.Dense(film_hidden_dim, name="cat_film_dense_0")(cat_embedding)
+            film_params = nn.leaky_relu(film_params)
+            film_params = nn.Dense(2 * self.hidden_dim, name="cat_film_dense_1")(film_params)
+
+            gamma = film_params[:self.hidden_dim]
+            beta = film_params[self.hidden_dim:]
+
+            h = gamma * h_spatial + beta
             h = nn.leaky_relu(h)
             current_hidden_idx = 1
 

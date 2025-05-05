@@ -13,8 +13,8 @@ categorical: True
 num_categories: 4
 
 include_land_potential: True
-bandwidth: 1.2
-lambda_weight: 0.01
+bandwidth: 3
+lambda_weight: 0.03
 
 seed: 0
 num_pairs: 3
