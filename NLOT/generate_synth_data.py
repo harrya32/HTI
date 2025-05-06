@@ -456,7 +456,7 @@ if __name__ == "__main__":
     #----------------------------------------------------#
     print("\n--- Conditional Circles Data ---")
     num_points_per_cond_smr = 100
-    num_times_smr = 3
+    num_times_smr = 4
     angular_conc_smr = 10.0
     radial_std_smr = 0.08
     radius_smr = 1.0

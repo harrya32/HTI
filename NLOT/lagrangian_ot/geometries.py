@@ -551,8 +551,6 @@ class MetricManifold(GeometryBase):
         ) or issubclass(
             self.metric_initializer_fn, metrics.NeuralNetMetric
             ) or issubclass(
-                self.metric_initializer_fn, metrics.NeuralNetMetricEig
-                ) or issubclass(
                     self.metric_initializer_fn, metrics.LANDMetric):
             grid_size = 21
 
@@ -593,7 +591,7 @@ class MetricManifold(GeometryBase):
 
                 ax.set_xlim(*xlims)
                 ax.set_ylim(*ylims)
-        elif self.lagrangian_potential_initializer_fn is not None:
+        if self.lagrangian_potential_initializer_fn is not None:
             grid_size = 201
             assert len(xlims) == 2
             if ylims is None:
@@ -616,6 +614,7 @@ class MetricManifold(GeometryBase):
                     default_condition = jnp.tile(condition, (xflat.shape[0], 1))
                 else:
                     default_condition = jnp.zeros((xflat.shape[0], self.C))
+                x_eval = jnp.concatenate([xflat, default_condition], axis=-1)
             else:
                 x_eval = xflat
 

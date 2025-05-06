@@ -18,7 +18,6 @@ from copy import copy
 from flax.core import FrozenDict
 from scipy.optimize import linear_sum_assignment # For the assignment problem
 
-
 import dataclasses
 from typing import Iterator
 
@@ -33,8 +32,7 @@ plt.style.use('bmh')
 
 import sys
 from IPython.core import ultratb
-sys.excepthook = ultratb.FormattedTB(
-    mode='Plain', color_scheme='Neutral', call_pdb=1)
+sys.excepthook = ultratb.FormattedTB(mode='Plain', color_scheme='Neutral', call_pdb=1)
 
 import wandb
 
@@ -61,12 +59,14 @@ class Workspace:
             num_pairs_requested=self.cfg.get('num_pairs', None)
         )
 
+        self.all_samples = jnp.concatenate([next(s) for s in self.samplers], axis=0)
+
         if self.cfg.get('include_land_potential', False):
             lagrangian_potential_initializer_fn = lagrangian_potentials.LandPotential(
                 D=self.cfg.get('D', 2),
                 C=self.cfg.get('C', 0),
-                samples = jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)),
-                bandwidth = self.cfg.get('bandwidth', 1.0),
+                samples=self.all_samples,
+                bandwidth=self.cfg.get('bandwidth', 1.0),
                 lambda_weight=self.cfg.get('lambda_weight', 0.01),
             )
         else:
@@ -77,7 +77,7 @@ class Workspace:
             self.cfg.get('geometry_kwargs', {}),
             self.cfg.get('land_kwargs', {}),
             self.cfg.get('rbf_kwargs', {}),
-            samples=jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)),
+            samples=self.all_samples,
             D=self.cfg.get('D', 2),
             C=self.cfg.get('C', 0),
             categorical=self.cfg.get('categorical', False),
@@ -87,8 +87,7 @@ class Workspace:
 
         if 'euclidean' in self.cfg.geometry or 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry:
             if self.cfg.data is None:
-                raise ValueError(
-                    'data must be specified for euclidean and neural geometries')
+                raise ValueError('data must be specified for euclidean and neural geometries')
 
         self.has_reference_geometry = 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry
         if self.has_reference_geometry:
@@ -97,7 +96,7 @@ class Workspace:
                 self.cfg.get('geometry_kwargs', {}),
                 self.cfg.get('land_kwargs', {}),
                 self.cfg.get('rbf_kwargs', {}),
-                samples=jnp.reshape(jnp.array([next(s) for s in self.samplers]), (-1, 2)),
+                samples=self.all_samples,
                 D=self.cfg.get('D', 2),
                 C=self.cfg.get('C', 0),
                 categorical=self.cfg.get('categorical', False),
@@ -348,6 +347,8 @@ class Workspace:
         while self.train_step < self.cfg.num_train_iters:
             start = time.time()
             batches = self.sample_all_batches(self.samplers)
+
+
             new_states, info = self.update_all_states(
                 self.state_target_potentials,
                 self.state_source_maps,
@@ -357,6 +358,8 @@ class Workspace:
 
             update_step_time = time.time() - start
             self.elapsed_time += update_step_time
+
+            
 
             if self.train_step % self.cfg.metric.update_frequency == 0:
                 start = time.time()
@@ -399,9 +402,7 @@ class Workspace:
                  }, step=self.train_step)
 
 
-            if self.train_step % self.cfg.spline.update_frequency == 0 \
-                    and 'spline_model' in self.params_geometry \
-                    and self.train_step < self.cfg.num_train_iters - 1000:
+            if self.train_step % self.cfg.spline.update_frequency == 0 and 'spline_model' in self.params_geometry and self.train_step < self.cfg.num_train_iters:
                 self.fit_spline_amortizer(samplers=self.samplers, init=False)
 
             if not self.cfg.plotting.get('disable', False):
@@ -1002,7 +1003,7 @@ class Workspace:
             for i, (x_i, y_j) in enumerate(pairs_to_plot):
                 # Compute path using only spatial dimensions for geometry
                 path = self.neural_dual_solver.path_jit(
-                    self.params_geometry, x_i[:self.cfg.D], y_j[:self.cfg.D] # Use only spatial dims for path
+                    self.params_geometry, x_i, y_j # Use only spatial dims for path
                 )
 
                 # Plot path

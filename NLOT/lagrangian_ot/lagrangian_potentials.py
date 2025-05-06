@@ -207,7 +207,7 @@ class CancerPotential(LagrangianPotentialBase):
 
 class LandPotential(LagrangianPotentialBase):
     """
-    U(x) = -λ * log p̂(x),     p̂(x) = 1/N ∑_i ϕ((x - samples[i])/bandwidth)
+    U(x) = λ * log p̂(x),     p̂(x) = 1/N ∑_i ϕ((x - samples[i])/bandwidth)
     """
     samples: jnp.ndarray = None         
     bandwidth: float = 1.0             
@@ -215,6 +215,7 @@ class LandPotential(LagrangianPotentialBase):
 
     def __call__(self, x):
         assert x.ndim == 1 and x.shape[0] == self.D + self.C
+        #jax.debug.print("self.D: {D}, self.C: {C}, x.shape: {xs}, self.samples.shape: {ss_shape}", D=self.D, C=self.C, xs=x.shape, ss_shape=self.samples.shape)
 
         x_ambient = x[:self.D]
         x_cond = x[self.D:]
@@ -224,10 +225,12 @@ class LandPotential(LagrangianPotentialBase):
             mask = jnp.all(self.samples[:, self.D:] == x_cond, axis=1)
             num_cond_samples = jnp.sum(mask)
         else:
-            # If no condition, all samples are considered
             mask = jnp.ones(self.samples.shape[0], dtype=bool)
             num_cond_samples = jnp.array(self.samples.shape[0])
             
+
+        #jax.debug.print("Processing x_cond: {x_c}, num_cond_samples: {n_c_s} out of total samples: {n_total}", x_c=x_cond, n_c_s=num_cond_samples, n_total=self.samples.shape[0])
+
         diffs = (all_samples_ambient - x_ambient[None, :]) / self.bandwidth
         sq_norms = jnp.sum(diffs**2, axis=1)
         log_kernel = -0.5 * sq_norms  
@@ -241,6 +244,7 @@ class LandPotential(LagrangianPotentialBase):
         # Normalization term based on the number of samples matching the condition
         log_norm = -0.5 * self.D * jnp.log(2*jnp.pi*self.bandwidth**2) - jnp.log(num_cond_samples)
         logp = log_sum + log_norm
-        potential = - self.lambda_weight * logp
+        potential = self.lambda_weight * logp
+        #jax.debug.print("Condition (x_cond): {x_c}, Calculated Potential: {p}", x_c=x_cond, p=potential)
 
         return potential
