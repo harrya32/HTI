@@ -425,8 +425,8 @@ class Workspace:
             logf.flush()
 
             self.train_step += 1
-            if self.train_step % self.cfg.save_frequency == 0:
-                self.save()
+            #if self.train_step % self.cfg.save_frequency == 0:
+            #    self.save()
 
         if not self.cfg.plotting.get('disable', False):
             self.plot()
@@ -591,7 +591,7 @@ class Workspace:
 
         for c_idx in range(num_conditions):
 
-            fig, ax = plt.subplots(figsize=(4, 4))
+            fig, ax = plt.subplots(figsize=(8, 4))
             
             if unique_conditions is not None:
                 current_condition = unique_conditions[c_idx]
@@ -965,7 +965,7 @@ class Workspace:
         based on the learned source map predictor (handling conditions internally)
         and plots the geodesic paths between the assigned pairs.
         """
-        fig, ax = plt.subplots(figsize=(8, 8))
+        fig, ax = plt.subplots(figsize=(8, 4))
         self._setup_ax(ax) # Setup axis once for the whole plot
         colors = plt.cm.viridis(np.linspace(0, 1, self.num_pairs))
 

@@ -52,6 +52,12 @@ def get(
         return MetricManifold(
             distance_mode=DistanceModes.SQUARED_GEODESIC,
             metric_initializer_fn=metrics.EuclideanMetric,
+            C=C,
+            D=D,
+            bounds=(-2,2),
+            categorical=categorical,
+            num_categories=num_categories,
+            lagrangian_potential_initializer_fn=lagrangian_potential_initializer_fn,
             **geometry_kwargs,
         )
     elif name == "scarvelis_circle":
@@ -334,13 +340,47 @@ class Sphere(GeometryBase):
 
 
 class SqEuclidean(GeometryBase):
+    lagrangian_potential_initializer_fn: Optional[Callable] = None
+    
+    def setup(self):
+        
+        if self.lagrangian_potential_initializer_fn is not None:
+            self.lagrangian_potential_module = self.lagrangian_potential_initializer_fn
+
+
+    def lagrangian_potential(self, x):
+        return self.lagrangian_potential_module(x)
+
     def cost(self, x, y):
         assert x.ndim == 1 and y.ndim == 1
-        return 0.5 * jnp.linalg.norm(x - y) ** 2
+        x_ambient = x[:self.D]
+        y_ambient = y[:self.D]
+
+        if self.lagrangian_potential_initializer_fn is not None:
+            path = self.path(x, y)
+            potential = 0
+
+            for i in range(path.shape[0] - 1):
+                potential += self.lagrangian_potential(path[i])
+
+            return 0.5 * jnp.linalg.norm(x_ambient - y_ambient) ** 2 + potential
+        
+        else:
+            return 0.5 * jnp.linalg.norm(x_ambient - y_ambient) ** 2
 
     def path(self, x, y, num_points=20):
         assert x.ndim == 1 and y.ndim == 1
-        return jnp.linspace(x, y, num_points)
+        x_ambient = x[:self.D]
+        y_ambient = y[:self.D]
+        ambient_path = jnp.linspace(x_ambient, y_ambient, num_points)
+
+        #add back the condition
+        if self.C:
+            condition = x[self.D:]
+            condition_repeated = jnp.tile(condition.reshape(1, -1), (num_points, 1))
+            return jnp.concatenate([ambient_path, condition_repeated], axis=-1)
+        else:
+            return ambient_path
 
     def project(self, x):
         return x

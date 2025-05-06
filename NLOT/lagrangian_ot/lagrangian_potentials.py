@@ -214,8 +214,9 @@ class LandPotential(LagrangianPotentialBase):
     lambda_weight: float = 0.01         
 
     def __call__(self, x):
-        assert x.ndim == 1 and x.shape[0] == self.D + self.C
-        #jax.debug.print("self.D: {D}, self.C: {C}, x.shape: {xs}, self.samples.shape: {ss_shape}", D=self.D, C=self.C, xs=x.shape, ss_shape=self.samples.shape)
+        assert x.ndim == 1 and x.shape[0] == self.D + self.C, "Input x must have shape (D + C,)"
+        assert self.samples is not None, "Samples must be provided before calling the potential."
+        assert self.samples.ndim == 2 and self.samples.shape[1] == self.D + self.C, "Samples must have shape (N, D + C)."
 
         x_ambient = x[:self.D]
         x_cond = x[self.D:]
@@ -228,16 +229,11 @@ class LandPotential(LagrangianPotentialBase):
             mask = jnp.ones(self.samples.shape[0], dtype=bool)
             num_cond_samples = jnp.array(self.samples.shape[0])
             
-
-        #jax.debug.print("Processing x_cond: {x_c}, num_cond_samples: {n_c_s} out of total samples: {n_total}", x_c=x_cond, n_c_s=num_cond_samples, n_total=self.samples.shape[0])
-
         diffs = (all_samples_ambient - x_ambient[None, :]) / self.bandwidth
         sq_norms = jnp.sum(diffs**2, axis=1)
         log_kernel = -0.5 * sq_norms  
 
         # Mask contributions to logsumexp where condition is not met
-        # Add 0.0 where mask is True, -inf where mask is False. This effectively
-        # removes the contribution of non-matching samples in the sum inside logsumexp.
         logsumexp_contributions = log_kernel + jnp.where(mask, 0.0, -jnp.inf)
         log_sum = jax.scipy.special.logsumexp(logsumexp_contributions)
 
@@ -245,6 +241,4 @@ class LandPotential(LagrangianPotentialBase):
         log_norm = -0.5 * self.D * jnp.log(2*jnp.pi*self.bandwidth**2) - jnp.log(num_cond_samples)
         logp = log_sum + log_norm
         potential = self.lambda_weight * logp
-        #jax.debug.print("Condition (x_cond): {x_c}, Calculated Potential: {p}", x_c=x_cond, p=potential)
-
         return potential

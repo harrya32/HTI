@@ -28,10 +28,14 @@ class MetricBase(nn.Module):
 
 @dataclass
 class EuclideanMetric(MetricBase):
+    D: int = 2
+    C: int = 0
+    categorical: Optional[bool] = False
+    num_categories: Optional[int] = 4
+
     def __call__(self, x):
         assert x.ndim == 1
-        D = x.shape[0]
-        return jnp.eye(D)
+        return jnp.eye(self.D)
 
 
 @dataclass

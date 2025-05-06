@@ -1,8 +1,8 @@
 defaults:
   - _self_
 
-# neural_net_metric, neural_net_metric_eig, neural_net_metric_direct, land_metric, rbf_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee
-geometry: 'neural_net_metric_eig'
+# neural_net_metric, neural_net_metric_eig, neural_net_metric_direct, land_metric, rbf_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee, sq_euclidean_manifold
+geometry: 'sq_euclidean_manifold'
 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, 
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
@@ -13,9 +13,9 @@ C: 1
 categorical: True
 num_categories: 4
 
-include_land_potential: True
-bandwidth: 0.075
-lambda_weight: 0.01
+include_land_potential: False
+bandwidth: 0.15
+lambda_weight: 0.05
 
 seed: 0
 num_pairs: 3

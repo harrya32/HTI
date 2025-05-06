@@ -513,7 +513,7 @@ if __name__ == "__main__":
 
     plt.suptitle(f"Conditional Circles Data ({num_times_smr} Time Points, {num_points_per_cond_smr} Pts/Cond)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plot_save_path_smr = os.path.join(SCRIPT_PATH, 'conditional_circles_plot.png')
+    plot_save_path_smr = os.path.join(SCRIPT_PATH, 'plots/conditional_circles_plot.png')
     plt.savefig(plot_save_path_smr)
     print(f"Conditional circles plot saved to {plot_save_path_smr}")
     plt.close(fig_smr)
@@ -612,7 +612,7 @@ if __name__ == "__main__":
     fig_vel.colorbar(points, ax=axs_vel, label='Condition (Speed)')
     plt.suptitle(f"Velocity Conditioned Data ({num_cond_vel} Speeds, {num_points_per_cond_vel} Pts/Speed)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plot_save_path_vel = os.path.join(SCRIPT_PATH, 'velocity_conditioned_plot.png')
+    plot_save_path_vel = os.path.join(SCRIPT_PATH, 'plots/velocity_conditioned_plot.png')
     #plt.savefig(plot_save_path_vel)
     plt.close(fig_vel)
 
@@ -668,7 +668,7 @@ if __name__ == "__main__":
     fig_rot.colorbar(points, ax=axs_rot, label='Condition (Angular Speed Offset)')
     plt.suptitle(f"Rotation Conditioned Data ({num_cond_rot} Offsets, {num_points_per_cond_rot} Pts/Offset)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plot_save_path_rot = os.path.join(SCRIPT_PATH, 'rotation_conditioned_plot.png')
+    plot_save_path_rot = os.path.join(SCRIPT_PATH, 'plots/rotation_conditioned_plot.png')
     #plt.savefig(plot_save_path_rot)
     plt.close(fig_rot)
 
@@ -720,7 +720,7 @@ if __name__ == "__main__":
 
     plt.suptitle("Generated Complex Conditional Gaussian Data")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plot_save_path_5t = os.path.join(SCRIPT_PATH, 'conditional_gaussians_complex_plot.png')
+    plot_save_path_5t = os.path.join(SCRIPT_PATH, 'plots/conditional_gaussians_complex_plot.png')
     #plt.savefig(plot_save_path_5t)
     #print(f"5T Plot saved to {plot_save_path_5t}")
     plt.close(fig_5t)
@@ -780,7 +780,7 @@ if __name__ == "__main__":
 
     plt.suptitle("Generated Conditional Gaussian Data (3 Time Steps)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plot_save_path = os.path.join(SCRIPT_PATH, 'conditional_gaussians_3t_plot.png') 
+    plot_save_path = os.path.join(SCRIPT_PATH, 'plots/conditional_gaussians_3t_plot.png') 
     #plt.savefig(plot_save_path)
     #print(f"Plot saved to {plot_save_path}")
 
@@ -814,4 +814,4 @@ if __name__ == "__main__":
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(sphere_points[0, :, 0], sphere_points[0, :, 1], sphere_points[0, :, 2], c='red')
     ax.scatter(sphere_points[1, :, 0], sphere_points[1, :, 1], sphere_points[1, :, 2], c='blue')
-    #plt.savefig('sphere_data.png')
+    #plt.savefig('plots/sphere_data.png')
