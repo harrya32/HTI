@@ -596,7 +596,7 @@ class MetricManifold(GeometryBase):
         assert x.ndim == 1 and y.ndim == 1, "Input points must be 1D arrays."
         assert x.shape == y.shape, "Input points must have the same shape."
         assert x.shape[0] == self.D + self.C, "Input points must have shape (D + C,)."
-        assert 0.0 <= t_fraction <= 1.0, "t_fraction must be between 0 and 1."
+        #assert 0.0 <= t_fraction <= 1.0, "t_fraction must be between 0 and 1."
 
         x_spatial = x[:self.D]
         y_spatial = y[:self.D]
@@ -611,7 +611,7 @@ class MetricManifold(GeometryBase):
             ts=jnp.array([t_fraction])
         )
         interpolated_spatial = interpolated_spatial_array[0]
-        
+
         if self.C:
             condition_part = x[self.D:]
             interpolated_point = jnp.concatenate([interpolated_spatial, condition_part])

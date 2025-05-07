@@ -16,7 +16,7 @@ import optax
 import cloudpickle as pkl
 from copy import copy
 from flax.core import FrozenDict
-from scipy.optimize import linear_sum_assignment # For the assignment problem
+from scipy.optimize import linear_sum_assignment
 
 import dataclasses
 from typing import Iterator
@@ -359,18 +359,7 @@ class Workspace:
             self.state_target_potentials, self.state_source_maps = new_states
 
             update_step_time = time.time() - start
-            self.elapsed_time += update_step_time
-
-            #marginals eval
-            #read in testing data
-
-            test_data = jnp.load('test_data.pkl', allow_pickle=True)
-            time_0_points = test_data[0][1] #drop the time
-            self.evaluate_marginals(time_0_points, test_data[1:], plot_results=True)
-
-            return
-
-            
+            self.elapsed_time += update_step_time            
 
             if self.train_step % self.cfg.metric.update_frequency == 0:
                 start = time.time()
@@ -421,6 +410,13 @@ class Workspace:
                     self.plot_all_pairs()
                     self.plot_pushforward()
                     self.plot_assignment_paths()
+
+                    #marginals eval
+                    #read in testing data
+                    test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals.pkl'
+                    test_data = jnp.load(test_path, allow_pickle=True)
+                    time_0_points = test_data[0][1] #drop the time
+                    self.evaluate_marginals(time_0_points, test_data[1:], plot_results=True, verbose=False)
 
                 if self.train_step % self.cfg.plot_frequency == 0 and self.has_reference_geometry:
                     alignment, true_eigen_vals, learned_eigen_vals = self.eval_alignment()
@@ -1065,7 +1061,7 @@ class Workspace:
             
         return float(ot.emd2(a, b, M))
         
-    def evaluate_marginals(self, initial_samples_at_t0, evaluation_points, plot_results=False):
+    def evaluate_marginals(self, initial_samples_at_t0, evaluation_points, plot_results=False, verbose=False):
         """
         Evaluates model by transporting initial samples through learned maps and
         geodesic paths, comparing with ground truth time marginals.
@@ -1110,13 +1106,15 @@ class Workspace:
         
         plot_key = jax.random.PRNGKey(self.cfg.seed + 200)
 
-        print(f"\n--- Evaluating at {len(evaluation_points)} points ---")
+        if verbose:
+            print(f"\n--- Evaluating at {len(evaluation_points)} points ---")
 
         for k in range(self.num_pairs):
             T_k = self.time_points[k]
             T_k_plus_1 = self.time_points[k+1]
 
-            print(f"Processing interval {k}: [{T_k:.4f}, {T_k_plus_1:.4f}]")
+            if verbose:
+                print(f"Processing interval {k}: [{T_k:.4f}, {T_k_plus_1:.4f}]")
 
             params_source_map_k = self.state_source_maps[k].params
             end_samples_pred_at_Tk_plus_1 = self.neural_dual_solver.source_map_apply_jit(
@@ -1179,7 +1177,8 @@ class Workspace:
                     per_condition_metric_values = []
                     num_conditions_evaluated = 0
 
-                    print(f"Evaluated at time {eval_time:.4f} ({desc}):")
+                    if verbose:
+                        print(f"Evaluated at time {eval_time:.4f} ({desc}):")
                     for cond_idx, true_cond_vec in enumerate(unique_true_conditions):
                         true_cond_mask = jnp.all(true_conditions_all == true_cond_vec, axis=1)
                         true_samples_for_cond = true_eval_samples[true_cond_mask]
@@ -1198,7 +1197,8 @@ class Workspace:
                             metric_val_cond_str = f"Wasserstein: {wasserstein_dist:.4e} (Pred N={predicted_spatial_for_cond.shape[0]}, Actual N={actual_spatial_for_cond.shape[0]})"
                             metric_val = float(wasserstein_dist)
                             
-                            print(f"Cond {cond_str}: {metric_val_cond_str}")
+                            if verbose:
+                                print(f"Cond {cond_str}: {metric_val_cond_str}")
                             if not np.isnan(metric_val):
                                 per_condition_metric_values.append(metric_val)
                             num_conditions_evaluated +=1
@@ -1208,7 +1208,8 @@ class Workspace:
                     if num_conditions_evaluated > 0 and per_condition_metric_values:
                         avg_metric_across_conditions = jnp.mean(jnp.array(per_condition_metric_values))
                         metrics_log[f"eval_time_{eval_time:.4f}_avg_cond_metric"] = float(avg_metric_across_conditions)
-                        print(f"Avg across {len(per_condition_metric_values)} conditions: {avg_metric_across_conditions:.4e}")
+                        if verbose:
+                            print(f"Avg across {len(per_condition_metric_values)} conditions: {avg_metric_across_conditions:.4e}")
                     elif num_conditions_evaluated > 0:
                          print(f"No valid numerical metrics to average across {num_conditions_evaluated} conditions with samples.")
                     else:
@@ -1218,19 +1219,53 @@ class Workspace:
                     wasserstein_dist = self.compute_wasserstein_distance(predicted_spatial_overall, actual_spatial_overall)
                     metrics_log[f"eval_time_{eval_time:.4f}_wasserstein"] = float(wasserstein_dist)
                     metric_val_str = f"Wasserstein: {wasserstein_dist:.4e} (Pred N={predicted_spatial_overall.shape[0]}, Actual N={actual_spatial_overall.shape[0]})"
-                    print(f"Evaluated at time {eval_time:.4f} ({desc}): {metric_val_str}")
+                    if verbose:
+                        print(f"Evaluated at time {eval_time:.4f} ({desc}): {metric_val_str}")
 
                 if plot_results and self.cfg.D >= 2:
                     fig_comp, ax_comp = plt.subplots(figsize=(6, 6))
                     self._setup_ax(ax_comp)
                     num_plot = self.cfg.plotting.get('num_eval_plot', 200)
                     pk1, pk2, plot_key = jax.random.split(plot_key, 3)
-                    
-                    idx_pred = jax.random.choice(pk1, predicted_spatial_overall.shape[0], shape=(min(num_plot, predicted_spatial_overall.shape[0]),), replace=False)
-                    idx_actual = jax.random.choice(pk2, actual_spatial_overall.shape[0], shape=(min(num_plot, actual_spatial_overall.shape[0]),), replace=False)
 
-                    ax_comp.scatter(predicted_spatial_overall[idx_pred, 0], predicted_spatial_overall[idx_pred, 1], alpha=0.6, label=f'Predicted (t={eval_time:.3f})', s=20, color='blue')
-                    ax_comp.scatter(actual_spatial_overall[idx_actual, 0], actual_spatial_overall[idx_actual, 1], alpha=0.6, label=f'Actual Test (t={eval_time:.3f})', s=20, color='red', marker='x')
+                    if self.cfg.C > 0:  # If conditions exist
+                        true_conditions_all = true_eval_samples[:, self.cfg.D:]
+                        predicted_conditions_all = predicted_eval_samples[:, self.cfg.D:]
+                        unique_conditions = jnp.unique(true_conditions_all, axis=0)
+                        cmap = plt.cm.get_cmap('tab10', len(unique_conditions)) 
+
+                        for cond_idx, cond_vec in enumerate(unique_conditions):
+                            cond_mask_true = jnp.all(true_conditions_all == cond_vec, axis=1)
+                            cond_mask_pred = jnp.all(predicted_conditions_all == cond_vec, axis=1)
+
+                            true_cond_samples = actual_spatial_overall[cond_mask_true]
+                            pred_cond_samples = predicted_spatial_overall[cond_mask_pred]
+
+                            idx_pred = jax.random.choice(pk1, pred_cond_samples.shape[0], shape=(min(num_plot, pred_cond_samples.shape[0]),), replace=False)
+                            idx_actual = jax.random.choice(pk2, true_cond_samples.shape[0], shape=(min(num_plot, true_cond_samples.shape[0]),), replace=False)
+
+                            ax_comp.scatter(
+                                pred_cond_samples[idx_pred, 0], pred_cond_samples[idx_pred, 1],
+                                alpha=0.6, label=f'Predicted Cond {cond_idx} (t={eval_time:.3f})', s=20, color=cmap(cond_idx),
+                                edgecolors='black', linewidths=0.5
+                            )
+                            ax_comp.scatter(
+                                true_cond_samples[idx_actual, 0], true_cond_samples[idx_actual, 1],
+                                alpha=0.3, label=f'Actual Cond {cond_idx} (t={eval_time:.3f})', s=20, color=cmap(cond_idx), marker='x'
+                            )
+                    else: 
+                        idx_pred = jax.random.choice(pk1, predicted_spatial_overall.shape[0], shape=(min(num_plot, predicted_spatial_overall.shape[0]),), replace=False)
+                        idx_actual = jax.random.choice(pk2, actual_spatial_overall.shape[0], shape=(min(num_plot, actual_spatial_overall.shape[0]),), replace=False)
+
+                        ax_comp.scatter(
+                            predicted_spatial_overall[idx_pred, 0], predicted_spatial_overall[idx_pred, 1],
+                            alpha=0.6, label=f'Predicted (t={eval_time:.3f})', s=20, color='blue'
+                        )
+                        ax_comp.scatter(
+                            actual_spatial_overall[idx_actual, 0], actual_spatial_overall[idx_actual, 1],
+                            alpha=0.3, label=f'Actual Test (t={eval_time:.3f})', s=20, color='red', marker='x'
+                        )
+
                     ax_comp.legend()
                     ax_comp.set_title(f'Test Eval: t={eval_time:.3f} (Interval {k}, Step {self.train_step})')
                     comp_fname = f'test_eval_time_{eval_time:.3f}.png'
@@ -1243,7 +1278,8 @@ class Workspace:
 
             current_transported_samples = end_samples_pred_at_Tk_plus_1
 
-        print("--- Finished Marginal Evaluation ---")
+        if verbose:
+            print("--- Finished Marginal Evaluation ---")
         if wandb.run is not None and metrics_log:
             wandb.log({"test_arbitrary_time_metrics": metrics_log}, step=self.train_step)
         

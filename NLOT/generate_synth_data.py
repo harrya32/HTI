@@ -5,6 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 from scipy.stats import vonmises, lognorm
+import pickle
+import jax.numpy as jnp
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -446,10 +448,209 @@ def generate_conditional_circles_data(num_points_per_condition: int,
 
     final_data = torch.stack(all_data_t, dim=0)
 
-    return final_data # Exclude the last time point
+    return final_data
 
+
+def generate_conditional_circle_at_time(num_points: int, time: float, radius: float = 1.0, angular_concentration: float = 5.0, radial_std_dev: float = 0.08):
+    """
+    Generate the conditional circle data for Condition 0 at an arbitrary time point.
+
+    Args:
+        num_points (int): Number of points to generate.
+        time (float): Time point (normalized between 0 and 1).
+        radius (float): Radius of the circle.
+        angular_concentration (float): Concentration parameter for the von Mises distribution.
+        radial_std_dev (float): Standard deviation for the radial distribution.
+
+    Returns:
+        torch.Tensor: Generated data points of shape (num_points, 2).
+    """
+    # Step 1: Generate base warped circle data at t=0
+    base_data = generate_warped_circle_data(
+        num_points_per_time=num_points,
+        num_time_points=1,  # Only need one time point
+        radius=radius,
+        angular_concentration=angular_concentration,
+        radial_std_dev=radial_std_dev,
+        device=DEVICE
+    )[0]  # Extract the first (and only) time point
+
+    # Step 2: Convert time to angle
+    theta = 2 * math.pi * time  # Map time to angle
+
+    # Step 3: Shift points along the circle
+    x, y = base_data[:, 0], base_data[:, 1]
+    r = torch.sqrt(x**2 + y**2)  # Compute radius
+    phi = torch.atan2(y, x)  # Compute angle
+    phi_shifted = phi + theta  # Shift angle
+
+    # Convert back to Cartesian coordinates
+    x_shifted = r * torch.cos(phi_shifted)
+    y_shifted = r * torch.sin(phi_shifted)
+
+    # Combine shifted points
+    shifted_data = torch.stack((x_shifted, y_shifted), dim=1)
+
+    return shifted_data
+
+def generate_conditional_circle_marginal(num_points_per_condition: int,
+                                         time: float,
+                                         radius: float = 1.0,
+                                         angular_concentration: float = 15.0,
+                                         radial_std_dev: float = 0.1,
+                                         device: torch.device = DEVICE):
+    """
+    Generate a marginal distribution for all 4 conditions at a single continuous time.
+
+    Args:
+        num_points_per_condition (int): Number of samples per condition.
+        time (float): Continuous time input (normalized between 0 and 1).
+        radius (float): Radius of the circle.
+        angular_concentration (float): Concentration parameter for the von Mises distribution.
+        radial_std_dev (float): Standard deviation for the radial distribution.
+        device (torch.device): The device to place the output tensor on.
+
+    Returns:
+        torch.Tensor: Data tensor of shape (4 * num_points_per_condition, 3),
+                      where the last dimension is [x, y, condition].
+    """
+   
+    base_data = generate_warped_circle_data(
+        num_points_per_time=num_points_per_condition,
+        num_time_points=1,  
+        radius=radius, 
+        angular_concentration=angular_concentration,
+        radial_std_dev=radial_std_dev,
+        device=device
+    )[0]  
+
+    def transform_points(points_xy, t_effective, current_radius):
+        theta_shift = 2 * math.pi * t_effective  
+
+        x_orig, y_orig = points_xy[:, 0], points_xy[:, 1]
+        r_orig = torch.sqrt(x_orig**2 + y_orig**2)  
+        phi_orig = torch.atan2(y_orig, x_orig)  
+
+        phi_shifted = phi_orig + theta_shift  
+
+        x_new = r_orig * torch.cos(phi_shifted)
+        y_new = r_orig * torch.sin(phi_shifted)
+
+
+        x_new_shifted = x_new - current_radius 
+        return torch.stack((x_new_shifted, y_new), dim=1)
+
+
+    cond0_xy = transform_points(base_data, time, radius)
+    
+    time_rev = 1.0 - time
+    cond1_xy = transform_points(base_data, time_rev, radius) 
+   
+    cond2_xy = cond0_xy.clone()
+    cond2_xy[..., 0] *= -1
+    
+    cond3_xy = cond1_xy.clone()
+    cond3_xy[..., 0] *= -1
+    cond0_data = torch.cat((cond0_xy, torch.full((num_points_per_condition, 1), 0, device=device, dtype=cond0_xy.dtype)), dim=1)
+    cond1_data = torch.cat((cond1_xy, torch.full((num_points_per_condition, 1), 1, device=device, dtype=cond1_xy.dtype)), dim=1)
+    cond2_data = torch.cat((cond2_xy, torch.full((num_points_per_condition, 1), 2, device=device, dtype=cond2_xy.dtype)), dim=1)
+    cond3_data = torch.cat((cond3_xy, torch.full((num_points_per_condition, 1), 3, device=device, dtype=cond3_xy.dtype)), dim=1)
+
+    final_data = torch.cat((cond0_data, cond1_data, cond2_data, cond3_data), dim=0)
+
+    return final_data
 
 if __name__ == "__main__":
+
+    # Parameters
+    num_points_per_condition = 100
+    time = 0.125
+    radius = 1.0
+    angular_concentration = 5.0
+    radial_std_dev = 0.08
+
+    # Generate the marginal data for all 4 conditions
+    marginal_data = generate_conditional_circle_marginal(
+        num_points_per_condition=num_points_per_condition,
+        time=time,
+        radius=radius,
+        angular_concentration=angular_concentration,
+        radial_std_dev=radial_std_dev,
+        device=DEVICE
+    )
+
+    print(f"Generated marginal data shape: {marginal_data.shape}")
+
+    # Extract x, y, and condition labels
+    x = marginal_data[:, 0].cpu().numpy()
+    y = marginal_data[:, 1].cpu().numpy()
+    conditions = marginal_data[:, 2].cpu().numpy()
+
+    # Plotting
+    plt.figure(figsize=(8, 8))
+    colors = ['blue', 'orange', 'green', 'red']
+    labels = ['Condition 0 (Base)', 'Condition 1 (Time-Reversed)', 
+            'Condition 2 (X-Flipped)', 'Condition 3 (X-Flipped, Time-Reversed)']
+
+    for c in range(4):
+        mask = conditions == c
+        plt.scatter(x[mask], y[mask], label=labels[c], color=colors[c], alpha=0.6, s=10)
+
+    # Add unit circle for reference
+    circle_ref = plt.Circle((-1, 0), radius, color='black', fill=False, linestyle='--', linewidth=1)
+    neg_circle_ref = plt.Circle((1, 0), -radius, color='black', fill=False, linestyle='--', linewidth=1)
+    plt.gca().add_patch(circle_ref)
+    plt.gca().add_patch(neg_circle_ref)
+
+    # Formatting
+    plt.gca().set_aspect('equal', adjustable='box')
+    plt.title(f"Marginal Distribution at Time {time}")
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.legend()
+    plt.grid(True)
+    plt.xlim(-2.5, 2.5)
+    plt.ylim(-1.5, 1.5)
+
+    # Show the plot
+    plt.savefig(os.path.join(SCRIPT_PATH, 'plots', f'conditional_circles_marginal_time_{time}.png'))
+
+    # Define the times for which to generate samples
+    times = [0, 0.125, 0.375, 0.625, 0.875]
+
+    # Initialize the list to store (time, samples) tuples
+    time_samples_list = []
+
+    # Generate samples for each time
+    for t in times:
+        samples = generate_conditional_circle_marginal(
+            num_points_per_condition=num_points_per_condition,
+            time=t,
+            radius=radius,
+            angular_concentration=angular_concentration,
+            radial_std_dev=radial_std_dev,
+            device=DEVICE
+        )
+        #convert samples to jnp
+        samples = jnp.array(samples.cpu().numpy())
+
+        time_samples_list.append((t, samples))
+
+    # Print the result
+    for time, samples in time_samples_list:
+        print(f"Time: {time}, Samples Shape: {samples.shape}")
+
+    #save time_samples_list as pkl
+
+    with open(os.path.join(SCRIPT_PATH, 'eval_marginals.pkl'), 'wb') as f:
+        pickle.dump(time_samples_list, f)
+    
+    print(time_samples_list[0])
+    print(time_samples_list[1])
+    print(time_samples_list[2])
+    print(time_samples_list[3])
+    print(time_samples_list[4])
+    
 
     #----------------------------------------------------#
     #  Conditional Circles DATA           #
@@ -472,7 +673,7 @@ if __name__ == "__main__":
 
     # save
     save_path_smr = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_circles.pt')
-    torch.save(smr_circle_data, save_path_smr)
+    #torch.save(smr_circle_data, save_path_smr)
     print(f"Conditional circles data saved to {save_path_smr}")
 
     # --- Plotting SMR Circle Data ---
@@ -514,7 +715,7 @@ if __name__ == "__main__":
     plt.suptitle(f"Conditional Circles Data ({num_times_smr} Time Points, {num_points_per_cond_smr} Pts/Cond)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plot_save_path_smr = os.path.join(SCRIPT_PATH, 'plots/conditional_circles_plot.png')
-    plt.savefig(plot_save_path_smr)
+    #plt.savefig(plot_save_path_smr)
     print(f"Conditional circles plot saved to {plot_save_path_smr}")
     plt.close(fig_smr)
 
