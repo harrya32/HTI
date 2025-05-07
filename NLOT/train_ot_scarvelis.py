@@ -35,6 +35,7 @@ from IPython.core import ultratb
 sys.excepthook = ultratb.FormattedTB(mode='Plain', color_scheme='Neutral', call_pdb=1)
 
 import wandb
+import ot
 
 class Workspace:
     def __init__(self, cfg):
@@ -360,6 +361,15 @@ class Workspace:
             update_step_time = time.time() - start
             self.elapsed_time += update_step_time
 
+            #marginals eval
+            #read in testing data
+
+            test_data = jnp.load('test_data.pkl', allow_pickle=True)
+            time_0_points = test_data[0][1] #drop the time
+            self.evaluate_marginals(time_0_points, test_data[1:], plot_results=True)
+
+            return
+
             
 
             if self.train_step % self.cfg.metric.update_frequency == 0:
@@ -433,6 +443,9 @@ class Workspace:
             self.plot()
             if self.has_reference_geometry: 
                 self.eval_alignment()
+
+
+        
 
 
     def eval_alignment(self):
@@ -1029,7 +1042,30 @@ class Workspace:
         wandb.log({"plots/assignment_paths": wandb.Image(fname)}, step=self.train_step)
         plt.close(fig)
 
-    def evaluate_at_arbitrary_times(self, initial_samples_at_t0, evaluation_points, plot_results=False):
+
+    def compute_wasserstein_distance(self, samples1, samples2):
+        """
+        Compute Wasserstein distance between two sets of samples using POT library.
+        
+        Args:
+            samples1: JAX array of shape (n_samples1, dim)
+            samples2: JAX array of shape (n_samples2, dim)
+            
+        Returns:
+            float: The Wasserstein distance
+        """
+        # Convert from JAX arrays to numpy for POT library compatibility
+        samples1_np = np.array(samples1)
+        samples2_np = np.array(samples2)
+        
+
+        M = ot.dist(samples1_np, samples2_np)
+        a = np.ones(samples1_np.shape[0]) / samples1_np.shape[0]  # uniform weights
+        b = np.ones(samples2_np.shape[0]) / samples2_np.shape[0]  # uniform weights
+            
+        return float(ot.emd2(a, b, M))
+        
+    def evaluate_marginals(self, initial_samples_at_t0, evaluation_points, plot_results=False):
         """
         Evaluates model by transporting initial samples through learned maps and
         geodesic paths, comparing with ground truth time marginals.
@@ -1157,21 +1193,10 @@ class Workspace:
                         cond_str = condition_to_str(true_cond_vec)
 
                         if predicted_spatial_for_cond.shape[0] > 0 and actual_spatial_for_cond.shape[0] > 0:
-                            metric_val_cond_str = "N/A"
-                            metric_val = np.nan
-                            if predicted_spatial_for_cond.shape[0] == actual_spatial_for_cond.shape[0]:
-                                mse_cond = jnp.mean((predicted_spatial_for_cond - actual_spatial_for_cond)**2)
-                                metrics_log[f"eval_time_{eval_time:.4f}_cond_{cond_str}_mse"] = float(mse_cond)
-                                metric_val_cond_str = f"MSE: {mse_cond:.4e}"
-                                metric_val = float(mse_cond)
-                            else:
-                                mean_pred_cond = jnp.mean(predicted_spatial_for_cond, axis=0)
-                                mean_actual_cond = jnp.mean(actual_spatial_for_cond, axis=0)
-                                diff_means_cond = jnp.linalg.norm(mean_pred_cond - mean_actual_cond)
-                                metrics_log[f"eval_time_{eval_time:.4f}_cond_{cond_str}_mean_diff"] = float(diff_means_cond)
-                                metric_val_cond_str = (f"Mean Diff: {diff_means_cond:.4f} "
-                                                       f"(Pred N={predicted_spatial_for_cond.shape[0]}, Actual N={actual_spatial_for_cond.shape[0]})")
-                                metric_val = float(diff_means_cond)
+                            wasserstein_dist = self.compute_wasserstein_distance(predicted_spatial_for_cond, actual_spatial_for_cond)
+                            metrics_log[f"eval_time_{eval_time:.4f}_cond_{cond_str}_wasserstein"] = float(wasserstein_dist)
+                            metric_val_cond_str = f"Wasserstein: {wasserstein_dist:.4e} (Pred N={predicted_spatial_for_cond.shape[0]}, Actual N={actual_spatial_for_cond.shape[0]})"
+                            metric_val = float(wasserstein_dist)
                             
                             print(f"Cond {cond_str}: {metric_val_cond_str}")
                             if not np.isnan(metric_val):
@@ -1190,20 +1215,10 @@ class Workspace:
                         print(f"No conditions evaluated or no matching samples found for any condition.")
 
                 else: 
-                    metric_val_str = "N/A"
-                    if predicted_spatial_overall.shape[0] == actual_spatial_overall.shape[0]:
-                        mse = jnp.mean((predicted_spatial_overall - actual_spatial_overall)**2)
-                        metrics_log[f"eval_time_{eval_time:.4f}_mse"] = float(mse)
-                        metric_val_str = f"MSE: {mse:.4e}"
-                    else:
-                        mean_pred = jnp.mean(predicted_spatial_overall, axis=0)
-                        mean_actual = jnp.mean(actual_spatial_overall, axis=0)
-                        diff_means = jnp.linalg.norm(mean_pred - mean_actual)
-                        metrics_log[f"eval_time_{eval_time:.4f}_mean_diff"] = float(diff_means)
-                        metric_val_str = (f"Mean Diff: {diff_means:.4f} "
-                                          f"(Pred N={predicted_spatial_overall.shape[0]}, Actual N={actual_spatial_overall.shape[0]})")
-                    print(f"    Evaluated at time {eval_time:.4f} ({desc}): {metric_val_str}")
-
+                    wasserstein_dist = self.compute_wasserstein_distance(predicted_spatial_overall, actual_spatial_overall)
+                    metrics_log[f"eval_time_{eval_time:.4f}_wasserstein"] = float(wasserstein_dist)
+                    metric_val_str = f"Wasserstein: {wasserstein_dist:.4e} (Pred N={predicted_spatial_overall.shape[0]}, Actual N={actual_spatial_overall.shape[0]})"
+                    print(f"Evaluated at time {eval_time:.4f} ({desc}): {metric_val_str}")
 
                 if plot_results and self.cfg.D >= 2:
                     fig_comp, ax_comp = plt.subplots(figsize=(6, 6))

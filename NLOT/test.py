@@ -1,8 +1,10 @@
 import jax.numpy as jnp
 import torch
+import numpy as np
+import pickle
 
 #read in the samples
-samples = torch.load("scarvelis_data/conditional_circles.pt").cpu().numpy()[:-1]
+"""samples = torch.load("scarvelis_data/conditional_circles.pt").cpu().numpy()[:-1]
 D = 2
 C = 1
 
@@ -35,4 +37,22 @@ h_grid = h0 * (10.0 ** ks)
 print("σ per coord:", sigma_per_coord)
 print("σ isotropic:", sigma_iso)
 print("h0 (Silverman):", h0)
-print("candidate h values:", h_grid)
+print("candidate h values:", h_grid)"""
+
+
+#read in conditional circles data, and make it a fake testing file, by creating a list of tuples of (time, samples) for each time point in the data, and saving as a pkl
+
+samples = torch.load("scarvelis_data/conditional_circles.pt").cpu().numpy()
+
+samples_0 = (0, jnp.array(samples[0]))
+samples_1 = (0.25, jnp.array(samples[1]))
+samples_2 = (0.5, jnp.array(samples[2]))
+samples_3 = (0.75, jnp.array(samples[3]))
+samples_4 = (1.0, jnp.array(samples[4]))
+
+samples_list = [samples_0, samples_1, samples_2, samples_3, samples_4]
+
+with open("test_data.pkl", "wb") as f:
+    pickle.dump(samples_list, f)
+
+

@@ -15,5 +15,5 @@ Our method uses guided conditional flow matching, matching geodesic velocities e
 - Define meaningful cancer reward fn., and the hyperparam of interest
 - Produce a few cancer datasets, and train NLOT on them to see if it can learn
 - Write down/check how our acq. fn. is working/averaging across pairs/conditions
-- HIV/diabetes/sepsis sims are secondary options which need varying adaptations to get into our setting. Start with HIV, doing similar reward shaping to cancer example.
 - Adversarial robustness in time series forecasting example, ideally on MIMIC data
+- HIV/diabetes/sepsis sims are secondary options which need varying adaptations to get into our setting. Start with HIV, doing similar reward shaping to cancer example.

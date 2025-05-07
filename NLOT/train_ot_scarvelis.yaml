@@ -1,7 +1,8 @@
 defaults:
   - _self_
 
-# neural_net_metric, neural_net_metric_eig, neural_net_metric_direct, land_metric, rbf_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee, sq_euclidean_manifold
+# neural_net_metric, neural_net_metric_eig, neural_net_metric_direct, land_metric, rbf_metric, 
+# scarvelis_circle, scarvelis_xpath, scarvelis_vee, sq_euclidean_manifold
 geometry: 'neural_net_metric_eig'
 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, 
@@ -14,7 +15,7 @@ categorical: True
 num_categories: 4
 
 include_land_potential: True
-bandwidth: 0.1 #0.284 # testing silverman h0
+bandwidth: 0.1
 lambda_weight: 0.01
 
 seed: 0
@@ -30,11 +31,6 @@ save_frequency: ${plot_frequency}
 plotting:
   disable: False
   num_pairs_plot: 100
-
-land_kwargs:
-  alpha: 1
-  rho: 0.001
-  gamma: 0.125
   
 metric:
   warmup_steps: 50

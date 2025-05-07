@@ -452,7 +452,7 @@ def generate_conditional_circles_data(num_points_per_condition: int,
 if __name__ == "__main__":
 
     #----------------------------------------------------#
-    #  SHIFTED, MIRRORED, REVERSED CIRCLE DATA           #
+    #  Conditional Circles DATA           #
     #----------------------------------------------------#
     print("\n--- Conditional Circles Data ---")
     num_points_per_cond_smr = 100
@@ -468,12 +468,12 @@ if __name__ == "__main__":
         radial_std_dev=radial_std_smr,
         radius=radius_smr
     )
-    print(f"Generated SMR circle data shape: {smr_circle_data.shape}")
+    print(f"Generated conditional circles data shape: {smr_circle_data.shape}")
 
     # save
     save_path_smr = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_circles.pt')
     torch.save(smr_circle_data, save_path_smr)
-    print(f"SMR circle data saved to {save_path_smr}")
+    print(f"Conditional circles data saved to {save_path_smr}")
 
     # --- Plotting SMR Circle Data ---
     fig_smr, axs_smr = plt.subplots(1, num_times_smr, figsize=(5 * num_times_smr, 5.5), sharex=True, sharey=True)
