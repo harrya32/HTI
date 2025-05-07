@@ -580,7 +580,45 @@ class MetricManifold(GeometryBase):
         return x[:, :self.D]
 
     
+    def point_on_path(self, x: jax.numpy.ndarray, y: jax.numpy.ndarray, t_fraction: float) -> jax.numpy.ndarray:
+        """
+        Computes a point on the spline-based geodesic path between x and y
+        at a given time t_fraction.
+
+        Args:
+            x: Starting point (D+C dimensional).
+            y: Ending point (D+C dimensional).
+            t_fraction: Fractional time, float between 0.0 and 1.0.
+
+        Returns:
+            The interpolated point (D+C dimensional).
+        """
+        assert x.ndim == 1 and y.ndim == 1, "Input points must be 1D arrays."
+        assert x.shape == y.shape, "Input points must have the same shape."
+        assert x.shape[0] == self.D + self.C, "Input points must have shape (D + C,)."
+        assert 0.0 <= t_fraction <= 1.0, "t_fraction must be between 0 and 1."
+
+        x_spatial = x[:self.D]
+        y_spatial = y[:self.D]
+
+        spline_p = self.predict_spline_params(x, y) 
+
+        interpolated_spatial_array = splines.compute_spline(
+            x=x_spatial,
+            y=y_spatial,
+            basis=self.spline_amortizer.basis, 
+            params=spline_p,
+            ts=jnp.array([t_fraction])
+        )
+        interpolated_spatial = interpolated_spatial_array[0]
         
+        if self.C:
+            condition_part = x[self.D:]
+            interpolated_point = jnp.concatenate([interpolated_spatial, condition_part])
+        else:
+            interpolated_point = interpolated_spatial
+            
+        return interpolated_point
 
     def add_plot_background(self, params, axs, xlims, ylims=None, alpha=1.0, condition=None):
         if not isinstance(axs, np.ndarray):

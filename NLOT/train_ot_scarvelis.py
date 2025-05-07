@@ -1029,6 +1029,210 @@ class Workspace:
         wandb.log({"plots/assignment_paths": wandb.Image(fname)}, step=self.train_step)
         plt.close(fig)
 
+    def evaluate_at_arbitrary_times(self, initial_samples_at_t0, evaluation_points, plot_results=False):
+        """
+        Evaluates model by transporting initial samples through learned maps and
+        geodesic paths, comparing with ground truth time marginals.
+
+        For each interval [T_k, T_{k+1}], samples are transported from T_k.
+        If an `eval_time` falls within this interval:
+        - At T_k or T_{k+1}: uses directly transported samples.
+        - Between T_k and T_{k+1}: interpolates along the geodesic path for time (eval_time - T_k) / (T_{k+1} - T_k).
+
+        Args:
+            initial_samples_at_t0 (jax.numpy.ndarray): Samples at self.time_points[0].
+            evaluation_points (list[tuple[float, jax.numpy.ndarray]]):
+                List of (eval_time, ground_truth_samples_at_eval_time).
+            plot_results (bool): If True, logs plots of comparisons.
+
+        Returns:
+            dict: Discrepancy metrics for each evaluation point.
+        """
+        evaluation_points.sort(key=lambda x: x[0])
+        min_train_time = self.time_points[0]
+        max_train_time = self.time_points[self.num_pairs]
+
+        valid_evaluation_points = []
+        for t_eval, samples in evaluation_points:
+            if not (min_train_time <= t_eval <= max_train_time):
+                print(f"Warning: Evaluation time {t_eval:.4f} is outside the trained range "
+                      f"[{min_train_time:.4f}, {max_train_time:.4f}]. Skipping.")
+                continue
+            if samples.shape[0] == 0:
+                print(f"Warning: No samples provided for evaluation time {t_eval:.4f}. Skipping.")
+                continue
+            valid_evaluation_points.append((t_eval, samples))
+        
+        if not valid_evaluation_points:
+            print("No valid evaluation points within the trained time range or with samples.")
+            return {}
+        evaluation_points = valid_evaluation_points
+        
+        metrics_log = {}
+        current_transported_samples = initial_samples_at_t0
+        eval_point_idx = 0
+        
+        plot_key = jax.random.PRNGKey(self.cfg.seed + 200)
+
+        print(f"\n--- Evaluating at {len(evaluation_points)} points ---")
+
+        for k in range(self.num_pairs):
+            T_k = self.time_points[k]
+            T_k_plus_1 = self.time_points[k+1]
+
+            print(f"Processing interval {k}: [{T_k:.4f}, {T_k_plus_1:.4f}]")
+
+            params_source_map_k = self.state_source_maps[k].params
+            end_samples_pred_at_Tk_plus_1 = self.neural_dual_solver.source_map_apply_jit(
+                {'params': params_source_map_k},
+                current_transported_samples
+            )
+
+            @jax.jit
+            def interpolate_batch_in_interval(current_geom_params, start_samples_batch, end_samples_pred_for_batch, s_fraction_val):
+                return jax.vmap(
+                    lambda x_start, y_end, s_f: self.geometry.apply(
+                        {'params': current_geom_params},
+                        x_start,
+                        y_end,
+                        s_f,
+                        method=self.geometry.point_on_path
+                    ), 
+                    in_axes=(0, 0, None)
+                )(start_samples_batch, end_samples_pred_for_batch, s_fraction_val)
+
+            while eval_point_idx < len(evaluation_points):
+                eval_time, true_eval_samples = evaluation_points[eval_point_idx]
+                
+                if eval_time > T_k_plus_1:
+                    break 
+                
+                predicted_eval_samples = None
+                desc = ""
+
+                if eval_time == T_k:
+                    predicted_eval_samples = current_transported_samples
+                    desc = f"at T_k={T_k:.4f} (start of interval {k})"
+                elif eval_time == T_k_plus_1:
+                    predicted_eval_samples = end_samples_pred_at_Tk_plus_1
+                    desc = f"at T_k+1={T_k_plus_1:.4f} (end of interval {k}, full transport)"
+                else:
+                    s_fraction = (eval_time - T_k) / (T_k_plus_1 - T_k)
+                    predicted_eval_samples = interpolate_batch_in_interval(
+                        self.params_geometry,
+                        current_transported_samples,
+                        end_samples_pred_at_Tk_plus_1,
+                        s_fraction
+                    )
+                    desc = f"interpolated at s={s_fraction:.3f} in [{T_k:.4f}, {T_k_plus_1:.4f}]"
+                
+                
+                # --- Metric Calculation (Overall and Per Condition) ---
+                predicted_spatial_overall = predicted_eval_samples[:, :self.cfg.D]
+                actual_spatial_overall = true_eval_samples[:, :self.cfg.D]
+
+                if self.cfg.C > 0:
+                    true_conditions_all = true_eval_samples[:, self.cfg.D:]
+                    predicted_conditions_all = predicted_eval_samples[:, self.cfg.D:]
+                    
+                    def condition_to_str(cond_vec):
+                        return '_'.join(map(str, cond_vec.tolist()))
+
+                    unique_true_conditions = jnp.unique(true_conditions_all, axis=0)
+                    
+                    per_condition_metric_values = []
+                    num_conditions_evaluated = 0
+
+                    print(f"Evaluated at time {eval_time:.4f} ({desc}):")
+                    for cond_idx, true_cond_vec in enumerate(unique_true_conditions):
+                        true_cond_mask = jnp.all(true_conditions_all == true_cond_vec, axis=1)
+                        true_samples_for_cond = true_eval_samples[true_cond_mask]
+                        actual_spatial_for_cond = true_samples_for_cond[:, :self.cfg.D]
+
+                        # Find predicted samples that match this true condition
+                        pred_cond_mask = jnp.all(predicted_conditions_all == true_cond_vec, axis=1)
+                        predicted_samples_for_cond = predicted_eval_samples[pred_cond_mask]
+                        predicted_spatial_for_cond = predicted_samples_for_cond[:, :self.cfg.D]
+                        
+                        cond_str = condition_to_str(true_cond_vec)
+
+                        if predicted_spatial_for_cond.shape[0] > 0 and actual_spatial_for_cond.shape[0] > 0:
+                            metric_val_cond_str = "N/A"
+                            metric_val = np.nan
+                            if predicted_spatial_for_cond.shape[0] == actual_spatial_for_cond.shape[0]:
+                                mse_cond = jnp.mean((predicted_spatial_for_cond - actual_spatial_for_cond)**2)
+                                metrics_log[f"eval_time_{eval_time:.4f}_cond_{cond_str}_mse"] = float(mse_cond)
+                                metric_val_cond_str = f"MSE: {mse_cond:.4e}"
+                                metric_val = float(mse_cond)
+                            else:
+                                mean_pred_cond = jnp.mean(predicted_spatial_for_cond, axis=0)
+                                mean_actual_cond = jnp.mean(actual_spatial_for_cond, axis=0)
+                                diff_means_cond = jnp.linalg.norm(mean_pred_cond - mean_actual_cond)
+                                metrics_log[f"eval_time_{eval_time:.4f}_cond_{cond_str}_mean_diff"] = float(diff_means_cond)
+                                metric_val_cond_str = (f"Mean Diff: {diff_means_cond:.4f} "
+                                                       f"(Pred N={predicted_spatial_for_cond.shape[0]}, Actual N={actual_spatial_for_cond.shape[0]})")
+                                metric_val = float(diff_means_cond)
+                            
+                            print(f"Cond {cond_str}: {metric_val_cond_str}")
+                            if not np.isnan(metric_val):
+                                per_condition_metric_values.append(metric_val)
+                            num_conditions_evaluated +=1
+                        else:
+                            print(f"Cond {cond_str}: Skipped (Pred N={predicted_spatial_for_cond.shape[0]}, Actual N={actual_spatial_for_cond.shape[0]})")
+                    
+                    if num_conditions_evaluated > 0 and per_condition_metric_values:
+                        avg_metric_across_conditions = jnp.mean(jnp.array(per_condition_metric_values))
+                        metrics_log[f"eval_time_{eval_time:.4f}_avg_cond_metric"] = float(avg_metric_across_conditions)
+                        print(f"Avg across {len(per_condition_metric_values)} conditions: {avg_metric_across_conditions:.4e}")
+                    elif num_conditions_evaluated > 0:
+                         print(f"No valid numerical metrics to average across {num_conditions_evaluated} conditions with samples.")
+                    else:
+                        print(f"No conditions evaluated or no matching samples found for any condition.")
+
+                else: 
+                    metric_val_str = "N/A"
+                    if predicted_spatial_overall.shape[0] == actual_spatial_overall.shape[0]:
+                        mse = jnp.mean((predicted_spatial_overall - actual_spatial_overall)**2)
+                        metrics_log[f"eval_time_{eval_time:.4f}_mse"] = float(mse)
+                        metric_val_str = f"MSE: {mse:.4e}"
+                    else:
+                        mean_pred = jnp.mean(predicted_spatial_overall, axis=0)
+                        mean_actual = jnp.mean(actual_spatial_overall, axis=0)
+                        diff_means = jnp.linalg.norm(mean_pred - mean_actual)
+                        metrics_log[f"eval_time_{eval_time:.4f}_mean_diff"] = float(diff_means)
+                        metric_val_str = (f"Mean Diff: {diff_means:.4f} "
+                                          f"(Pred N={predicted_spatial_overall.shape[0]}, Actual N={actual_spatial_overall.shape[0]})")
+                    print(f"    Evaluated at time {eval_time:.4f} ({desc}): {metric_val_str}")
+
+
+                if plot_results and self.cfg.D >= 2:
+                    fig_comp, ax_comp = plt.subplots(figsize=(6, 6))
+                    self._setup_ax(ax_comp)
+                    num_plot = self.cfg.plotting.get('num_eval_plot', 200)
+                    pk1, pk2, plot_key = jax.random.split(plot_key, 3)
+                    
+                    idx_pred = jax.random.choice(pk1, predicted_spatial_overall.shape[0], shape=(min(num_plot, predicted_spatial_overall.shape[0]),), replace=False)
+                    idx_actual = jax.random.choice(pk2, actual_spatial_overall.shape[0], shape=(min(num_plot, actual_spatial_overall.shape[0]),), replace=False)
+
+                    ax_comp.scatter(predicted_spatial_overall[idx_pred, 0], predicted_spatial_overall[idx_pred, 1], alpha=0.6, label=f'Predicted (t={eval_time:.3f})', s=20, color='blue')
+                    ax_comp.scatter(actual_spatial_overall[idx_actual, 0], actual_spatial_overall[idx_actual, 1], alpha=0.6, label=f'Actual Test (t={eval_time:.3f})', s=20, color='red', marker='x')
+                    ax_comp.legend()
+                    ax_comp.set_title(f'Test Eval: t={eval_time:.3f} (Interval {k}, Step {self.train_step})')
+                    comp_fname = f'test_eval_time_{eval_time:.3f}.png'
+                    fig_comp.savefig(comp_fname)
+                    if wandb.run is not None:
+                        wandb.log({f"plots/test_evaluation/time_{eval_time:.3f}": wandb.Image(comp_fname)}, step=self.train_step)
+                    plt.close(fig_comp)
+
+                eval_point_idx += 1
+
+            current_transported_samples = end_samples_pred_at_Tk_plus_1
+
+        print("--- Finished Marginal Evaluation ---")
+        if wandb.run is not None and metrics_log:
+            wandb.log({"test_arbitrary_time_metrics": metrics_log}, step=self.train_step)
+        
+        return metrics_log
 
 
 
