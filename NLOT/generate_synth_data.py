@@ -7,6 +7,7 @@ import math
 from scipy.stats import vonmises, lognorm
 import pickle
 import jax.numpy as jnp
+import seaborn as sns
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -566,8 +567,8 @@ if __name__ == "__main__":
     num_points_per_condition = 100
     time = 0.125
     radius = 1.0
-    angular_concentration = 5.0
-    radial_std_dev = 0.08
+    angular_concentration = 10.0
+    radial_std_dev = 0.01
 
     # Generate the marginal data for all 4 conditions
     marginal_data = generate_conditional_circle_marginal(
@@ -645,21 +646,61 @@ if __name__ == "__main__":
     with open(os.path.join(SCRIPT_PATH, 'eval_marginals.pkl'), 'wb') as f:
         pickle.dump(time_samples_list, f)
     
-    print(time_samples_list[0])
-    print(time_samples_list[1])
-    print(time_samples_list[2])
-    print(time_samples_list[3])
-    print(time_samples_list[4])
-    
 
     #----------------------------------------------------#
     #  Conditional Circles DATA           #
     #----------------------------------------------------#
+    # Parameters for dataset generation
+    num_points_per_condition = 500
+    num_time_points = 4
+    radius = 1.0
+    angular_concentration = 10.0
+    radial_std_dev = 0.01
+
+    # Generate the dataset
+    data = generate_conditional_circles_data(
+        num_points_per_condition=num_points_per_condition,
+        num_time_points=num_time_points,
+        radius=radius,
+        angular_concentration=angular_concentration,
+        radial_std_dev=radial_std_dev,
+        device=DEVICE
+    )[:-1]  # Exclude the last time point for plotting
+
+    #combine all time points
+    data = data.view(-1, data.shape[-1]).cpu().numpy()  # Shape: (num_points_per_condition * num_time_points * 4, 3)
+    print(data.shape)
+    # Separate data by condition
+    conditions = data[:, 2].astype(int)
+    x = data[:, 0]
+    y = data[:, 1]
+
+    # Plot KDE for each condition in separate subplots
+    fig, axs = plt.subplots(2, 2, figsize=(12, 10), sharex=True, sharey=True)
+    colors = ['blue', 'orange', 'green', 'red']
+    labels = ['Condition 0', 'Condition 1', 'Condition 2', 'Condition 3']
+
+    for c, ax in enumerate(axs.flatten()):
+        mask = conditions == c
+        sns.kdeplot(x=x[mask], y=y[mask], fill=True, alpha=0.5, label=labels[c], color=colors[c], ax=ax, bw_method=0.2)
+        ax.set_title(labels[c])
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.grid(True)
+        ax.legend()
+
+    # Formatting
+    plt.suptitle("KDE of Ambient Data for Each Condition")
+    plt.tight_layout()
+    plt.savefig(os.path.join(SCRIPT_PATH, 'plots', 'conditional_circles_kde_subplots.png'))
+
+
+
     print("\n--- Conditional Circles Data ---")
-    num_points_per_cond_smr = 100
+    num_points_per_cond_smr = 500
     num_times_smr = 4
-    angular_conc_smr = 5.0
-    radial_std_smr = 0.08
+    angular_conc_smr = 10.0
+    radial_std_smr = 0.01
     radius_smr = 1.0
 
     smr_circle_data = generate_conditional_circles_data(
@@ -673,7 +714,7 @@ if __name__ == "__main__":
 
     # save
     save_path_smr = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_circles.pt')
-    #torch.save(smr_circle_data, save_path_smr)
+    torch.save(smr_circle_data, save_path_smr)
     print(f"Conditional circles data saved to {save_path_smr}")
 
     # --- Plotting SMR Circle Data ---
@@ -715,7 +756,7 @@ if __name__ == "__main__":
     plt.suptitle(f"Conditional Circles Data ({num_times_smr} Time Points, {num_points_per_cond_smr} Pts/Cond)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plot_save_path_smr = os.path.join(SCRIPT_PATH, 'plots/conditional_circles_plot.png')
-    #plt.savefig(plot_save_path_smr)
+    plt.savefig(plot_save_path_smr)
     print(f"Conditional circles plot saved to {plot_save_path_smr}")
     plt.close(fig_smr)
 
