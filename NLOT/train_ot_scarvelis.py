@@ -59,7 +59,8 @@ class Workspace:
             num_pairs_requested=self.cfg.get('num_pairs', None)
         )
 
-        self.all_samples = jnp.concatenate([next(s) for s in self.samplers], axis=0)
+        self.all_samples = jnp.concatenate([next(s) for s in self.samplers][:-1], axis=0) #remove last time point for density calc
+        print(f"all_samples shape: {self.all_samples.shape}")
 
         if self.cfg.get('include_land_potential', False):
             lagrangian_potential_initializer_fn = lagrangian_potentials.LandPotential(
@@ -425,8 +426,8 @@ class Workspace:
             logf.flush()
 
             self.train_step += 1
-            #if self.train_step % self.cfg.save_frequency == 0:
-            #    self.save()
+            if self.train_step % self.cfg.save_frequency == 0:
+                self.save()
 
         if not self.cfg.plotting.get('disable', False):
             self.plot()

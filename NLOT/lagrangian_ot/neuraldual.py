@@ -27,6 +27,7 @@ import flax
 from flax import core
 from flax.core import frozen_dict
 from flax.training import train_state
+from flax.jax_utils import replicate, unreplicate
 
 from copy import copy
 

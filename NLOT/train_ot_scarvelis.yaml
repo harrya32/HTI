@@ -2,7 +2,7 @@ defaults:
   - _self_
 
 # neural_net_metric, neural_net_metric_eig, neural_net_metric_direct, land_metric, rbf_metric, scarvelis_circle, scarvelis_xpath, scarvelis_vee, sq_euclidean_manifold
-geometry: 'sq_euclidean_manifold'
+geometry: 'neural_net_metric_eig'
 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, 
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
@@ -13,13 +13,13 @@ C: 1
 categorical: True
 num_categories: 4
 
-include_land_potential: False
-bandwidth: 0.15
-lambda_weight: 0.05
+include_land_potential: True
+bandwidth: 0.1 #0.284 # testing silverman h0
+lambda_weight: 0.01
 
 seed: 0
-num_pairs: 3
-num_train_iters: 2000
+num_pairs: 4
+num_train_iters: 3000
 batch_size: 1024
 potential_lr: 1e-4
 wandb: True
@@ -59,12 +59,12 @@ ctransform_solver:
   linesearch_type: "backtracking"
 
 spline:
-  init_train_iters: 10 #1001
+  init_train_iters: 1001
   train_iters: 1001
   update_frequency: 25
   grad_norm_threshold: 1e-4
   noise: 0.0
-  update_on_conjugates: True
+  update_on_conjugates: False
 
 target_potential_dim_hidden: [64, 64, 64, 64]
 source_map_dim_hidden: [64, 64, 64, 64]

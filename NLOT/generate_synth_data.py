@@ -446,7 +446,7 @@ def generate_conditional_circles_data(num_points_per_condition: int,
 
     final_data = torch.stack(all_data_t, dim=0)
 
-    return final_data[:-1] # Exclude the last time point
+    return final_data # Exclude the last time point
 
 
 if __name__ == "__main__":
@@ -457,7 +457,7 @@ if __name__ == "__main__":
     print("\n--- Conditional Circles Data ---")
     num_points_per_cond_smr = 100
     num_times_smr = 4
-    angular_conc_smr = 10.0
+    angular_conc_smr = 5.0
     radial_std_smr = 0.08
     radius_smr = 1.0
 

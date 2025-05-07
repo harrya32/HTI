@@ -661,7 +661,7 @@ class MetricManifold(GeometryBase):
             vals = -self.lagrangian_potential_vmap_jit(params, x_eval).reshape(x1.shape)
 
             for ax in axs:
-                CS = ax.contourf(x1, x2, vals, cmap="Blues")
+                CS = ax.contourf(x1, x2, vals, cmap="Blues", levels=50)
                 ax.set_xlim(*xlims)
                 ax.set_ylim(*ylims)
 
