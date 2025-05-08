@@ -14,15 +14,16 @@ C: 1
 categorical: True
 num_categories: 4
 
-include_land_potential: True
-bandwidth: 0.25
-lambda_weight: 0.1
+include_land_potential: False
+include_inverse_potential: True
+bandwidth: 0.5
+lambda: 0.1
 
 seed: 0
 num_pairs: 4
 num_train_iters: 3000
 batch_size: 1024
-potential_lr: 5e-4
+potential_lr: 1e-4
 wandb: True
 
 plot_frequency: 50

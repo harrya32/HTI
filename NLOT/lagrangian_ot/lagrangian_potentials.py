@@ -242,35 +242,66 @@ class LandPotential(LagrangianPotentialBase):
         logp = log_sum + log_norm
         potential = self.lambda_weight * logp
         return potential
-
+    
 @dataclass
 class DoubleCirclePotential(LagrangianPotentialBase):
-    center1: jnp.ndarray = jnp.array([1.0, 0.0])  # Center of the first circle
-    center2: jnp.ndarray = jnp.array([-1.0, 0.0])  # Center of the second circle
-    radius: float = 1.0  # Radius of the circles
-    offset: float = 0.1  # Offset from the circumferences
-    M_bounds = (0.0, 1.0)  # Bounds for the potential strength
+    center_left: jnp.ndarray = jnp.array([-1.0, 0.0])
+    center_right: jnp.ndarray = jnp.array([1.0, 0.0])
+    radius: float = 1.0
+    offset: float = 0.1
+    M_bounds = (0.0, 1.0)
 
     def __call__(self, x):
         assert x.ndim == 1 and x.shape[0] == self.D + self.C, "Input x must have shape (D + C,)"
 
-        # Extract the ambient dimensions (first D dimensions)
         x_ambient = x[:self.D]
+        condition = x[self.D].astype(int)
 
-        # Distance from the first circle's center
-        dist1 = jnp.linalg.norm(x_ambient - self.center1)
-        # Distance from the second circle's center
-        dist2 = jnp.linalg.norm(x_ambient - self.center2)
+        center = jnp.where(
+            (condition == 0) | (condition == 1),
+            self.center_left,
+            self.center_right
+        )
 
-        # Sigmoid-based potential for the first circle
-        U1 = nn.sigmoid((dist1 - (self.radius - self.offset)) / self.temp) - \
-             nn.sigmoid((dist1 - (self.radius + self.offset)) / self.temp)
+        dist = jnp.linalg.norm(x_ambient - center)
 
-        # Sigmoid-based potential for the second circle
-        U2 = nn.sigmoid((dist2 - (self.radius - self.offset)) / self.temp) - \
-             nn.sigmoid((dist2 - (self.radius + self.offset)) / self.temp)
-
-        # Combine the potentials for both circles
-        U = (U1 + U2)
+        U = nn.sigmoid((dist - (self.radius - self.offset)) / 0.1) - \
+            nn.sigmoid((dist - (self.radius + self.offset)) / 0.1)
 
         return self.M * U
+    
+@dataclass
+class InverseDensityPotential(LagrangianPotentialBase):
+    """
+    U(x) = lambda_repel / log(p̂(x) + epsilon),     p̂(x) = 1/N ∑_i ϕ((x - samples[i])/bandwidth)
+    """
+    samples: jnp.ndarray = None
+    bandwidth: float = 1.0
+    lambda_repel: float = 0.01
+    epsilon: float = 1e-8
+
+    def __call__(self, x):
+        assert x.ndim == 1 and x.shape[0] == self.D + self.C, "Input x must have shape (D + C,)"
+        assert self.samples is not None, "Samples must be provided before calling the potential."
+        assert self.samples.ndim == 2 and self.samples.shape[1] == self.D + self.C, "Samples must have shape (N, D + C)."
+
+        x_ambient = x[:self.D]
+        x_cond = x[self.D:]
+        all_samples_ambient = self.samples[:, :self.D]
+
+        if self.C > 0:
+            mask = jnp.all(self.samples[:, self.D:] == x_cond, axis=1)
+            num_cond_samples = jnp.sum(mask, dtype=jnp.float32)
+        else:
+            mask = jnp.ones(self.samples.shape[0], dtype=bool)
+            num_cond_samples = jnp.array(self.samples.shape[0], dtype=jnp.float32)
+
+        safe_num_cond_samples_denom = jnp.maximum(num_cond_samples, 1.0)
+        diffs = (all_samples_ambient - x_ambient[None, :]) / self.bandwidth
+        sq_norms = jnp.sum(diffs**2, axis=1)
+        kernel_norm_factor = (2 * jnp.pi * self.bandwidth**2)**(-self.D / 2.0)
+        kernel_vals = kernel_norm_factor * jnp.exp(-0.5 * sq_norms)
+        masked_kernel_vals = jnp.where(mask, kernel_vals, 0.0)
+        density_p_hat = jnp.sum(masked_kernel_vals) / safe_num_cond_samples_denom
+        potential = self.lambda_repel / (jnp.log(density_p_hat + self.epsilon))
+        return potential

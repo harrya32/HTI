@@ -66,12 +66,15 @@ class Workspace:
                 C=self.cfg.get('C', 0),
                 samples=self.all_samples,
                 bandwidth=self.cfg.get('bandwidth', 1.0),
-                lambda_weight=self.cfg.get('lambda_weight', 0.01),
+                lambda_weight=self.cfg.get('lambda', 0.01),
             )
-
-            lagrangian_potential_initializer_fn = lagrangian_potentials.DoubleCirclePotential(
+        elif self.cfg.get('include_inverse_potential', False):
+            lagrangian_potential_initializer_fn = lagrangian_potentials.InverseDensityPotential(
                 D=self.cfg.get('D', 2),
                 C=self.cfg.get('C', 0),
+                samples=self.all_samples,
+                bandwidth=self.cfg.get('bandwidth', 1.0),
+                lambda_repel=self.cfg.get('lambda', 0.01),
             )
         else:
             lagrangian_potential_initializer_fn = None
@@ -119,6 +122,7 @@ class Workspace:
         print(f'training on {self.num_pairs} pairs at times {self.time_points}')
         self.eval_samples = [next(s) for s in self.samplers]
 
+        #scheduler = optax.exponential_decay(init_value=5e-4, transition_steps=self.cfg.num_train_iters, decay_rate=0.9)
         self.optimizer_target_potential = optax.adamw(learning_rate=self.cfg.potential_lr)
         self.optimizer_source_map = self.optimizer_target_potential
         self.optimizer_geom = optax.adamw(learning_rate=self.cfg.metric.lr)
