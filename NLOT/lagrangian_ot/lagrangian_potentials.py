@@ -242,3 +242,35 @@ class LandPotential(LagrangianPotentialBase):
         logp = log_sum + log_norm
         potential = self.lambda_weight * logp
         return potential
+
+@dataclass
+class DoubleCirclePotential(LagrangianPotentialBase):
+    center1: jnp.ndarray = jnp.array([1.0, 0.0])  # Center of the first circle
+    center2: jnp.ndarray = jnp.array([-1.0, 0.0])  # Center of the second circle
+    radius: float = 1.0  # Radius of the circles
+    offset: float = 0.1  # Offset from the circumferences
+    M_bounds = (0.0, 1.0)  # Bounds for the potential strength
+
+    def __call__(self, x):
+        assert x.ndim == 1 and x.shape[0] == self.D + self.C, "Input x must have shape (D + C,)"
+
+        # Extract the ambient dimensions (first D dimensions)
+        x_ambient = x[:self.D]
+
+        # Distance from the first circle's center
+        dist1 = jnp.linalg.norm(x_ambient - self.center1)
+        # Distance from the second circle's center
+        dist2 = jnp.linalg.norm(x_ambient - self.center2)
+
+        # Sigmoid-based potential for the first circle
+        U1 = nn.sigmoid((dist1 - (self.radius - self.offset)) / self.temp) - \
+             nn.sigmoid((dist1 - (self.radius + self.offset)) / self.temp)
+
+        # Sigmoid-based potential for the second circle
+        U2 = nn.sigmoid((dist2 - (self.radius - self.offset)) / self.temp) - \
+             nn.sigmoid((dist2 - (self.radius + self.offset)) / self.temp)
+
+        # Combine the potentials for both circles
+        U = (U1 + U2)
+
+        return self.M * U

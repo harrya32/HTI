@@ -354,37 +354,60 @@ def generate_warped_circle_data(num_points_per_time: int,
     """
     all_points_t = []
     target_angles = np.linspace(0, 2 * np.pi, num_time_points, endpoint=False)
-
-    # Parameters for the Log-Normal distribution to center the median around `radius`
-    # The median of Log-Normal(mu, sigma) is exp(mu). We want exp(mu) = radius.
-    # So, mu = log(radius). Sigma is the radial_std_dev.
     log_normal_mu = np.log(radius)
     log_normal_sigma = radial_std_dev
 
     for t in range(num_time_points):
         target_angle = target_angles[t]
-
-        # Sample angles using von Mises distribution
-        # scipy.stats.vonmises uses location (mu) and concentration (kappa)
         sampled_angles = vonmises.rvs(loc=target_angle, kappa=angular_concentration, size=num_points_per_time)
-
-        # Sample radii using Log-Normal distribution
-        # scipy.stats.lognorm uses shape (s=sigma), loc (usually 0), scale (exp(mu))
         sampled_radii = lognorm.rvs(s=log_normal_sigma, loc=0, scale=np.exp(log_normal_mu), size=num_points_per_time)
-
-        # Convert polar to Cartesian coordinates
         x = sampled_radii * np.cos(sampled_angles)
         y = sampled_radii * np.sin(sampled_angles)
-
         points_t = np.stack((x, y), axis=-1)
         all_points_t.append(points_t)
 
-    # Combine data from all time points and convert to torch tensor
     final_data = torch.tensor(np.array(all_points_t), dtype=torch.float32, device=device)
 
     return final_data
 
-def generate_conditional_circles_data(num_points_per_condition: int,
+def generate_warped_circle_data_uniform(num_points_per_time: int,
+                                        num_time_points: int = 6,
+                                        radius: float = 1.0,
+                                        angle_range: float = np.pi / 4, 
+                                        device: torch.device = DEVICE):
+    """
+    Generates 2D data distributed uniformly around a circle at multiple time points,
+    with the distribution rotated along the circle based on the time point.
+
+    Args:
+        num_points_per_time (int): Number of data points for each time step.
+        num_time_points (int): Number of discrete time steps.
+        radius (float): The target mean radius of the circle.
+        angle_range (float): Spread of the distribution on the circumference per time point (in radians).
+        device (torch.device): The device to place the output tensor on.
+
+    Returns:
+        torch.Tensor: Data tensor of shape (num_time_points, num_points_per_time, 2).
+    """
+    all_points_t = []
+    for t in range(num_time_points):
+        center_angle = 2 * np.pi * (t / num_time_points) 
+
+        sampled_angles = np.random.uniform(center_angle - angle_range / 2,
+                                            center_angle + angle_range / 2,
+                                            size=num_points_per_time)
+
+        sampled_radii = np.random.uniform(radius * 0.9, radius * 1.1, size=num_points_per_time)
+        x = sampled_radii * np.cos(sampled_angles)
+        y = sampled_radii * np.sin(sampled_angles)
+        points_t = np.stack((x, y), axis=-1)
+        all_points_t.append(points_t)
+
+    final_data = torch.tensor(np.array(all_points_t), dtype=torch.float32, device=device)
+
+    return final_data
+
+def generate_conditional_circles_data_old(num_points_per_condition: int,
                                                    num_time_points: int = 6,
                                                    radius: float = 1.0,
                                                    angular_concentration: float = 15.0,
@@ -494,7 +517,7 @@ def generate_conditional_circle_at_time(num_points: int, time: float, radius: fl
 
     return shifted_data
 
-def generate_conditional_circle_marginal(num_points_per_condition: int,
+def generate_conditional_circle_marginal_old(num_points_per_condition: int,
                                          time: float,
                                          radius: float = 1.0,
                                          angular_concentration: float = 15.0,
@@ -561,22 +584,146 @@ def generate_conditional_circle_marginal(num_points_per_condition: int,
 
     return final_data
 
-if __name__ == "__main__":
+def generate_conditional_circles_data(num_points_per_condition: int,
+                                      num_time_points: int = 6,
+                                      radius: float = 1.0,
+                                      angle_range: float = np.pi / 4,
+                                      device: torch.device = DEVICE):
+    """
+    Generates 4 conditions based on a warped circle, all starting near (0,0).
+    1. Generates a base warped circle trajectory using uniform distribution.
+    2. Shifts it so t=0 is centered at (0,0) -> Condition 0.
+    3. Time-reverses Condition 0 -> Condition 1.
+    4. Negates x-coordinates of Condition 0 -> Condition 2.
+    5. Time-reverses Condition 2 -> Condition 3.
 
+    Args:
+        num_points_per_condition (int): Number of data points per condition per time step.
+        num_time_points (int): Number of discrete time steps for the base trajectory.
+        radius (float): The target mean radius of the base circle.
+        angle_range (float): Spread of the distribution on the circumference per time point (in radians).
+        device (torch.device): The device to place the output tensor on.
+
+    Returns:
+        torch.Tensor: Data tensor of shape (num_time_points, num_points_per_condition * 4, 3),
+                      where the last dimension is [x, y, condition].
+    """
+    base_data = generate_warped_circle_data_uniform(
+        num_points_per_time=num_points_per_condition,
+        num_time_points=num_time_points,
+        radius=radius,
+        angle_range=angle_range,
+        device=device
+    )
+    base_data = torch.cat((base_data, base_data[0:1]), dim=0)  # Wrap around to first time point
+
+    # 2. Shift data so t=0 is centered at (0,0) -> Condition 0
+    cond0_data = base_data.clone()
+    cond0_data[..., 0] -= radius
+
+    # 3. Time-reverse Condition 0 -> Condition 1
+    cond1_data = torch.flip(cond0_data, dims=[0])
+
+    # 4. Negate x-coordinates of Condition 0 -> Condition 2
+    cond2_data = cond0_data.clone()
+    cond2_data[..., 0] *= -1
+
+    # 5. Time-reverse Condition 2 -> Condition 3
+    cond3_data = torch.flip(cond2_data, dims=[0])
+
+    all_data_t = []
+    for t in range(num_time_points + 1):
+        data_t_conds = []
+        for c, cond_data in enumerate([cond0_data, cond1_data, cond2_data, cond3_data]):
+            coords_t = cond_data[t]
+            labels_t = torch.full((num_points_per_condition, 1), c, device=device)
+            combined_c_t = torch.cat((coords_t, labels_t), dim=1)
+            data_t_conds.append(combined_c_t)
+
+        data_t_combined = torch.cat(data_t_conds, dim=0)
+        all_data_t.append(data_t_combined)
+
+    final_data = torch.stack(all_data_t, dim=0)
+
+    return final_data
+
+
+def generate_conditional_circle_marginal(num_points_per_condition: int,
+                                         time: float,
+                                         radius: float = 1.0,
+                                         angle_range: float = np.pi / 4,
+                                         device: torch.device = DEVICE):
+    """
+    Generate a marginal distribution for all 4 conditions at a single continuous time.
+
+    Args:
+        num_points_per_condition (int): Number of samples per condition.
+        time (float): Continuous time input (normalized between 0 and 1).
+        radius (float): Radius of the circle.
+        angle_range (float): Spread of the distribution on the circumference per time point (in radians).
+        device (torch.device): The device to place the output tensor on.
+
+    Returns:
+        torch.Tensor: Data tensor of shape (4 * num_points_per_condition, 3),
+                      where the last dimension is [x, y, condition].
+    """
+    base_data = generate_warped_circle_data_uniform(
+        num_points_per_time=num_points_per_condition,
+        num_time_points=1,
+        radius=radius,
+        angle_range=angle_range,
+        device=device
+    )[0]  # Extract the first (and only) time point
+
+    def transform_points(points_xy, t_effective, current_radius):
+        theta_shift = 2 * math.pi * t_effective  # Rotate based on time
+
+        x_orig, y_orig = points_xy[:, 0], points_xy[:, 1]
+        r_orig = torch.sqrt(x_orig**2 + y_orig**2)  # Compute radius
+        phi_orig = torch.atan2(y_orig, x_orig)  # Compute angle
+
+        phi_shifted = phi_orig + theta_shift  # Shift angle
+
+        x_new = r_orig * torch.cos(phi_shifted)
+        y_new = r_orig * torch.sin(phi_shifted)
+
+        x_new_shifted = x_new - current_radius
+        return torch.stack((x_new_shifted, y_new), dim=1)
+
+    cond0_xy = transform_points(base_data, time, radius)
+
+    time_rev = 1.0 - time
+    cond1_xy = transform_points(base_data, time_rev, radius)
+
+    cond2_xy = cond0_xy.clone()
+    cond2_xy[..., 0] *= -1
+
+    cond3_xy = cond1_xy.clone()
+    cond3_xy[..., 0] *= -1
+
+    cond0_data = torch.cat((cond0_xy, torch.full((num_points_per_condition, 1), 0, device=device, dtype=cond0_xy.dtype)), dim=1)
+    cond1_data = torch.cat((cond1_xy, torch.full((num_points_per_condition, 1), 1, device=device, dtype=cond1_xy.dtype)), dim=1)
+    cond2_data = torch.cat((cond2_xy, torch.full((num_points_per_condition, 1), 2, device=device, dtype=cond2_xy.dtype)), dim=1)
+    cond3_data = torch.cat((cond3_xy, torch.full((num_points_per_condition, 1), 3, device=device, dtype=cond3_xy.dtype)), dim=1)
+
+    final_data = torch.cat((cond0_data, cond1_data, cond2_data, cond3_data), dim=0)
+
+    return final_data
+
+if __name__ == "__main__":
+    
     # Parameters
     num_points_per_condition = 100
     time = 0.125
     radius = 1.0
-    angular_concentration = 10.0
-    radial_std_dev = 0.01
+    angle_range = np.pi / 2
 
     # Generate the marginal data for all 4 conditions
     marginal_data = generate_conditional_circle_marginal(
         num_points_per_condition=num_points_per_condition,
         time=time,
         radius=radius,
-        angular_concentration=angular_concentration,
-        radial_std_dev=radial_std_dev,
+        angle_range=angle_range,
         device=DEVICE
     )
 
@@ -628,8 +775,7 @@ if __name__ == "__main__":
             num_points_per_condition=num_points_per_condition,
             time=t,
             radius=radius,
-            angular_concentration=angular_concentration,
-            radial_std_dev=radial_std_dev,
+            angle_range=angle_range,
             device=DEVICE
         )
         #convert samples to jnp
@@ -648,27 +794,24 @@ if __name__ == "__main__":
     
 
     #----------------------------------------------------#
-    #  Conditional Circles DATA           #
+    #  Conditional Circles KDE #
     #----------------------------------------------------#
-    # Parameters for dataset generation
-    num_points_per_condition = 500
+    
+    num_points_per_condition = 100
     num_time_points = 4
     radius = 1.0
-    angular_concentration = 10.0
-    radial_std_dev = 0.01
+    angle_range = np.pi / 2  # Spread of the distribution on the circumference
 
-    # Generate the dataset
-    data = generate_conditional_circles_data(
+    kde_data = generate_conditional_circles_data(
         num_points_per_condition=num_points_per_condition,
         num_time_points=num_time_points,
         radius=radius,
-        angular_concentration=angular_concentration,
-        radial_std_dev=radial_std_dev,
+        angle_range=angle_range,
         device=DEVICE
     )[:-1]  # Exclude the last time point for plotting
 
     #combine all time points
-    data = data.view(-1, data.shape[-1]).cpu().numpy()  # Shape: (num_points_per_condition * num_time_points * 4, 3)
+    data = kde_data.view(-1, kde_data.shape[-1]).cpu().numpy()  # Shape: (num_points_per_condition * num_time_points * 4, 3)
     print(data.shape)
     # Separate data by condition
     conditions = data[:, 2].astype(int)
@@ -682,7 +825,7 @@ if __name__ == "__main__":
 
     for c, ax in enumerate(axs.flatten()):
         mask = conditions == c
-        sns.kdeplot(x=x[mask], y=y[mask], fill=True, alpha=0.5, label=labels[c], color=colors[c], ax=ax, bw_method=0.2)
+        sns.kdeplot(x=x[mask], y=y[mask], fill=True, alpha=0.5, label=labels[c], color=colors[c], ax=ax, bw_method=0.25)
         ax.set_title(labels[c])
         ax.set_xlabel("x")
         ax.set_ylabel("y")
@@ -692,42 +835,44 @@ if __name__ == "__main__":
     # Formatting
     plt.suptitle("KDE of Ambient Data for Each Condition")
     plt.tight_layout()
-    plt.savefig(os.path.join(SCRIPT_PATH, 'plots', 'conditional_circles_kde_subplots.png'))
+    #plt.savefig(os.path.join(SCRIPT_PATH, 'plots', 'conditional_circles_kde_subplots.png'))
 
-
+    #----------------------------------------------------#
+    #  Conditional Circles Data #
+    #----------------------------------------------------#
 
     print("\n--- Conditional Circles Data ---")
-    num_points_per_cond_smr = 500
-    num_times_smr = 4
-    angular_conc_smr = 10.0
-    radial_std_smr = 0.01
-    radius_smr = 1.0
+    num_points_per_condition = 100
+    num_time_points = 4
+    radius = 1.0
+    angle_range = np.pi / 2  # Spread of the distribution on the circumference
 
-    smr_circle_data = generate_conditional_circles_data(
-        num_points_per_condition=num_points_per_cond_smr,
-        num_time_points=num_times_smr,
-        angular_concentration=angular_conc_smr,
-        radial_std_dev=radial_std_smr,
-        radius=radius_smr
+    conditional_circles_data = generate_conditional_circles_data(
+        num_points_per_condition=num_points_per_condition,
+        num_time_points=num_time_points,
+        radius=radius,
+        angle_range=angle_range,
+        device=DEVICE
     )
-    print(f"Generated conditional circles data shape: {smr_circle_data.shape}")
+
+    print(f"Generated conditional circles data shape: {conditional_circles_data.shape}")
 
     # save
     save_path_smr = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_circles.pt')
-    torch.save(smr_circle_data, save_path_smr)
+    #torch.save(conditional_circles_data, save_path_smr)
     print(f"Conditional circles data saved to {save_path_smr}")
 
     # --- Plotting SMR Circle Data ---
-    fig_smr, axs_smr = plt.subplots(1, num_times_smr, figsize=(5 * num_times_smr, 5.5), sharex=True, sharey=True)
-    all_x_smr = smr_circle_data[..., 0].cpu().numpy().flatten()
-    all_y_smr = smr_circle_data[..., 1].cpu().numpy().flatten()
+    fig_smr, axs_smr = plt.subplots(1, num_time_points, figsize=(5 * num_time_points, 5.5), sharex=True, sharey=True)
+    all_x_smr = conditional_circles_data[..., 0].cpu().numpy().flatten()
+    all_y_smr = conditional_circles_data[..., 1].cpu().numpy().flatten()
     max_abs_coord_smr = max(np.abs(all_x_smr).max(), np.abs(all_y_smr).max()) * 1.1
     plot_lim_smr = (-max_abs_coord_smr, max_abs_coord_smr)
 
     colors_smr = plt.cm.tab10(np.linspace(0, 1, 4))
 
-    for t in range(num_times_smr):
-        data_t = smr_circle_data[t].cpu().numpy()
+    for t in range(num_time_points):
+        data_t = conditional_circles_data[t].cpu().numpy()
         conditions_t = data_t[:, 2].astype(int)
         axs_smr[t].set_title(f"Time t={t}")
         for c in range(4):
@@ -746,17 +891,15 @@ if __name__ == "__main__":
         axs_smr[t].grid(True)
         axs_smr[t].set_xlim(plot_lim_smr)
         axs_smr[t].set_ylim(plot_lim_smr)
-        # Draw unit circle for reference
         circle_ref = plt.Circle((-1, 0), 1.0, color='r', fill=False, linestyle='--', linewidth=1)
-        # Draw reversed circle for reference
         circle_ref_reversed = plt.Circle((1, 0), -1.0, color='b', fill=False, linestyle='--', linewidth=1)
         axs_smr[t].add_patch(circle_ref)
         axs_smr[t].add_patch(circle_ref_reversed)
 
-    plt.suptitle(f"Conditional Circles Data ({num_times_smr} Time Points, {num_points_per_cond_smr} Pts/Cond)")
+    plt.suptitle(f"Conditional Circles Data ({num_time_points} Time Points, {num_points_per_condition} Pts/Cond)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plot_save_path_smr = os.path.join(SCRIPT_PATH, 'plots/conditional_circles_plot.png')
-    plt.savefig(plot_save_path_smr)
+    #plt.savefig(plot_save_path_smr)
     print(f"Conditional circles plot saved to {plot_save_path_smr}")
     plt.close(fig_smr)
 
@@ -765,7 +908,7 @@ if __name__ == "__main__":
     #------------------------#
     print("\n--- Warped Circle Data ---")
     num_points_circle = 100
-    num_times_circle = 3
+    num_times_circle = 4
     angular_conc_circle = 10.0 # Higher value -> more concentrated angle
     radial_std_circle = 0.08  # Smaller value -> less spread in radius
 
@@ -775,6 +918,15 @@ if __name__ == "__main__":
         angular_concentration=angular_conc_circle,
         radial_std_dev=radial_std_circle,
         radius=1.0
+    )
+
+    #generate uniform circle data
+    warped_circle_data = generate_warped_circle_data_uniform(
+        num_points_per_time=num_points_circle,
+        num_time_points=num_times_circle,
+        radius=1.0,
+        angle_range=np.pi / 2,
+        device=DEVICE
     )
 
     # save
@@ -809,9 +961,9 @@ if __name__ == "__main__":
     plt.suptitle(f"Warped Circle Data ({num_times_circle} Time Points, {num_points_circle} Pts/Time)")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plot_save_path_circle = os.path.join(SCRIPT_PATH, 'warped_circle_plot.png')
-    #plt.savefig(plot_save_path_circle)
-    #print(f"Warped circle plot saved to {plot_save_path_circle}")
-    plt.close(fig_circle) # Close the figure to prevent display if running script
+    plt.savefig(plot_save_path_circle)
+    print(f"Warped circle plot saved to {plot_save_path_circle}")
+    plt.close(fig_circle)
 
     #-----------------------------#
     #  VELOCITY CONDITIONED DATA  #

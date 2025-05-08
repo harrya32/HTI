@@ -507,7 +507,6 @@ class MetricManifold(GeometryBase):
                 params=init_spline_params,
                 ts=ts,
             )
-            # Tile condition to match the number of points in xs
             condition_repeated = jnp.tile(condition.reshape(1, -1), (num_points, 1))
             xs = jnp.concatenate([xs, condition_repeated], axis=-1)
             return xs

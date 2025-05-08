@@ -193,8 +193,8 @@ class NeuralNetMetricDirect(MetricBase):
 
 @dataclass
 class NeuralNetMetricEig(MetricBase):
-    D: int = 2 #ambient dimension
-    C: int = 0 #conditional dimension
+    D: int = 2 
+    C: int = 0 
     hidden_dim: int = 128
     categorical: Optional[bool] = False
     num_categories: Optional[int] = 4
@@ -208,7 +208,6 @@ class NeuralNetMetricEig(MetricBase):
     def __call__(self, x):
         assert x.ndim == 1
 
-        # Determine output size based on D
         if self.D == 2:
             output_size = self.D + 2
         else:
@@ -253,7 +252,7 @@ class NeuralNetMetricEig(MetricBase):
             h = nn.leaky_relu(h)
             current_hidden_idx = 1
 
-        else: #just simple concatenation for condition
+        else: 
             assert x.shape[0] == self.D + self.C, f"Expected concatenated input shape ({self.D + self.C},), got {x.shape}"
             net_input = x
             h = nn.Dense(self.hidden_dim, name="dense_0")(net_input)
@@ -266,10 +265,7 @@ class NeuralNetMetricEig(MetricBase):
         nn_out = nn.Dense(output_size, name="output_dense")(h)
 
 
-        # --- Eigenvalue and Rotation Calculation ---
         raw_eigenvalues = nn_out[:self.D]
-
-        # Allocation of eigenvalue budget using softmax
         eigenvalue_weights = jax.nn.softmax(raw_eigenvalues * self.temperature)
 
         # Set total budget to D if not specified
@@ -282,8 +278,6 @@ class NeuralNetMetricEig(MetricBase):
         scaled_weights = eigenvalue_weights * (budget / self.D) * budget_range
         eigenvalues = self.min_eigenvalue + scaled_weights
         eigenvalues = jnp.clip(eigenvalues, self.min_eigenvalue, self.max_eigenvalue)
-
-
         rotation = self._create_rotation_matrix(nn_out[self.D:])
         diagonal = jnp.diag(eigenvalues)
         A = rotation.T @ diagonal @ rotation

@@ -55,10 +55,7 @@ class Workspace:
         
         self.frobenius_weight = self.cfg.metric.get('frobenius_reg_weight', 0.0)
 
-        self.samplers = data.get_samplers_scarvelis(
-            self.cfg.data,
-            num_pairs_requested=self.cfg.get('num_pairs', None)
-        )
+        self.samplers = data.get_samplers_scarvelis(self.cfg.data, num_pairs_requested=self.cfg.get('num_pairs', None))
 
         self.all_samples = jnp.concatenate([next(s) for s in self.samplers][:-1], axis=0) #remove last time point for density calc
         print(f"all_samples shape: {self.all_samples.shape}")
@@ -70,6 +67,11 @@ class Workspace:
                 samples=self.all_samples,
                 bandwidth=self.cfg.get('bandwidth', 1.0),
                 lambda_weight=self.cfg.get('lambda_weight', 0.01),
+            )
+
+            lagrangian_potential_initializer_fn = lagrangian_potentials.DoubleCirclePotential(
+                D=self.cfg.get('D', 2),
+                C=self.cfg.get('C', 0),
             )
         else:
             lagrangian_potential_initializer_fn = None
@@ -117,21 +119,14 @@ class Workspace:
         print(f'training on {self.num_pairs} pairs at times {self.time_points}')
         self.eval_samples = [next(s) for s in self.samplers]
 
-        self.optimizer_target_potential = optax.adamw(
-            learning_rate=self.cfg.potential_lr)
+        self.optimizer_target_potential = optax.adamw(learning_rate=self.cfg.potential_lr)
         self.optimizer_source_map = self.optimizer_target_potential
-        self.optimizer_geom = optax.adamw(
-            learning_rate=self.cfg.metric.lr)
-
+        self.optimizer_geom = optax.adamw(learning_rate=self.cfg.metric.lr)
         k1, self.key = jax.random.split(self.key)
-
-    
         self.params_geometry = self.geometry.init(
             k1, self.eval_samples[0][0], self.eval_samples[1][0],
             method=self.geometry.cost
         ).get('params', {})
-
-
         self.params_geometry = FrozenDict(self.params_geometry)
         self.state_geometry = self.optimizer_geom.init(self.params_geometry)
 
@@ -173,7 +168,6 @@ class Workspace:
             self.fit_spline_amortizer(self.samplers, init=True)
 
         self.train_step = 0
-
 
     def fit_spline_amortizer(self, samplers, init):
         num_iters = self.cfg.spline.init_train_iters if init else self.cfg.spline.train_iters

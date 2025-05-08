@@ -94,12 +94,8 @@ class SplineAmortizer:
     def __post_init__(self):
         self.num_params_spline = self.spline_geodesic_solver.spline_basis.shape[-1] * self.D
         self.basis = self.spline_geodesic_solver.spline_basis
-
         grad_clip = 1.0 # TODO
-        self.optimizer = optax.chain(
-            optax.clip_by_global_norm(grad_clip),
-            optax.adam(1e-4),
-        )
+        self.optimizer = optax.chain(optax.clip_by_global_norm(grad_clip), optax.adam(1e-4))
         self.opt_state = None
 
 
@@ -118,10 +114,7 @@ class SplineAmortizer:
             assert y.shape[0] == self.D + self.C
             # TODO: num, also set spline knots elsewhere?
             ts = jnp.linspace(0., 1., num=20)
-
-            path = splines.compute_spline(
-                x=x[:self.D], y=y[:self.D], basis=self.basis, params=params_spline, ts=ts)
-            
+            path = splines.compute_spline(x=x[:self.D], y=y[:self.D], basis=self.basis, params=params_spline, ts=ts)
             condition = x[self.D:]
             condition_repeated = jnp.tile(condition.reshape(1, -1), (path.shape[0], 1))
             path = jnp.concatenate([path, condition_repeated], axis=-1)
@@ -143,8 +136,7 @@ class SplineAmortizer:
         # a better way to do this
         grads = grads['spline_model']
         updates, opt_state = self.optimizer.update(grads, opt_state)
-        new_params_spline_model = optax.apply_updates(
-            params_geometry['spline_model'], updates)
+        new_params_spline_model = optax.apply_updates(params_geometry['spline_model'], updates)
         # params_geometry = params_geometry.unfreeze()
         params_geometry['spline_model'] = new_params_spline_model
         grad_norm = jnp.linalg.norm(jax.tree_util.tree_flatten(grads)[0][0])
@@ -155,16 +147,13 @@ class SplineAmortizer:
         if verbose:
             print('fitting spline amortizer (single step)')
         params_geometry = params_geometry.unfreeze()
-        params_geometry, self.opt_state, loss, grad_norm = self.update_fn_jit(
-            params_geometry, self.opt_state, source_samples, target_samples)
+        params_geometry, self.opt_state, loss, grad_norm = self.update_fn_jit(params_geometry, self.opt_state, source_samples, target_samples)
         params_geometry = flax.core.freeze(params_geometry)
         if verbose:
             print(f'  loss: {loss:.2e}')
         return params_geometry
 
-    def train(self, params_geometry,
-              source_sampler, target_sampler, max_iter,
-              grad_norm_threshold=None, callback=None):
+    def train(self, params_geometry, source_sampler, target_sampler, max_iter, grad_norm_threshold=None, callback=None):
         print('fitting spline amortizer')
         params_geometry = params_geometry.unfreeze()
 
@@ -179,8 +168,7 @@ class SplineAmortizer:
         for i in range(max_iter):
             xs = next(source_sampler)
             ys = next(target_sampler)
-            params_geometry, self.opt_state, loss, grad_norm = self.update_fn_jit(
-                params_geometry, self.opt_state, xs, ys)
+            params_geometry, self.opt_state, loss, grad_norm = self.update_fn_jit(params_geometry, self.opt_state, xs, ys)
             loss_meter.update(loss)
             loss_grad_meter.update(grad_norm)
             if i % 1000 == 0:
