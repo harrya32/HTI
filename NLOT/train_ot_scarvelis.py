@@ -1100,6 +1100,8 @@ class Workspace:
         if verbose:
             print(f"\n--- Evaluating at {len(evaluation_points)} points ---")
 
+        all_wasserstein_distances = []
+        all_circle_distances = []
         for k in range(self.num_pairs):
             T_k = self.time_points[k]
             T_k_plus_1 = self.time_points[k+1]
@@ -1158,90 +1160,61 @@ class Workspace:
                 if self.cfg.C:
                     true_conditions_all = true_eval_samples[:, self.cfg.D:]
                     predicted_conditions_all = predicted_eval_samples[:, self.cfg.D:]
-                    
-                    def condition_to_str(cond_vec):
-                        return '_'.join(map(str, cond_vec.tolist()))
-
                     unique_true_conditions = jnp.unique(true_conditions_all, axis=0)
-                    
-                    per_condition_metric_values = []
-                    num_conditions_evaluated = 0
 
-                    if verbose:
-                        print(f"Evaluated at time {eval_time:.4f} ({desc}):")
+                    per_condition_wasserstein = []
                     for cond_idx, true_cond_vec in enumerate(unique_true_conditions):
                         true_cond_mask = jnp.all(true_conditions_all == true_cond_vec, axis=1)
-                        true_samples_for_cond = true_eval_samples[true_cond_mask]
-                        actual_spatial_for_cond = true_samples_for_cond[:, :self.cfg.D]
-
                         pred_cond_mask = jnp.all(predicted_conditions_all == true_cond_vec, axis=1)
-                        predicted_samples_for_cond = predicted_eval_samples[pred_cond_mask]
-                        predicted_spatial_for_cond = predicted_samples_for_cond[:, :self.cfg.D]
-                        
-                        cond_str = condition_to_str(true_cond_vec)
 
-                        if predicted_spatial_for_cond.shape[0] > 0 and actual_spatial_for_cond.shape[0] > 0:
-                            wasserstein_dist = self.compute_wasserstein_distance(predicted_spatial_for_cond, actual_spatial_for_cond)
-                            metrics_log[f"time_{eval_time:.4f}_cond_{cond_str}_wass"] = float(wasserstein_dist)
-                            metric_val_cond_str = f"Wasserstein: {wasserstein_dist:.4e} (Pred N={predicted_spatial_for_cond.shape[0]}, Actual N={actual_spatial_for_cond.shape[0]})"
-                            metric_val = float(wasserstein_dist)
-                            
-                            if verbose:
-                                print(f"Cond {cond_str}: {metric_val_cond_str}")
-                            if not np.isnan(metric_val):
-                                per_condition_metric_values.append(metric_val)
-                            num_conditions_evaluated +=1
-                        else:
-                            print(f"Cond {cond_str}: Skipped (Pred N={predicted_spatial_for_cond.shape[0]}, Actual N={actual_spatial_for_cond.shape[0]})")
-                    
-                    if num_conditions_evaluated > 0 and per_condition_metric_values:
-                        avg_metric_across_conditions = jnp.mean(jnp.array(per_condition_metric_values))
-                        metrics_log[f"time_{eval_time:.4f}_avg_wass"] = float(avg_metric_across_conditions)
+                        true_samples_for_cond = true_eval_samples[true_cond_mask][:, :self.cfg.D]
+                        pred_samples_for_cond = predicted_eval_samples[pred_cond_mask][:, :self.cfg.D]
+
+                        if true_samples_for_cond.shape[0] > 0 and pred_samples_for_cond.shape[0] > 0:
+                            wasserstein_dist = self.compute_wasserstein_distance(pred_samples_for_cond, true_samples_for_cond)
+                            per_condition_wasserstein.append(wasserstein_dist)
+                            metrics_log[f"time_{eval_time:.4f}_cond_{cond_idx}_wass"] = float(wasserstein_dist)
+
+                    if per_condition_wasserstein:
+                        avg_wasserstein = jnp.mean(jnp.array(per_condition_wasserstein))
+                        metrics_log[f"time_{eval_time:.4f}_avg_wass"] = float(avg_wasserstein)
+                        all_wasserstein_distances.extend(per_condition_wasserstein)
                         if verbose:
-                            print(f"Avg across {len(per_condition_metric_values)} conditions: {avg_metric_across_conditions:.4e}")
-                    elif num_conditions_evaluated > 0:
-                         print(f"No valid numerical metrics to average across {num_conditions_evaluated} conditions with samples.")
-                    else:
-                        print(f"No conditions evaluated or no matching samples found for any condition.")
+                            print(f"Avg Wasserstein Across Conditions: {avg_wasserstein:.4e}")
 
                 else: 
                     wasserstein_dist = self.compute_wasserstein_distance(predicted_spatial_overall, actual_spatial_overall)
                     metrics_log[f"time_{eval_time:.4f}_wass"] = float(wasserstein_dist)
+                    all_wasserstein_distances.append(wasserstein_dist)
                     metric_val_str = f"Wasserstein: {wasserstein_dist:.4e} (Pred N={predicted_spatial_overall.shape[0]}, Actual N={actual_spatial_overall.shape[0]})"
                     if verbose:
                         print(f"Evaluated at time {eval_time:.4f} ({desc}): {metric_val_str}")
 
                 # Circle distance
                 if self.cfg.data == 'conditional_circles':
-                    circle_centers = {0: jnp.array([-1.0, 0.0]), 1: jnp.array([-1.0, 0.0]), 
-                                    2: jnp.array([1.0, 0.0]), 3: jnp.array([1.0, 0.0])}
+                    circle_centers = {0: jnp.array([-1.0, 0.0]), 1: jnp.array([-1.0, 0.0]), 2: jnp.array([1.0, 0.0]), 3: jnp.array([1.0, 0.0])}
                     circle_radius = 1.0
-                    avg_distances = []
+                    per_condition_circle_dist = []
 
                     for cond_idx, true_cond_vec in enumerate(unique_true_conditions):
                         true_cond_mask = jnp.all(true_conditions_all == true_cond_vec, axis=1)
                         pred_cond_mask = jnp.all(predicted_conditions_all == true_cond_vec, axis=1)
 
-                        predicted_samples_for_cond = predicted_spatial_overall[pred_cond_mask]
-                        cond_str = condition_to_str(true_cond_vec)
+                        pred_samples_for_cond = predicted_spatial_overall[pred_cond_mask]
 
-                        if predicted_samples_for_cond.shape[0] > 0:
+                        if pred_samples_for_cond.shape[0] > 0:
                             center = circle_centers[cond_idx]
-                            distances = jnp.abs(jnp.linalg.norm(predicted_samples_for_cond - center, axis=1) - circle_radius) # should square?
+                            distances = jnp.abs(jnp.linalg.norm(pred_samples_for_cond - center, axis=1) - circle_radius)
                             avg_distance = jnp.mean(distances)
-                            avg_distances.append(avg_distance)
+                            per_condition_circle_dist.append(avg_distance)
+                            metrics_log[f"time_{eval_time:.4f}_cond_{cond_idx}_circle_dist"] = float(avg_distance)
 
-                            metrics_log[f"time_{eval_time:.4f}_cond_{cond_str}_circle_dist"] = float(avg_distance)
-                            if verbose:
-                                print(f"Cond {cond_str}: Avg Circle Distance: {avg_distance:.4e}")
-                        else:
-                            print(f"Cond {cond_str}: Skipped (Pred N={predicted_samples_for_cond.shape[0]})")
-
-                    if avg_distances:
-                        overall_avg_distance = jnp.mean(jnp.array(avg_distances))
-                        metrics_log[f"time_{eval_time:.4f}_avg_circle_dist"] = float(overall_avg_distance)
+                    if per_condition_circle_dist:
+                        avg_circle_dist = jnp.mean(jnp.array(per_condition_circle_dist))
+                        metrics_log[f"time_{eval_time:.4f}_avg_circle_dist"] = float(avg_circle_dist)
+                        all_circle_distances.extend(per_condition_circle_dist)
                         if verbose:
-                            print(f"Avg Circle Distance Across Conditions: {overall_avg_distance:.4e}")
+                            print(f"Avg Circle Distance Across Conditions: {avg_circle_dist:.4e}")
 
                 # Plotting
                 if plot_results and self.cfg.D >= 2:
@@ -1275,7 +1248,6 @@ class Workspace:
                                 true_cond_samples[idx_actual, 0], true_cond_samples[idx_actual, 1],
                                 alpha=0.3, label=f'Actual Cond {cond_idx} (t={eval_time:.3f})', s=20, color=cmap(cond_idx), marker='x'
                             )
-                        #plot unit circles at (-1,0) and (1,0)
                         circle1 = plt.Circle((-1, 0), 1, color='black', fill=False, linestyle='--', lw=0.5)
                         circle2 = plt.Circle((1, 0), 1, color='black', fill=False, linestyle='--', lw=0.5)
                         ax_comp.add_artist(circle1)
@@ -1305,11 +1277,23 @@ class Workspace:
 
             current_transported_samples = end_samples_pred_at_Tk_plus_1
 
+        if all_wasserstein_distances:
+            overall_avg_wasserstein = jnp.mean(jnp.array(all_wasserstein_distances))
+            metrics_log["overall_avg_wass"] = float(overall_avg_wasserstein)
+            if verbose:
+                print(f"Overall Avg Wasserstein Across All Conditions and Time Points: {overall_avg_wasserstein:.4e}")
+
+        if all_circle_distances:
+            overall_avg_circle_dist = jnp.mean(jnp.array(all_circle_distances))
+            metrics_log["overall_avg_circle_dist"] = float(overall_avg_circle_dist)
+            if verbose:
+                print(f"Overall Avg Circle Distance Across All Conditions and Time Points: {overall_avg_circle_dist:.4e}")
+        
         if verbose:
             print("--- Finished Marginal Evaluation ---")
         if wandb.run is not None and metrics_log:
             wandb.log({"test": metrics_log}, step=self.train_step)
-        
+
         return metrics_log
 
 
