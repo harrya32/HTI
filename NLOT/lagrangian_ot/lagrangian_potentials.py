@@ -303,5 +303,5 @@ class InverseDensityPotential(LagrangianPotentialBase):
         kernel_vals = kernel_norm_factor * jnp.exp(-0.5 * sq_norms)
         masked_kernel_vals = jnp.where(mask, kernel_vals, 0.0)
         density_p_hat = jnp.sum(masked_kernel_vals) / safe_num_cond_samples_denom
-        potential = self.lambda_repel / (jnp.log(density_p_hat + self.epsilon))
+        potential = -self.lambda_repel / (jnp.log(density_p_hat + self.epsilon))
         return potential
