@@ -418,6 +418,8 @@ class Workspace:
                         test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals.pkl'
                     elif self.cfg.data == 'conditional_circles_normal':
                         test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals_normal.pkl'
+                    elif self.cfg.data == 'conditional_semicircles':
+                        test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals_semicircle.pkl'
                     else:
                         test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals_normal.pkl'
                     test_data = jnp.load(test_path, allow_pickle=True)
@@ -1199,7 +1201,7 @@ class Workspace:
                         print(f"Evaluated at time {eval_time:.4f} ({desc}): {metric_val_str}")
 
                 # Circle distance
-                if self.cfg.data == 'conditional_circles' or self.cfg.data == 'conditional_circles_normal':
+                if "circle" in self.cfg.data:
                     circle_centers = {0: jnp.array([-1.0, 0.0]), 1: jnp.array([-1.0, 0.0]), 2: jnp.array([1.0, 0.0]), 3: jnp.array([1.0, 0.0])}
                     circle_radius = 1.0
                     per_condition_circle_dist = []
