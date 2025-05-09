@@ -57,10 +57,10 @@ class Workspace:
 
         self.samplers = data.get_samplers_scarvelis(self.cfg.data, num_pairs_requested=self.cfg.get('num_pairs', None))
 
-        if self.cfg.data == 'conditional_circles' or self.cfg.data == 'conditional_circles_normal':
-            self.all_samples = jnp.concatenate([next(s) for s in self.samplers][:-1], axis=0) #remove last time point for density calc, as it returns to the origin
-        else:
-            self.all_samples = jnp.concatenate([next(s) for s in self.samplers], axis=0)
+        #if "circle" in self.cfg.data:
+        #    self.all_samples = jnp.concatenate([next(s) for s in self.samplers][:-1], axis=0) #remove last time point for density calc, as it returns to the origin
+        #else:
+        self.all_samples = jnp.concatenate([next(s) for s in self.samplers], axis=0)
         
         print(f"all_samples shape: {self.all_samples.shape}")
 
@@ -417,6 +417,8 @@ class Workspace:
                     if self.cfg.data == 'conditional_circles':
                         test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals.pkl'
                     elif self.cfg.data == 'conditional_circles_normal':
+                        test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals_normal.pkl'
+                    else:
                         test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals_normal.pkl'
                     test_data = jnp.load(test_path, allow_pickle=True)
                     time_0_points = test_data[0][1] #drop the time for the initial samples from time 0

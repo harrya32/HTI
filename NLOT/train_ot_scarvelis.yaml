@@ -7,8 +7,8 @@ geometry: 'neural_net_metric_eig'
 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, 
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
-# agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, conditional_circles_normal
-data: 'conditional_circles_normal'
+# agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, conditional_circles_normal, conditional_semicircles
+data: 'conditional_semicircles'
 D: 2
 C: 1
 categorical: True
@@ -20,7 +20,7 @@ bandwidth: 0.4
 lambda: 0.15
 
 seed: 0
-num_pairs: 4
+num_pairs: 2
 num_train_iters: 3000
 batch_size: 1024
 potential_lr: 1e-4

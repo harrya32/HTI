@@ -726,9 +726,184 @@ def generate_conditional_circle_marginal(num_points_per_condition: int,
 
     return final_data
 
+def generate_conditional_semicircles(num_points_per_condition: int,
+                                     num_time_points: int = 6,
+                                     radius: float = 1.0,
+                                     angular_concentration: float = 15.0,
+                                     radial_std_dev: float = 0.1,
+                                     device: torch.device = DEVICE):
+    """
+    Generates 4 conditions of warped semicircle data with independent sampling for each condition.
+    Each condition moves along a different semicircle:
+    - Condition 0: Top half of circle centered at (-1,0), moving from origin to left
+    - Condition 1: Bottom half of circle centered at (-1,0), moving from origin to left
+    - Condition 2: Top half of circle centered at (1,0), moving from origin to right
+    - Condition 3: Bottom half of circle centered at (1,0), moving from origin to right
+
+    Args:
+        num_points_per_condition (int): Number of data points per condition per time step.
+        num_time_points (int): Number of discrete time steps.
+        radius (float): Mean radius of the semicircles.
+        angular_concentration (float): Concentration parameter for the von Mises distribution.
+        radial_std_dev (float): Standard deviation for the radial distribution.
+        device (torch.device): Device to place the output tensor on.
+
+    Returns:
+        torch.Tensor: Data tensor of shape (num_time_points, num_points_per_condition * 4, 3).
+    """
+    all_data_t = []
+    
+    for t in range(num_time_points):
+        data_t_conds = []
+        
+        # Calculate progress from 0 to 1
+        progress = t / (num_time_points - 1) if num_time_points > 1 else 0
+        
+        for c in range(4):
+            # Determine the target angle based on condition and progress
+            if c == 0:  # Top half of left circle (moving from 0 to π)
+                target_angle = progress * np.pi  # 0 to π
+                center_x = -1.0
+            elif c == 1:  # Bottom half of left circle (moving from 0 to -π)
+                target_angle = -progress * np.pi  # 0 to -π
+                center_x = -1.0
+            elif c == 2:  # Top half of right circle (moving from π to 0)
+                target_angle = np.pi - progress * np.pi  # π to 0
+                center_x = 1.0
+            else:  # c == 3, Bottom half of right circle (moving from -π to 0)
+                target_angle = -np.pi + progress * np.pi  # -π to 0
+                center_x = 1.0
+            
+            # Generate warped normal distribution
+            sampled_angles = vonmises.rvs(
+                loc=target_angle,
+                kappa=angular_concentration,
+                size=num_points_per_condition
+            )
+            
+            log_normal_mu = np.log(radius)
+            log_normal_sigma = radial_std_dev
+            sampled_radii = lognorm.rvs(
+                s=log_normal_sigma,
+                loc=0,
+                scale=np.exp(log_normal_mu),
+                size=num_points_per_condition
+            )
+            
+            # Convert to Cartesian coordinates
+            x = center_x + sampled_radii * np.cos(sampled_angles)
+            y = sampled_radii * np.sin(sampled_angles)
+            
+            # Stack coordinates and add condition labels
+            points_t = np.stack((x, y), axis=-1)
+            points_tensor = torch.tensor(points_t, dtype=torch.float32, device=device)
+            labels_tensor = torch.full((num_points_per_condition, 1), c, device=device)
+            
+            data_t_conds.append(torch.cat((points_tensor, labels_tensor), dim=1))
+        
+        all_data_t.append(torch.cat(data_t_conds, dim=0))
+    
+    return torch.stack(all_data_t, dim=0)
+
 if __name__ == "__main__":
 
-    if True:  # Eval marginals normal
+    if True:  # Conditional semicircles
+        #----------------------------------------------------#
+        #  Conditional Semicircles Data                      #
+        #----------------------------------------------------#
+
+        print("\n--- Conditional Semicircles Data ---")
+        num_points_per_condition = 100
+        num_time_points = 3
+        radius = 1.0
+        angular_concentration = 15.0  # Higher value -> more concentrated angle
+        radial_std_dev = 0.05  # Smaller value -> less spread in radius
+
+        # Generate the conditional semicircles data
+        conditional_semicircles_data = generate_conditional_semicircles(
+            num_points_per_condition=num_points_per_condition,
+            num_time_points=num_time_points,
+            radius=radius,
+            angular_concentration=angular_concentration,
+            radial_std_dev=radial_std_dev,
+            device=DEVICE
+        )
+
+        print(f"Generated conditional semicircles data shape: {conditional_semicircles_data.shape}")
+
+        # Save the data
+        save_path_semicircles = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_semicircles.pt')
+        torch.save(conditional_semicircles_data, save_path_semicircles)
+        print(f"Conditional semicircles data saved to {save_path_semicircles}")
+
+        # --- Plotting Conditional Semicircles Data ---
+        fig_semicircles, axs_semicircles = plt.subplots(1, num_time_points, figsize=(5 * num_time_points, 5.5), 
+                                                    sharex=True, sharey=True)
+        all_x_semicircles = conditional_semicircles_data[..., 0].cpu().numpy().flatten()
+        all_y_semicircles = conditional_semicircles_data[..., 1].cpu().numpy().flatten()
+        max_abs_coord_semicircles = max(np.abs(all_x_semicircles).max(), np.abs(all_y_semicircles).max()) * 1.1
+        plot_lim_semicircles = (-max_abs_coord_semicircles, max_abs_coord_semicircles)
+
+        colors_semicircles = plt.cm.tab10(np.linspace(0, 1, 4))
+
+        for t in range(num_time_points):
+            data_t = conditional_semicircles_data[t].cpu().numpy()
+            conditions_t = data_t[:, 2].astype(int)
+            axs_semicircles[t].set_title(f"Time t={t}")
+            for c in range(4):
+                mask = conditions_t == c
+                label = f'Cond {c}' if t == 0 else ""
+                if c == 0: label += " (Left Top)"
+                if c == 1: label += " (Left Bottom)"
+                if c == 2: label += " (Right Top)"
+                if c == 3: label += " (Right Bottom)"
+                axs_semicircles[t].scatter(data_t[mask, 0], data_t[mask, 1], 
+                                        color=colors_semicircles[c], label=label, alpha=0.5, s=5)
+            axs_semicircles[t].set_xlabel("x")
+            if t == 0:
+                axs_semicircles[t].set_ylabel("y")
+                axs_semicircles[t].legend(markerscale=2, fontsize='small')
+            axs_semicircles[t].set_aspect('equal', adjustable='box')
+            axs_semicircles[t].grid(True)
+            axs_semicircles[t].set_xlim(plot_lim_semicircles)
+            axs_semicircles[t].set_ylim(plot_lim_semicircles)
+            
+            # Draw reference semicircles with condition-specific colors
+            from matplotlib.patches import Arc
+            
+            # Condition 0: Top half of left circle
+            top_left_arc = Arc((-1, 0), 2*radius, 2*radius, 
+                            theta1=0, theta2=180, 
+                            color=colors_semicircles[0], linestyle='-', linewidth=1.5)
+            
+            # Condition 1: Bottom half of left circle
+            bottom_left_arc = Arc((-1, 0), 2*radius, 2*radius, 
+                                theta1=180, theta2=360, 
+                                color=colors_semicircles[1], linestyle='-', linewidth=1.5)
+            
+            # Condition 2: Top half of right circle
+            top_right_arc = Arc((1, 0), 2*radius, 2*radius, 
+                            theta1=0, theta2=180, 
+                            color=colors_semicircles[2], linestyle='-', linewidth=1.5)
+            
+            # Condition 3: Bottom half of right circle
+            bottom_right_arc = Arc((1, 0), 2*radius, 2*radius, 
+                                theta1=180, theta2=360, 
+                                color=colors_semicircles[3], linestyle='-', linewidth=1.5)
+            
+            axs_semicircles[t].add_patch(top_left_arc)
+            axs_semicircles[t].add_patch(bottom_left_arc)
+            axs_semicircles[t].add_patch(top_right_arc)
+            axs_semicircles[t].add_patch(bottom_right_arc)
+
+        plt.suptitle(f"Conditional Semicircles Data ({num_time_points} Time Points, {num_points_per_condition} Pts/Cond)")
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plot_save_path_semicircles = os.path.join(SCRIPT_PATH, 'plots/conditional_semicircles_plot.png')
+        plt.savefig(plot_save_path_semicircles)
+        print(f"Conditional semicircles plot saved to {plot_save_path_semicircles}")
+        plt.close(fig_semicircles)
+
+    if False:  # Eval marginals normal
         num_points_per_condition = 100
         time = 0.25
         radius = 1.0
@@ -793,8 +968,6 @@ if __name__ == "__main__":
 
         with open(os.path.join(SCRIPT_PATH, 'eval_marginals_normal.pkl'), 'wb') as f:
             pickle.dump(time_samples_list_normal, f)
-        
-
 
     if False:  # Conditional circles normal
         #----------------------------------------------------#
