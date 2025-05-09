@@ -407,56 +407,54 @@ def generate_warped_circle_data_uniform(num_points_per_time: int,
 
     return final_data
 
-def generate_conditional_circles_data_old(num_points_per_condition: int,
-                                                   num_time_points: int = 6,
-                                                   radius: float = 1.0,
-                                                   angular_concentration: float = 15.0,
-                                                   radial_std_dev: float = 0.1,
-                                                   device: torch.device = DEVICE):
+def generate_conditional_circles_data_normal(num_points_per_condition: int,
+                                             num_time_points: int = 6,
+                                             radius: float = 1.0,
+                                             angular_concentration: float = 15.0,
+                                             radial_std_dev: float = 0.1,
+                                             device: torch.device = DEVICE):
     """
-    Generates 4 conditions based on a warped circle, all starting near (0,0).
-    1. Generates a base warped circle trajectory.
-    2. Shifts it so t=0 is centered at (0,0) -> Condition 0.
-    3. Time-reverses Condition 0 -> Condition 1.
-    4. Negates x-coordinates of Condition 0 -> Condition 2.
-    5. Time-reverses Condition 2 -> Condition 3.
+    Generates 4 conditions of warped circle data with independent sampling for each condition.
+    Each condition is transformed (time-reversed, x-flipped) to create variations.
 
     Args:
         num_points_per_condition (int): Number of data points per condition per time step.
-        num_time_points (int): Number of discrete time steps for the base trajectory.
-        radius (float): The target mean radius of the base circle.
-        angular_concentration (float): Kappa parameter for the von Mises distribution.
-        radial_std_dev (float): Standard deviation for the Log-Normal radius samples.
-        device (torch.device): The device to place the output tensor on.
+        num_time_points (int): Number of discrete time steps.
+        radius (float): Mean radius of the circle.
+        angular_concentration (float): Concentration parameter for the von Mises distribution.
+        radial_std_dev (float): Standard deviation for the radial distribution.
+        device (torch.device): Device to place the output tensor on.
 
     Returns:
-        torch.Tensor: Data tensor of shape (num_time_points, num_points_per_condition * 4, 3),
-                      where the last dimension is [x, y, condition].
+        torch.Tensor: Data tensor of shape (num_time_points + 1, num_points_per_condition * 4, 3).
     """
+    all_conditions_data = []
+    for _ in range(4):
+        condition_data = generate_warped_circle_data(
+            num_points_per_time=num_points_per_condition,
+            num_time_points=num_time_points,
+            radius=radius,
+            angular_concentration=angular_concentration,
+            radial_std_dev=radial_std_dev,
+            device=device
+        )
+        all_conditions_data.append(torch.cat((condition_data, condition_data[0:1]), dim=0))
 
-    base_data = generate_warped_circle_data(
-        num_points_per_time=num_points_per_condition,
-        num_time_points=num_time_points,
-        radius=radius,
-        angular_concentration=angular_concentration,
-        radial_std_dev=radial_std_dev,
-        device=device
-    )
-    base_data = torch.cat((base_data, base_data[0:1]), dim=0) # Wrap around to first time point
-
-    # 2. Shift data so t=0 is centered at (0,0) -> Condition 0
-    cond0_data = base_data.clone()
-    cond0_data[..., 0] -= radius
-
-    # 3. Time-reverse Condition 0 -> Condition 1
-    cond1_data = torch.flip(cond0_data, dims=[0])
-
-    # 4. Negate x-coordinates of Condition 0 -> Condition 2
-    cond2_data = cond0_data.clone()
-    cond2_data[..., 0] *= -1
-
-    # 5. Time-reverse Condition 2 -> Condition 3
-    cond3_data = torch.flip(cond2_data, dims=[0])
+    cond0_data = all_conditions_data[0].clone()
+    cond0_data[..., 0] -= radius  
+    
+    cond1_data = all_conditions_data[1].clone()
+    cond1_data[..., 0] -= radius  
+    cond1_data = torch.flip(cond1_data, dims=[0])  # Time-reverse condition 1
+    
+    cond2_data = all_conditions_data[2].clone()
+    cond2_data[..., 0] -= radius 
+    cond2_data[..., 0] *= -1  # Flip x-coordinates for condition 2
+    
+    cond3_data = all_conditions_data[3].clone()
+    cond3_data[..., 0] -= radius  
+    cond3_data[..., 0] *= -1  # Flip x-coordinates for condition 3
+    cond3_data = torch.flip(cond3_data, dims=[0])  # Time-reverse condition 3
 
     all_data_t = []
     for t in range(num_time_points + 1):
@@ -464,16 +462,10 @@ def generate_conditional_circles_data_old(num_points_per_condition: int,
         for c, cond_data in enumerate([cond0_data, cond1_data, cond2_data, cond3_data]):
             coords_t = cond_data[t]
             labels_t = torch.full((num_points_per_condition, 1), c, device=device)
-            combined_c_t = torch.cat((coords_t, labels_t), dim=1)
-            data_t_conds.append(combined_c_t)
+            data_t_conds.append(torch.cat((coords_t, labels_t), dim=1))
+        all_data_t.append(torch.cat(data_t_conds, dim=0))
 
-        data_t_combined = torch.cat(data_t_conds, dim=0)
-        all_data_t.append(data_t_combined)
-
-    final_data = torch.stack(all_data_t, dim=0)
-
-    return final_data
-
+    return torch.stack(all_data_t, dim=0)
 
 def generate_conditional_circle_at_time(num_points: int, time: float, radius: float = 1.0, angular_concentration: float = 5.0, radial_std_dev: float = 0.08):
     """
@@ -517,7 +509,7 @@ def generate_conditional_circle_at_time(num_points: int, time: float, radius: fl
 
     return shifted_data
 
-def generate_conditional_circle_marginal_old(num_points_per_condition: int,
+def generate_conditional_circle_marginal_normal(num_points_per_condition: int,
                                          time: float,
                                          radius: float = 1.0,
                                          angular_concentration: float = 15.0,
@@ -525,6 +517,7 @@ def generate_conditional_circle_marginal_old(num_points_per_condition: int,
                                          device: torch.device = DEVICE):
     """
     Generate a marginal distribution for all 4 conditions at a single continuous time.
+    Each condition uses independently sampled warped circle data.
 
     Args:
         num_points_per_condition (int): Number of samples per condition.
@@ -538,16 +531,6 @@ def generate_conditional_circle_marginal_old(num_points_per_condition: int,
         torch.Tensor: Data tensor of shape (4 * num_points_per_condition, 3),
                       where the last dimension is [x, y, condition].
     """
-   
-    base_data = generate_warped_circle_data(
-        num_points_per_time=num_points_per_condition,
-        num_time_points=1,  
-        radius=radius, 
-        angular_concentration=angular_concentration,
-        radial_std_dev=radial_std_dev,
-        device=device
-    )[0]  
-
     def transform_points(points_xy, t_effective, current_radius):
         theta_shift = 2 * math.pi * t_effective  
 
@@ -560,26 +543,60 @@ def generate_conditional_circle_marginal_old(num_points_per_condition: int,
         x_new = r_orig * torch.cos(phi_shifted)
         y_new = r_orig * torch.sin(phi_shifted)
 
-
         x_new_shifted = x_new - current_radius 
         return torch.stack((x_new_shifted, y_new), dim=1)
 
+    base_data_0 = generate_warped_circle_data(
+        num_points_per_time=num_points_per_condition,
+        num_time_points=1,  
+        radius=radius, 
+        angular_concentration=angular_concentration,
+        radial_std_dev=radial_std_dev,
+        device=device
+    )[0]
+    
+    base_data_1 = generate_warped_circle_data(
+        num_points_per_time=num_points_per_condition,
+        num_time_points=1,
+        radius=radius,
+        angular_concentration=angular_concentration,
+        radial_std_dev=radial_std_dev,
+        device=device
+    )[0]
+    
+    base_data_2 = generate_warped_circle_data(
+        num_points_per_time=num_points_per_condition,
+        num_time_points=1,
+        radius=radius,
+        angular_concentration=angular_concentration,
+        radial_std_dev=radial_std_dev,
+        device=device
+    )[0]
+    
+    base_data_3 = generate_warped_circle_data(
+        num_points_per_time=num_points_per_condition,
+        num_time_points=1,
+        radius=radius,
+        angular_concentration=angular_concentration,
+        radial_std_dev=radial_std_dev,
+        device=device
+    )[0]
 
-    cond0_xy = transform_points(base_data, time, radius)
+    cond0_xy = transform_points(base_data_0, time, radius)
     
     time_rev = 1.0 - time
-    cond1_xy = transform_points(base_data, time_rev, radius) 
+    cond1_xy = transform_points(base_data_1, time_rev, radius)
    
-    cond2_xy = cond0_xy.clone()
+    cond2_xy = transform_points(base_data_2, time, radius)
     cond2_xy[..., 0] *= -1
     
-    cond3_xy = cond1_xy.clone()
+    cond3_xy = transform_points(base_data_3, time_rev, radius)
     cond3_xy[..., 0] *= -1
+
     cond0_data = torch.cat((cond0_xy, torch.full((num_points_per_condition, 1), 0, device=device, dtype=cond0_xy.dtype)), dim=1)
     cond1_data = torch.cat((cond1_xy, torch.full((num_points_per_condition, 1), 1, device=device, dtype=cond1_xy.dtype)), dim=1)
     cond2_data = torch.cat((cond2_xy, torch.full((num_points_per_condition, 1), 2, device=device, dtype=cond2_xy.dtype)), dim=1)
     cond3_data = torch.cat((cond3_xy, torch.full((num_points_per_condition, 1), 3, device=device, dtype=cond3_xy.dtype)), dim=1)
-
     final_data = torch.cat((cond0_data, cond1_data, cond2_data, cond3_data), dim=0)
 
     return final_data
@@ -647,7 +664,6 @@ def generate_conditional_circles_data(num_points_per_condition: int,
 
     return final_data
 
-
 def generate_conditional_circle_marginal(num_points_per_condition: int,
                                          time: float,
                                          radius: float = 1.0,
@@ -711,501 +727,647 @@ def generate_conditional_circle_marginal(num_points_per_condition: int,
     return final_data
 
 if __name__ == "__main__":
-    
-    # Parameters
-    num_points_per_condition = 100
-    time = 0.125
-    radius = 1.0
-    angle_range = np.pi / 2
 
-    # Generate the marginal data for all 4 conditions
-    marginal_data = generate_conditional_circle_marginal(
-        num_points_per_condition=num_points_per_condition,
-        time=time,
-        radius=radius,
-        angle_range=angle_range,
-        device=DEVICE
-    )
+    if True:  # Eval marginals normal
+        num_points_per_condition = 100
+        time = 0.25
+        radius = 1.0
+        angular_concentration = 10.0
+        radial_std_dev = 0.08
 
-    print(f"Generated marginal data shape: {marginal_data.shape}")
-
-    # Extract x, y, and condition labels
-    x = marginal_data[:, 0].cpu().numpy()
-    y = marginal_data[:, 1].cpu().numpy()
-    conditions = marginal_data[:, 2].cpu().numpy()
-
-    # Plotting
-    plt.figure(figsize=(8, 8))
-    colors = ['blue', 'orange', 'green', 'red']
-    labels = ['Condition 0 (Base)', 'Condition 1 (Time-Reversed)', 
-            'Condition 2 (X-Flipped)', 'Condition 3 (X-Flipped, Time-Reversed)']
-
-    for c in range(4):
-        mask = conditions == c
-        plt.scatter(x[mask], y[mask], label=labels[c], color=colors[c], alpha=0.6, s=10)
-
-    # Add unit circle for reference
-    circle_ref = plt.Circle((-1, 0), radius, color='black', fill=False, linestyle='--', linewidth=1)
-    neg_circle_ref = plt.Circle((1, 0), -radius, color='black', fill=False, linestyle='--', linewidth=1)
-    plt.gca().add_patch(circle_ref)
-    plt.gca().add_patch(neg_circle_ref)
-
-    # Formatting
-    plt.gca().set_aspect('equal', adjustable='box')
-    plt.title(f"Marginal Distribution at Time {time}")
-    plt.xlabel("x")
-    plt.ylabel("y")
-    plt.legend()
-    plt.grid(True)
-    plt.xlim(-2.5, 2.5)
-    plt.ylim(-1.5, 1.5)
-
-    # Show the plot
-    plt.savefig(os.path.join(SCRIPT_PATH, 'plots', f'conditional_circles_marginal_time_{time}.png'))
-
-    # Define the times for which to generate samples
-    times = [0, 0.125, 0.375, 0.625, 0.875]
-
-    # Initialize the list to store (time, samples) tuples
-    time_samples_list = []
-
-    # Generate samples for each time
-    for t in times:
-        samples = generate_conditional_circle_marginal(
+        marginal_data_normal = generate_conditional_circle_marginal_normal(
             num_points_per_condition=num_points_per_condition,
-            time=t,
+            time=time,
+            radius=radius,
+            angular_concentration=angular_concentration,
+            radial_std_dev=radial_std_dev,
+            device=DEVICE
+        )
+        print(f"Generated normal marginal data shape: {marginal_data_normal.shape}")
+
+        x = marginal_data_normal[:, 0].cpu().numpy()
+        y = marginal_data_normal[:, 1].cpu().numpy()
+        conditions = marginal_data_normal[:, 2].cpu().numpy()
+
+        plt.figure(figsize=(8, 8))
+        colors = ['blue', 'orange', 'green', 'red']
+        labels = ['Condition 0 (Base)', 'Condition 1 (Time-Reversed)', 
+                'Condition 2 (X-Flipped)', 'Condition 3 (X-Flipped, Time-Reversed)']
+
+        for c in range(4):
+            mask = conditions == c
+            plt.scatter(x[mask], y[mask], label=labels[c], color=colors[c], alpha=0.6, s=10)
+
+        circle_ref = plt.Circle((-1, 0), radius, color='black', fill=False, linestyle='--', linewidth=1)
+        neg_circle_ref = plt.Circle((1, 0), -radius, color='black', fill=False, linestyle='--', linewidth=1)
+        plt.gca().add_patch(circle_ref)
+        plt.gca().add_patch(neg_circle_ref)
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.title(f"Normal Marginal Distribution at Time {time}")
+        plt.xlabel("x")
+        plt.ylabel("y")
+        plt.legend()
+        plt.grid(True)
+        plt.xlim(-2.5, 2.5)
+        plt.ylim(-1.5, 1.5)
+
+        plt.savefig(os.path.join(SCRIPT_PATH, 'plots', f'conditional_circles_marginal_normal_time_{time}.png'))
+
+        # Define the times for which eval marginals
+        times = [0, 0.125, 0.375, 0.625, 0.875]
+        time_samples_list_normal = []
+        for t in times:
+            samples = generate_conditional_circle_marginal_normal(
+                num_points_per_condition=num_points_per_condition,
+                time=t,
+                radius=radius,
+                angular_concentration=angular_concentration,
+                radial_std_dev=radial_std_dev,
+                device=DEVICE
+            )
+            samples = jnp.array(samples.cpu().numpy())
+            time_samples_list_normal.append((t, samples))
+
+        for time, samples in time_samples_list_normal:
+            print(f"Time: {time}, Samples Shape: {samples.shape}")
+
+        with open(os.path.join(SCRIPT_PATH, 'eval_marginals_normal.pkl'), 'wb') as f:
+            pickle.dump(time_samples_list_normal, f)
+        
+
+
+    if False:  # Conditional circles normal
+        #----------------------------------------------------#
+        #  Conditional Circles Data (Normal Distribution)   #
+        #----------------------------------------------------#
+
+        print("\n--- Conditional Circles Data (Normal) ---")
+        num_points_per_condition = 100
+        num_time_points = 4
+        radius = 1.0
+        angular_concentration = 10.0  # Higher value -> more concentrated angle
+        radial_std_dev = 0.08  # Smaller value -> less spread in radius
+
+        # Generate the conditional circles data using the normal distribution
+        conditional_circles_data_normal = generate_conditional_circles_data_normal(
+            num_points_per_condition=num_points_per_condition,
+            num_time_points=num_time_points,
+            radius=radius,
+            angular_concentration=angular_concentration,
+            radial_std_dev=radial_std_dev,
+            device=DEVICE
+        )
+
+        print(f"Generated conditional circles data (normal) shape: {conditional_circles_data_normal.shape}")
+
+        # Save the data
+        save_path_normal = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_circles_normal.pt')
+        torch.save(conditional_circles_data_normal, save_path_normal)
+        print(f"Conditional circles data (normal) saved to {save_path_normal}")
+
+        # --- Plotting Conditional Circles Data (Normal) ---
+        fig_normal, axs_normal = plt.subplots(1, num_time_points, figsize=(5 * num_time_points, 5.5), sharex=True, sharey=True)
+        all_x_normal = conditional_circles_data_normal[..., 0].cpu().numpy().flatten()
+        all_y_normal = conditional_circles_data_normal[..., 1].cpu().numpy().flatten()
+        max_abs_coord_normal = max(np.abs(all_x_normal).max(), np.abs(all_y_normal).max()) * 1.1
+        plot_lim_normal = (-max_abs_coord_normal, max_abs_coord_normal)
+
+        colors_normal = plt.cm.tab10(np.linspace(0, 1, 4))
+
+        for t in range(num_time_points):
+            data_t = conditional_circles_data_normal[t].cpu().numpy()
+            conditions_t = data_t[:, 2].astype(int)
+            axs_normal[t].set_title(f"Time t={t}")
+            for c in range(4):
+                mask = conditions_t == c
+                label = f'Cond {c}' if t == 0 else ""
+                if c == 0: label += " (Base)"
+                if c == 1: label += " (Time Reversed)"
+                if c == 2: label += " (X-Flipped)"
+                if c == 3: label += " (X-Flipped, Time Reversed)"
+                axs_normal[t].scatter(data_t[mask, 0], data_t[mask, 1], color=colors_normal[c], label=label, alpha=0.5, s=5)
+            axs_normal[t].set_xlabel("x")
+            if t == 0:
+                axs_normal[t].set_ylabel("y")
+                axs_normal[t].legend(markerscale=2, fontsize='small')
+            axs_normal[t].set_aspect('equal', adjustable='box')
+            axs_normal[t].grid(True)
+            axs_normal[t].set_xlim(plot_lim_normal)
+            axs_normal[t].set_ylim(plot_lim_normal)
+            circle_ref = plt.Circle((-1, 0), 1.0, color='r', fill=False, linestyle='--', linewidth=1)
+            circle_ref_reversed = plt.Circle((1, 0), -1.0, color='b', fill=False, linestyle='--', linewidth=1)
+            axs_normal[t].add_patch(circle_ref)
+            axs_normal[t].add_patch(circle_ref_reversed)
+
+        plt.suptitle(f"Conditional Circles Data (Normal) ({num_time_points} Time Points, {num_points_per_condition} Pts/Cond)")
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plot_save_path_normal = os.path.join(SCRIPT_PATH, 'plots/conditional_circles_normal_plot.png')
+        plt.savefig(plot_save_path_normal)
+        print(f"Conditional circles plot (normal) saved to {plot_save_path_normal}")
+        plt.close(fig_normal)
+    
+    if False:  #Eval marginals uniform
+        # Parameters
+        num_points_per_condition = 100
+        time = 0.125
+        radius = 1.0
+        angle_range = np.pi / 2
+
+        # Generate the marginal data for all 4 conditions
+        marginal_data = generate_conditional_circle_marginal(
+            num_points_per_condition=num_points_per_condition,
+            time=time,
             radius=radius,
             angle_range=angle_range,
             device=DEVICE
         )
-        #convert samples to jnp
-        samples = jnp.array(samples.cpu().numpy())
 
-        time_samples_list.append((t, samples))
+        print(f"Generated marginal data shape: {marginal_data.shape}")
 
-    # Print the result
-    for time, samples in time_samples_list:
-        print(f"Time: {time}, Samples Shape: {samples.shape}")
+        # Extract x, y, and condition labels
+        x = marginal_data[:, 0].cpu().numpy()
+        y = marginal_data[:, 1].cpu().numpy()
+        conditions = marginal_data[:, 2].cpu().numpy()
 
-    #save time_samples_list as pkl
+        # Plotting
+        plt.figure(figsize=(8, 8))
+        colors = ['blue', 'orange', 'green', 'red']
+        labels = ['Condition 0 (Base)', 'Condition 1 (Time-Reversed)', 
+                'Condition 2 (X-Flipped)', 'Condition 3 (X-Flipped, Time-Reversed)']
 
-    with open(os.path.join(SCRIPT_PATH, 'eval_marginals.pkl'), 'wb') as f:
-        pickle.dump(time_samples_list, f)
-    
-
-    #----------------------------------------------------#
-    #  Conditional Circles KDE #
-    #----------------------------------------------------#
-    
-    num_points_per_condition = 100
-    num_time_points = 4
-    radius = 1.0
-    angle_range = np.pi / 2  # Spread of the distribution on the circumference
-
-    kde_data = generate_conditional_circles_data(
-        num_points_per_condition=num_points_per_condition,
-        num_time_points=num_time_points,
-        radius=radius,
-        angle_range=angle_range,
-        device=DEVICE
-    )[:-1]  # Exclude the last time point for plotting
-
-    #combine all time points
-    data = kde_data.view(-1, kde_data.shape[-1]).cpu().numpy()  # Shape: (num_points_per_condition * num_time_points * 4, 3)
-    print(data.shape)
-    # Separate data by condition
-    conditions = data[:, 2].astype(int)
-    x = data[:, 0]
-    y = data[:, 1]
-
-    # Plot KDE for each condition in separate subplots
-    fig, axs = plt.subplots(2, 2, figsize=(12, 10), sharex=True, sharey=True)
-    colors = ['blue', 'orange', 'green', 'red']
-    labels = ['Condition 0', 'Condition 1', 'Condition 2', 'Condition 3']
-
-    for c, ax in enumerate(axs.flatten()):
-        mask = conditions == c
-        sns.kdeplot(x=x[mask], y=y[mask], fill=True, alpha=0.5, label=labels[c], color=colors[c], ax=ax, bw_method=0.25)
-        ax.set_title(labels[c])
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
-        ax.grid(True)
-        ax.legend()
-
-    # Formatting
-    plt.suptitle("KDE of Ambient Data for Each Condition")
-    plt.tight_layout()
-    #plt.savefig(os.path.join(SCRIPT_PATH, 'plots', 'conditional_circles_kde_subplots.png'))
-
-    #----------------------------------------------------#
-    #  Conditional Circles Data #
-    #----------------------------------------------------#
-
-    print("\n--- Conditional Circles Data ---")
-    num_points_per_condition = 100
-    num_time_points = 4
-    radius = 1.0
-    angle_range = np.pi / 2  # Spread of the distribution on the circumference
-
-    conditional_circles_data = generate_conditional_circles_data(
-        num_points_per_condition=num_points_per_condition,
-        num_time_points=num_time_points,
-        radius=radius,
-        angle_range=angle_range,
-        device=DEVICE
-    )
-
-    print(f"Generated conditional circles data shape: {conditional_circles_data.shape}")
-
-    # save
-    save_path_smr = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_circles.pt')
-    #torch.save(conditional_circles_data, save_path_smr)
-    print(f"Conditional circles data saved to {save_path_smr}")
-
-    # --- Plotting SMR Circle Data ---
-    fig_smr, axs_smr = plt.subplots(1, num_time_points, figsize=(5 * num_time_points, 5.5), sharex=True, sharey=True)
-    all_x_smr = conditional_circles_data[..., 0].cpu().numpy().flatten()
-    all_y_smr = conditional_circles_data[..., 1].cpu().numpy().flatten()
-    max_abs_coord_smr = max(np.abs(all_x_smr).max(), np.abs(all_y_smr).max()) * 1.1
-    plot_lim_smr = (-max_abs_coord_smr, max_abs_coord_smr)
-
-    colors_smr = plt.cm.tab10(np.linspace(0, 1, 4))
-
-    for t in range(num_time_points):
-        data_t = conditional_circles_data[t].cpu().numpy()
-        conditions_t = data_t[:, 2].astype(int)
-        axs_smr[t].set_title(f"Time t={t}")
         for c in range(4):
-            mask = conditions_t == c
-            label = f'Cond {c}' if t == 0 else ""
-            if c == 0: label += " (Base)"
-            if c == 1: label += " (Time Reversed)"
-            if c == 2: label += " (X-Flipped)"
-            if c == 3: label += " (X-Flipped, Time Reversed)"
-            axs_smr[t].scatter(data_t[mask, 0], data_t[mask, 1], color=colors_smr[c], label=label, alpha=0.5, s=5)
-        axs_smr[t].set_xlabel("x")
-        if t == 0:
-            axs_smr[t].set_ylabel("y")
-            axs_smr[t].legend(markerscale=2, fontsize='small')
-        axs_smr[t].set_aspect('equal', adjustable='box')
-        axs_smr[t].grid(True)
-        axs_smr[t].set_xlim(plot_lim_smr)
-        axs_smr[t].set_ylim(plot_lim_smr)
-        circle_ref = plt.Circle((-1, 0), 1.0, color='r', fill=False, linestyle='--', linewidth=1)
-        circle_ref_reversed = plt.Circle((1, 0), -1.0, color='b', fill=False, linestyle='--', linewidth=1)
-        axs_smr[t].add_patch(circle_ref)
-        axs_smr[t].add_patch(circle_ref_reversed)
+            mask = conditions == c
+            plt.scatter(x[mask], y[mask], label=labels[c], color=colors[c], alpha=0.6, s=10)
 
-    plt.suptitle(f"Conditional Circles Data ({num_time_points} Time Points, {num_points_per_condition} Pts/Cond)")
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plot_save_path_smr = os.path.join(SCRIPT_PATH, 'plots/conditional_circles_plot.png')
-    #plt.savefig(plot_save_path_smr)
-    print(f"Conditional circles plot saved to {plot_save_path_smr}")
-    plt.close(fig_smr)
+        # Add unit circle for reference
+        circle_ref = plt.Circle((-1, 0), radius, color='black', fill=False, linestyle='--', linewidth=1)
+        neg_circle_ref = plt.Circle((1, 0), -radius, color='black', fill=False, linestyle='--', linewidth=1)
+        plt.gca().add_patch(circle_ref)
+        plt.gca().add_patch(neg_circle_ref)
 
-    #------------------------#
-    #   WARPED CIRCLE DATA   #
-    #------------------------#
-    print("\n--- Warped Circle Data ---")
-    num_points_circle = 100
-    num_times_circle = 4
-    angular_conc_circle = 10.0 # Higher value -> more concentrated angle
-    radial_std_circle = 0.08  # Smaller value -> less spread in radius
+        # Formatting
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.title(f"Marginal Distribution at Time {time}")
+        plt.xlabel("x")
+        plt.ylabel("y")
+        plt.legend()
+        plt.grid(True)
+        plt.xlim(-2.5, 2.5)
+        plt.ylim(-1.5, 1.5)
 
-    warped_circle_data = generate_warped_circle_data(
-        num_points_per_time=num_points_circle,
-        num_time_points=num_times_circle,
-        angular_concentration=angular_conc_circle,
-        radial_std_dev=radial_std_circle,
-        radius=1.0
-    )
+        # Show the plot
+        plt.savefig(os.path.join(SCRIPT_PATH, 'plots', f'conditional_circles_marginal_time_{time}.png'))
 
-    #generate uniform circle data
-    warped_circle_data = generate_warped_circle_data_uniform(
-        num_points_per_time=num_points_circle,
-        num_time_points=num_times_circle,
-        radius=1.0,
-        angle_range=np.pi / 2,
-        device=DEVICE
-    )
+        # Define the times for which to generate samples
+        times = [0, 0.125, 0.375, 0.625, 0.875]
 
-    # save
-    #warped_circle_data = torch.cat((warped_circle_data, warped_circle_data[0:1]), dim=0) # Wrap around to first time point
-    print(f"Generated warped circle data shape: {warped_circle_data.shape}")
+        # Initialize the list to store (time, samples) tuples
+        time_samples_list = []
 
-    save_path_circle = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'warped_circle.pt')
-    #torch.save(warped_circle_data, save_path_circle)
-    #print(f"Warped circle data saved to {save_path_circle}")
+        # Generate samples for each time
+        for t in times:
+            samples = generate_conditional_circle_marginal(
+                num_points_per_condition=num_points_per_condition,
+                time=t,
+                radius=radius,
+                angle_range=angle_range,
+                device=DEVICE
+            )
+            #convert samples to jnp
+            samples = jnp.array(samples.cpu().numpy())
 
-    # --- Plotting Warped Circle Data ---
-    fig_circle, axs_circle = plt.subplots(1, num_times_circle, figsize=(5 * num_times_circle, 5.5), sharex=True, sharey=True)
-    max_abs_coord = warped_circle_data.abs().max().item() * 1.1 # Get max coordinate for consistent plot limits
-    plot_lim = (-max_abs_coord, max_abs_coord)
+            time_samples_list.append((t, samples))
 
-    for t in range(num_times_circle):
-        data_t = warped_circle_data[t].cpu().numpy()
-        axs_circle[t].scatter(data_t[:, 0], data_t[:, 1], alpha=0.5, s=5)
-        axs_circle[t].set_title(f"Time t={t}")
-        axs_circle[t].set_xlabel("x")
-        if t == 0:
-            axs_circle[t].set_ylabel("y")
-        axs_circle[t].set_aspect('equal', adjustable='box')
-        axs_circle[t].grid(True)
-        axs_circle[t].set_xlim(plot_lim)
-        axs_circle[t].set_ylim(plot_lim)
-        # Draw unit circle for reference
-        circle_ref = plt.Circle((0, 0), 1.0, color='r', fill=False, linestyle='--', linewidth=1)
-        axs_circle[t].add_patch(circle_ref)
+        # Print the result
+        for time, samples in time_samples_list:
+            print(f"Time: {time}, Samples Shape: {samples.shape}")
 
+        #save time_samples_list as pkl
 
-    plt.suptitle(f"Warped Circle Data ({num_times_circle} Time Points, {num_points_circle} Pts/Time)")
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plot_save_path_circle = os.path.join(SCRIPT_PATH, 'warped_circle_plot.png')
-    plt.savefig(plot_save_path_circle)
-    print(f"Warped circle plot saved to {plot_save_path_circle}")
-    plt.close(fig_circle)
-
-    #-----------------------------#
-    #  VELOCITY CONDITIONED DATA  #
-    #-----------------------------#
-
-    print("\n--- Velocity Conditioned Data ---")
-    num_cond_vel = 10
-    num_points_per_cond_vel = 100
-    total_points_vel = num_cond_vel * num_points_per_cond_vel
-    timesteps_vel = np.linspace(0, 1, 21)
-    variance_vel = 0.01
-    velocity_data = generate_velocity_conditioned_data(
-        num_conditions=num_cond_vel,
-        num_points_per_condition=num_points_per_cond_vel,
-        timesteps=timesteps_vel,
-        variance=variance_vel
-    )
-    print(f"Generated velocity conditioned data shape: {velocity_data.shape}")
-
-    #save
-    save_path_vel = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_velocity.pt')
-    #torch.save(velocity_data, save_path_vel)
-    #print(f"Velocity conditioned data saved to {save_path_vel}")
-
-    fig_vel, axs_vel = plt.subplots(1, len(timesteps_vel), figsize=(5 * len(timesteps_vel), 5), sharex=True, sharey=True)
-    conditions_vel = velocity_data[0, :, 2].cpu().numpy()
-    norm_vel = plt.Normalize(conditions_vel.min(), conditions_vel.max())
-    cmap_vel = plt.cm.viridis
-
-    for i, t in enumerate(timesteps_vel):
-        data_t = velocity_data[i].cpu().numpy()
-        points = axs_vel[i].scatter(data_t[:, 0], data_t[:, 1], c=conditions_vel, cmap=cmap_vel, norm=norm_vel, alpha=0.6, s=10)
-        axs_vel[i].set_title(f"Time t={t:.2f}")
-        axs_vel[i].set_xlabel("x")
-        if i == 0:
-            axs_vel[i].set_ylabel("y")
-        axs_vel[i].set_aspect('equal', adjustable='box')
-        axs_vel[i].grid(True)
-
-    fig_vel.colorbar(points, ax=axs_vel, label='Condition (Speed)')
-    plt.suptitle(f"Velocity Conditioned Data ({num_cond_vel} Speeds, {num_points_per_cond_vel} Pts/Speed)")
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plot_save_path_vel = os.path.join(SCRIPT_PATH, 'plots/velocity_conditioned_plot.png')
-    #plt.savefig(plot_save_path_vel)
-    plt.close(fig_vel)
-
-    #-----------------------------#
-    #  ROTATION CONDITIONED DATA  #
-    #-----------------------------#    
+        with open(os.path.join(SCRIPT_PATH, 'eval_marginals.pkl'), 'wb') as f:
+            pickle.dump(time_samples_list, f)
     
-    print("\n--- Rotation Conditioned Data ---")
-    num_cond_rot = 10 
-    num_points_per_cond_rot = 100 
-    total_points_rot = num_cond_rot * num_points_per_cond_rot
-    timesteps_rot = np.linspace(0, 1, 21)
-    variance_rot = 0.03
-    rotation_data = generate_rotation_conditioned_data(
-        num_conditions=num_cond_rot,
-        num_points_per_condition=num_points_per_cond_rot,
-        timesteps=timesteps_rot,
-        base_radius_speed=0.5,
-        base_angular_speed=math.pi,
-        condition_range=(0, math.pi),
-        variance=variance_rot
-    )
-    print(f"Generated rotation conditioned data shape: {rotation_data.shape}") 
+    if False: # KDE
+        #----------------------------------------------------#
+        #  Conditional Circles KDE #
+        #----------------------------------------------------#
+        
+        num_points_per_condition = 100
+        num_time_points = 4
+        radius = 1.0
+        angle_range = np.pi / 2  # Spread of the distribution on the circumference
 
-    #save
-    save_path_rot = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_rotation.pt')
-    #torch.save(rotation_data, save_path_rot)
-    #print(f"Rotation conditioned data saved to {save_path_rot}")
+        kde_data = generate_conditional_circles_data(
+            num_points_per_condition=num_points_per_condition,
+            num_time_points=num_time_points,
+            radius=radius,
+            angle_range=angle_range,
+            device=DEVICE
+        )[:-1]  # Exclude the last time point for plotting
 
-    fig_rot, axs_rot = plt.subplots(1, len(timesteps_rot), figsize=(5 * len(timesteps_rot), 5), sharex=True, sharey=True)
-    conditions_rot = rotation_data[0, :, 2].cpu().numpy()
-    norm_rot = plt.Normalize(conditions_rot.min(), conditions_rot.max())
-    cmap_rot = plt.cm.plasma
+        #combine all time points
+        data = kde_data.view(-1, kde_data.shape[-1]).cpu().numpy()  # Shape: (num_points_per_condition * num_time_points * 4, 3)
+        print(data.shape)
+        # Separate data by condition
+        conditions = data[:, 2].astype(int)
+        x = data[:, 0]
+        y = data[:, 1]
 
-    for i, t in enumerate(timesteps_rot):
-        data_t = rotation_data[i].cpu().numpy()
-        points = axs_rot[i].scatter(data_t[:, 0], data_t[:, 1], c=conditions_rot, cmap=cmap_rot, norm=norm_rot, alpha=0.6, s=10)
-        axs_rot[i].set_title(f"Time t={t:.2f}")
-        axs_rot[i].set_xlabel("x")
-        if i == 0:
-            axs_rot[i].set_ylabel("y")
-        axs_rot[i].set_aspect('equal', adjustable='box')
-        axs_rot[i].grid(True)
+        # Plot KDE for each condition in separate subplots
+        fig, axs = plt.subplots(2, 2, figsize=(12, 10), sharex=True, sharey=True)
+        colors = ['blue', 'orange', 'green', 'red']
+        labels = ['Condition 0', 'Condition 1', 'Condition 2', 'Condition 3']
 
-    all_x_rot = rotation_data[:, :, 0].cpu().numpy().flatten()
-    all_y_rot = rotation_data[:, :, 1].cpu().numpy().flatten()
-    x_min_rot, x_max_rot = np.min(all_x_rot), np.max(all_x_rot)
-    y_min_rot, y_max_rot = np.min(all_y_rot), np.max(all_y_rot)
-    padding_rot = max(abs(x_min_rot), abs(x_max_rot), abs(y_min_rot), abs(y_max_rot)) * 0.1
-    axs_rot[0].set_xlim(x_min_rot - padding_rot, x_max_rot + padding_rot)
-    axs_rot[0].set_ylim(y_min_rot - padding_rot, y_max_rot + padding_rot)
+        for c, ax in enumerate(axs.flatten()):
+            mask = conditions == c
+            sns.kdeplot(x=x[mask], y=y[mask], fill=True, alpha=0.5, label=labels[c], color=colors[c], ax=ax, bw_method=0.25)
+            ax.set_title(labels[c])
+            ax.set_xlabel("x")
+            ax.set_ylabel("y")
+            ax.grid(True)
+            ax.legend()
 
-    fig_rot.colorbar(points, ax=axs_rot, label='Condition (Angular Speed Offset)')
-    plt.suptitle(f"Rotation Conditioned Data ({num_cond_rot} Offsets, {num_points_per_cond_rot} Pts/Offset)")
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plot_save_path_rot = os.path.join(SCRIPT_PATH, 'plots/rotation_conditioned_plot.png')
-    #plt.savefig(plot_save_path_rot)
-    plt.close(fig_rot)
+        # Formatting
+        plt.suptitle("KDE of Ambient Data for Each Condition")
+        plt.tight_layout()
+        #plt.savefig(os.path.join(SCRIPT_PATH, 'plots', 'conditional_circles_kde_subplots.png'))
 
-    #----------------------------#
-    #  COMPLEX CONDITIONAL DATA  #
-    #----------------------------#
-    num_points_per_cond_5t = 500
-    variance_5t = 0.05
-    conditional_data_5t = generate_complex_conditional_gaussian_data( 
-        num_points_per_condition=num_points_per_cond_5t,
-        variance=variance_5t
-    )
-    print(f"Generated 5T conditional data shape: {conditional_data_5t.shape}")
-    print(conditional_data_5t[0])
+    if False: # Conditional circles uniform
+        #----------------------------------------------------#
+        #  Conditional Circles Data #
+        #----------------------------------------------------#
 
-    #save
-    #save_path_5t = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_gaussians_complex.pt')
-    #torch.save(conditional_data_5t, save_path_5t)
-    #print(f"5T Conditional data saved to {save_path_5t}")
+        print("\n--- Conditional Circles Data ---")
+        num_points_per_condition = 100
+        num_time_points = 4
+        radius = 1.0
+        angle_range = np.pi / 2  # Spread of the distribution on the circumference
 
-    # --- Plotting 5T Conditional Data ---
-    num_time_points_plot = 5
-    fig_5t, axs_5t = plt.subplots(1, num_time_points_plot, figsize=(5 * num_time_points_plot, 5), sharex=True, sharey=True)
-    colors_5t = plt.cm.viridis(np.linspace(0, 1, 4))
+        conditional_circles_data = generate_conditional_circles_data(
+            num_points_per_condition=num_points_per_condition,
+            num_time_points=num_time_points,
+            radius=radius,
+            angle_range=angle_range,
+            device=DEVICE
+        )
 
-    for t in range(num_time_points_plot):
-        data_t = conditional_data_5t[t].cpu().numpy()
-        conditions_t = data_t[:, 2].astype(int)
-        axs_5t[t].set_title(f"Time t={t}")
+        print(f"Generated conditional circles data shape: {conditional_circles_data.shape}")
+
+        # save
+        save_path_smr = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_circles.pt')
+        #torch.save(conditional_circles_data, save_path_smr)
+        print(f"Conditional circles data saved to {save_path_smr}")
+
+        # --- Plotting SMR Circle Data ---
+        fig_smr, axs_smr = plt.subplots(1, num_time_points, figsize=(5 * num_time_points, 5.5), sharex=True, sharey=True)
+        all_x_smr = conditional_circles_data[..., 0].cpu().numpy().flatten()
+        all_y_smr = conditional_circles_data[..., 1].cpu().numpy().flatten()
+        max_abs_coord_smr = max(np.abs(all_x_smr).max(), np.abs(all_y_smr).max()) * 1.1
+        plot_lim_smr = (-max_abs_coord_smr, max_abs_coord_smr)
+
+        colors_smr = plt.cm.tab10(np.linspace(0, 1, 4))
+
+        for t in range(num_time_points):
+            data_t = conditional_circles_data[t].cpu().numpy()
+            conditions_t = data_t[:, 2].astype(int)
+            axs_smr[t].set_title(f"Time t={t}")
+            for c in range(4):
+                mask = conditions_t == c
+                label = f'Cond {c}' if t == 0 else ""
+                if c == 0: label += " (Base)"
+                if c == 1: label += " (Time Reversed)"
+                if c == 2: label += " (X-Flipped)"
+                if c == 3: label += " (X-Flipped, Time Reversed)"
+                axs_smr[t].scatter(data_t[mask, 0], data_t[mask, 1], color=colors_smr[c], label=label, alpha=0.5, s=5)
+            axs_smr[t].set_xlabel("x")
+            if t == 0:
+                axs_smr[t].set_ylabel("y")
+                axs_smr[t].legend(markerscale=2, fontsize='small')
+            axs_smr[t].set_aspect('equal', adjustable='box')
+            axs_smr[t].grid(True)
+            axs_smr[t].set_xlim(plot_lim_smr)
+            axs_smr[t].set_ylim(plot_lim_smr)
+            circle_ref = plt.Circle((-1, 0), 1.0, color='r', fill=False, linestyle='--', linewidth=1)
+            circle_ref_reversed = plt.Circle((1, 0), -1.0, color='b', fill=False, linestyle='--', linewidth=1)
+            axs_smr[t].add_patch(circle_ref)
+            axs_smr[t].add_patch(circle_ref_reversed)
+
+        plt.suptitle(f"Conditional Circles Data ({num_time_points} Time Points, {num_points_per_condition} Pts/Cond)")
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plot_save_path_smr = os.path.join(SCRIPT_PATH, 'plots/conditional_circles_plot.png')
+        #plt.savefig(plot_save_path_smr)
+        print(f"Conditional circles plot saved to {plot_save_path_smr}")
+        plt.close(fig_smr)
+
+    if False: # Warped circle
+        #------------------------#
+        #   WARPED CIRCLE DATA   #
+        #------------------------#
+        print("\n--- Warped Circle Data ---")
+        num_points_circle = 100
+        num_times_circle = 4
+        angular_conc_circle = 10.0 # Higher value -> more concentrated angle
+        radial_std_circle = 0.08  # Smaller value -> less spread in radius
+
+        warped_circle_data = generate_warped_circle_data(
+            num_points_per_time=num_points_circle,
+            num_time_points=num_times_circle,
+            angular_concentration=angular_conc_circle,
+            radial_std_dev=radial_std_circle,
+            radius=1.0
+        )
+
+        #generate uniform circle data
+        warped_circle_data = generate_warped_circle_data_uniform(
+            num_points_per_time=num_points_circle,
+            num_time_points=num_times_circle,
+            radius=1.0,
+            angle_range=np.pi / 2,
+            device=DEVICE
+        )
+
+        # save
+        #warped_circle_data = torch.cat((warped_circle_data, warped_circle_data[0:1]), dim=0) # Wrap around to first time point
+        print(f"Generated warped circle data shape: {warped_circle_data.shape}")
+
+        save_path_circle = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'warped_circle.pt')
+        #torch.save(warped_circle_data, save_path_circle)
+        #print(f"Warped circle data saved to {save_path_circle}")
+
+        # --- Plotting Warped Circle Data ---
+        fig_circle, axs_circle = plt.subplots(1, num_times_circle, figsize=(5 * num_times_circle, 5.5), sharex=True, sharey=True)
+        max_abs_coord = warped_circle_data.abs().max().item() * 1.1 # Get max coordinate for consistent plot limits
+        plot_lim = (-max_abs_coord, max_abs_coord)
+
+        for t in range(num_times_circle):
+            data_t = warped_circle_data[t].cpu().numpy()
+            axs_circle[t].scatter(data_t[:, 0], data_t[:, 1], alpha=0.5, s=5)
+            axs_circle[t].set_title(f"Time t={t}")
+            axs_circle[t].set_xlabel("x")
+            if t == 0:
+                axs_circle[t].set_ylabel("y")
+            axs_circle[t].set_aspect('equal', adjustable='box')
+            axs_circle[t].grid(True)
+            axs_circle[t].set_xlim(plot_lim)
+            axs_circle[t].set_ylim(plot_lim)
+            # Draw unit circle for reference
+            circle_ref = plt.Circle((0, 0), 1.0, color='r', fill=False, linestyle='--', linewidth=1)
+            axs_circle[t].add_patch(circle_ref)
+
+
+        plt.suptitle(f"Warped Circle Data ({num_times_circle} Time Points, {num_points_circle} Pts/Time)")
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plot_save_path_circle = os.path.join(SCRIPT_PATH, 'warped_circle_plot.png')
+        plt.savefig(plot_save_path_circle)
+        print(f"Warped circle plot saved to {plot_save_path_circle}")
+        plt.close(fig_circle)
+
+    if False: # Velocity condition
+        #-----------------------------#
+        #  VELOCITY CONDITIONED DATA  #
+        #-----------------------------#
+
+        print("\n--- Velocity Conditioned Data ---")
+        num_cond_vel = 10
+        num_points_per_cond_vel = 100
+        total_points_vel = num_cond_vel * num_points_per_cond_vel
+        timesteps_vel = np.linspace(0, 1, 21)
+        variance_vel = 0.01
+        velocity_data = generate_velocity_conditioned_data(
+            num_conditions=num_cond_vel,
+            num_points_per_condition=num_points_per_cond_vel,
+            timesteps=timesteps_vel,
+            variance=variance_vel
+        )
+        print(f"Generated velocity conditioned data shape: {velocity_data.shape}")
+
+        #save
+        save_path_vel = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_velocity.pt')
+        #torch.save(velocity_data, save_path_vel)
+        #print(f"Velocity conditioned data saved to {save_path_vel}")
+
+        fig_vel, axs_vel = plt.subplots(1, len(timesteps_vel), figsize=(5 * len(timesteps_vel), 5), sharex=True, sharey=True)
+        conditions_vel = velocity_data[0, :, 2].cpu().numpy()
+        norm_vel = plt.Normalize(conditions_vel.min(), conditions_vel.max())
+        cmap_vel = plt.cm.viridis
+
+        for i, t in enumerate(timesteps_vel):
+            data_t = velocity_data[i].cpu().numpy()
+            points = axs_vel[i].scatter(data_t[:, 0], data_t[:, 1], c=conditions_vel, cmap=cmap_vel, norm=norm_vel, alpha=0.6, s=10)
+            axs_vel[i].set_title(f"Time t={t:.2f}")
+            axs_vel[i].set_xlabel("x")
+            if i == 0:
+                axs_vel[i].set_ylabel("y")
+            axs_vel[i].set_aspect('equal', adjustable='box')
+            axs_vel[i].grid(True)
+
+        fig_vel.colorbar(points, ax=axs_vel, label='Condition (Speed)')
+        plt.suptitle(f"Velocity Conditioned Data ({num_cond_vel} Speeds, {num_points_per_cond_vel} Pts/Speed)")
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plot_save_path_vel = os.path.join(SCRIPT_PATH, 'plots/velocity_conditioned_plot.png')
+        #plt.savefig(plot_save_path_vel)
+        plt.close(fig_vel)
+
+    if False: # Rotation condition
+        #-----------------------------#
+        #  ROTATION CONDITIONED DATA  #
+        #-----------------------------#    
+        
+        print("\n--- Rotation Conditioned Data ---")
+        num_cond_rot = 10 
+        num_points_per_cond_rot = 100 
+        total_points_rot = num_cond_rot * num_points_per_cond_rot
+        timesteps_rot = np.linspace(0, 1, 21)
+        variance_rot = 0.03
+        rotation_data = generate_rotation_conditioned_data(
+            num_conditions=num_cond_rot,
+            num_points_per_condition=num_points_per_cond_rot,
+            timesteps=timesteps_rot,
+            base_radius_speed=0.5,
+            base_angular_speed=math.pi,
+            condition_range=(0, math.pi),
+            variance=variance_rot
+        )
+        print(f"Generated rotation conditioned data shape: {rotation_data.shape}") 
+
+        #save
+        save_path_rot = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_rotation.pt')
+        #torch.save(rotation_data, save_path_rot)
+        #print(f"Rotation conditioned data saved to {save_path_rot}")
+
+        fig_rot, axs_rot = plt.subplots(1, len(timesteps_rot), figsize=(5 * len(timesteps_rot), 5), sharex=True, sharey=True)
+        conditions_rot = rotation_data[0, :, 2].cpu().numpy()
+        norm_rot = plt.Normalize(conditions_rot.min(), conditions_rot.max())
+        cmap_rot = plt.cm.plasma
+
+        for i, t in enumerate(timesteps_rot):
+            data_t = rotation_data[i].cpu().numpy()
+            points = axs_rot[i].scatter(data_t[:, 0], data_t[:, 1], c=conditions_rot, cmap=cmap_rot, norm=norm_rot, alpha=0.6, s=10)
+            axs_rot[i].set_title(f"Time t={t:.2f}")
+            axs_rot[i].set_xlabel("x")
+            if i == 0:
+                axs_rot[i].set_ylabel("y")
+            axs_rot[i].set_aspect('equal', adjustable='box')
+            axs_rot[i].grid(True)
+
+        all_x_rot = rotation_data[:, :, 0].cpu().numpy().flatten()
+        all_y_rot = rotation_data[:, :, 1].cpu().numpy().flatten()
+        x_min_rot, x_max_rot = np.min(all_x_rot), np.max(all_x_rot)
+        y_min_rot, y_max_rot = np.min(all_y_rot), np.max(all_y_rot)
+        padding_rot = max(abs(x_min_rot), abs(x_max_rot), abs(y_min_rot), abs(y_max_rot)) * 0.1
+        axs_rot[0].set_xlim(x_min_rot - padding_rot, x_max_rot + padding_rot)
+        axs_rot[0].set_ylim(y_min_rot - padding_rot, y_max_rot + padding_rot)
+
+        fig_rot.colorbar(points, ax=axs_rot, label='Condition (Angular Speed Offset)')
+        plt.suptitle(f"Rotation Conditioned Data ({num_cond_rot} Offsets, {num_points_per_cond_rot} Pts/Offset)")
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plot_save_path_rot = os.path.join(SCRIPT_PATH, 'plots/rotation_conditioned_plot.png')
+        #plt.savefig(plot_save_path_rot)
+        plt.close(fig_rot)
+
+    if False: # Gaussian squiggles
+        #----------------------------#
+        #  COMPLEX CONDITIONAL DATA  #
+        #----------------------------#
+        num_points_per_cond_5t = 500
+        variance_5t = 0.05
+        conditional_data_5t = generate_complex_conditional_gaussian_data( 
+            num_points_per_condition=num_points_per_cond_5t,
+            variance=variance_5t
+        )
+        print(f"Generated 5T conditional data shape: {conditional_data_5t.shape}")
+        print(conditional_data_5t[0])
+
+        #save
+        #save_path_5t = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_gaussians_complex.pt')
+        #torch.save(conditional_data_5t, save_path_5t)
+        #print(f"5T Conditional data saved to {save_path_5t}")
+
+        # --- Plotting 5T Conditional Data ---
+        num_time_points_plot = 5
+        fig_5t, axs_5t = plt.subplots(1, num_time_points_plot, figsize=(5 * num_time_points_plot, 5), sharex=True, sharey=True)
+        colors_5t = plt.cm.viridis(np.linspace(0, 1, 4))
+
+        for t in range(num_time_points_plot):
+            data_t = conditional_data_5t[t].cpu().numpy()
+            conditions_t = data_t[:, 2].astype(int)
+            axs_5t[t].set_title(f"Time t={t}")
+            for c in range(4):
+                mask = conditions_t == c
+                axs_5t[t].scatter(data_t[mask, 0], data_t[mask, 1], color=colors_5t[c], label=f'Cond {c}' if t == 0 else "", alpha=0.6, s=10)
+            axs_5t[t].set_xlabel("x")
+            if t == 0:
+                axs_5t[t].set_ylabel("y")
+                axs_5t[t].legend()
+            axs_5t[t].set_aspect('equal', adjustable='box')
+            axs_5t[t].grid(True)
+
+
+        all_x = conditional_data_5t[:, :, 0].cpu().numpy().flatten()
+        all_y = conditional_data_5t[:, :, 1].cpu().numpy().flatten()
+        x_min, x_max = np.min(all_x), np.max(all_x)
+        y_min, y_max = np.min(all_y), np.max(all_y)
+        padding = 1.0
+        axs_5t[0].set_xlim(x_min - padding, x_max + padding)
+        axs_5t[0].set_ylim(y_min - padding, y_max + padding)
+
+
+        plt.suptitle("Generated Complex Conditional Gaussian Data")
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plot_save_path_5t = os.path.join(SCRIPT_PATH, 'plots/conditional_gaussians_complex_plot.png')
+        #plt.savefig(plot_save_path_5t)
+        #print(f"5T Plot saved to {plot_save_path_5t}")
+        plt.close(fig_5t)
+
+    if False: # Gaussian splitting
+        #--------------------#
+        #  CONDITIONAL DATA  #
+        #--------------------#
+        num_points_per_cond = 500
+        conditional_data = generate_conditional_gaussian_data(num_points_per_condition=num_points_per_cond, variance=0.05)
+        total_points = num_points_per_cond * 4
+        print(f"Generated conditional data shape: {conditional_data.shape}") 
+
+        # save
+        save_path = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_gaussians_3t.pt')
+        #torch.save(conditional_data, save_path)
+        #print(f"Conditional data saved to {save_path}")
+
+        # --- Plotting Conditional Data ---
+        fig, axs = plt.subplots(1, 3, figsize=(15, 5), sharex=True, sharey=True)
+        colors = plt.cm.viridis(np.linspace(0, 1, 4))
+
+        # Plot t=0
+        data_t0 = conditional_data[0].cpu().numpy()
+        conditions_t0 = data_t0[:, 2].astype(int)
+        axs[0].set_title("Time t=0")
         for c in range(4):
-            mask = conditions_t == c
-            axs_5t[t].scatter(data_t[mask, 0], data_t[mask, 1], color=colors_5t[c], label=f'Cond {c}' if t == 0 else "", alpha=0.6, s=10)
-        axs_5t[t].set_xlabel("x")
-        if t == 0:
-            axs_5t[t].set_ylabel("y")
-            axs_5t[t].legend()
-        axs_5t[t].set_aspect('equal', adjustable='box')
-        axs_5t[t].grid(True)
+            mask = conditions_t0 == c
+            axs[0].scatter(data_t0[mask, 0], data_t0[mask, 1], color=colors[c], label=f'Cond {c}', alpha=0.6, s=10)
+        axs[0].legend()
+        axs[0].set_xlabel("x")
+        axs[0].set_ylabel("y")
+        axs[0].set_aspect('equal', adjustable='box')
+        axs[0].grid(True)
 
+        # Plot t=1
+        data_t1 = conditional_data[1].cpu().numpy()
+        conditions_t1 = data_t1[:, 2].astype(int)
+        axs[1].set_title("Time t=1")
+        for c in range(4):
+            mask = conditions_t1 == c
+            axs[1].scatter(data_t1[mask, 0], data_t1[mask, 1], color=colors[c], label=f'Cond {c}', alpha=0.6, s=10)
+        axs[1].set_xlabel("x")
+        axs[1].set_aspect('equal', adjustable='box')
+        axs[1].grid(True)
 
-    all_x = conditional_data_5t[:, :, 0].cpu().numpy().flatten()
-    all_y = conditional_data_5t[:, :, 1].cpu().numpy().flatten()
-    x_min, x_max = np.min(all_x), np.max(all_x)
-    y_min, y_max = np.min(all_y), np.max(all_y)
-    padding = 1.0
-    axs_5t[0].set_xlim(x_min - padding, x_max + padding)
-    axs_5t[0].set_ylim(y_min - padding, y_max + padding)
+        # Plot t=2
+        data_t2 = conditional_data[2].cpu().numpy()
+        conditions_t2 = data_t2[:, 2].astype(int)
+        axs[2].set_title("Time t=2") 
+        for c in range(4):
+            mask = conditions_t2 == c
+            axs[2].scatter(data_t2[mask, 0], data_t2[mask, 1], color=colors[c], label=f'Cond {c}', alpha=0.6, s=10)
+        axs[2].set_xlabel("x")
+        axs[2].set_aspect('equal', adjustable='box')
+        axs[2].grid(True)
 
+        plt.suptitle("Generated Conditional Gaussian Data (3 Time Steps)")
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plot_save_path = os.path.join(SCRIPT_PATH, 'plots/conditional_gaussians_3t_plot.png') 
+        #plt.savefig(plot_save_path)
+        #print(f"Plot saved to {plot_save_path}")
 
-    plt.suptitle("Generated Complex Conditional Gaussian Data")
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plot_save_path_5t = os.path.join(SCRIPT_PATH, 'plots/conditional_gaussians_complex_plot.png')
-    #plt.savefig(plot_save_path_5t)
-    #print(f"5T Plot saved to {plot_save_path_5t}")
-    plt.close(fig_5t)
+    if False: # Arch data
+        #-------------#
+        #  ARCH DATA  #
+        #-------------#
+        num_points = 5000
+        arch_points, labels, unique_labels = generate_arch_data(num_points=num_points)
+        print("arch points shape:", arch_points.shape)
+        arch_points = np.reshape(arch_points, (len(unique_labels), num_points, 2))
 
+        #save
+        arch_points = torch.tensor(arch_points)
+        arch_points = arch_points[[0,2]]
+        print("arch points shape:", arch_points.shape)
+        #torch.save(arch_points, 'scarvelis_data/arch_data.pt')
 
-    #--------------------#
-    #  CONDITIONAL DATA  #
-    #--------------------#
-    num_points_per_cond = 500
-    conditional_data = generate_conditional_gaussian_data(num_points_per_condition=num_points_per_cond, variance=0.05)
-    total_points = num_points_per_cond * 4
-    print(f"Generated conditional data shape: {conditional_data.shape}") 
+    if False: # Sphere data
+        #---------------#
+        #  SPHERE DATA  #
+        #---------------#
+        sphere_points, labels, unique_labels = generate_sphere_data(num_points=num_points)
+        print("sphere points shape:", sphere_points.shape)
+        sphere_points = np.reshape(sphere_points, (len(unique_labels), num_points, 3))
+        sphere_points = torch.tensor(sphere_points)
+        sphere_points = sphere_points[[0,2]]
+        print("sphere points shape:", sphere_points.shape)
+        #torch.save(sphere_points, 'scarvelis_data/sphere_data.pt')
 
-    # save
-    save_path = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_gaussians_3t.pt')
-    #torch.save(conditional_data, save_path)
-    #print(f"Conditional data saved to {save_path}")
-
-    # --- Plotting Conditional Data ---
-    fig, axs = plt.subplots(1, 3, figsize=(15, 5), sharex=True, sharey=True)
-    colors = plt.cm.viridis(np.linspace(0, 1, 4))
-
-    # Plot t=0
-    data_t0 = conditional_data[0].cpu().numpy()
-    conditions_t0 = data_t0[:, 2].astype(int)
-    axs[0].set_title("Time t=0")
-    for c in range(4):
-        mask = conditions_t0 == c
-        axs[0].scatter(data_t0[mask, 0], data_t0[mask, 1], color=colors[c], label=f'Cond {c}', alpha=0.6, s=10)
-    axs[0].legend()
-    axs[0].set_xlabel("x")
-    axs[0].set_ylabel("y")
-    axs[0].set_aspect('equal', adjustable='box')
-    axs[0].grid(True)
-
-    # Plot t=1
-    data_t1 = conditional_data[1].cpu().numpy()
-    conditions_t1 = data_t1[:, 2].astype(int)
-    axs[1].set_title("Time t=1")
-    for c in range(4):
-        mask = conditions_t1 == c
-        axs[1].scatter(data_t1[mask, 0], data_t1[mask, 1], color=colors[c], label=f'Cond {c}', alpha=0.6, s=10)
-    axs[1].set_xlabel("x")
-    axs[1].set_aspect('equal', adjustable='box')
-    axs[1].grid(True)
-
-    # Plot t=2
-    data_t2 = conditional_data[2].cpu().numpy()
-    conditions_t2 = data_t2[:, 2].astype(int)
-    axs[2].set_title("Time t=2") 
-    for c in range(4):
-        mask = conditions_t2 == c
-        axs[2].scatter(data_t2[mask, 0], data_t2[mask, 1], color=colors[c], label=f'Cond {c}', alpha=0.6, s=10)
-    axs[2].set_xlabel("x")
-    axs[2].set_aspect('equal', adjustable='box')
-    axs[2].grid(True)
-
-    plt.suptitle("Generated Conditional Gaussian Data (3 Time Steps)")
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plot_save_path = os.path.join(SCRIPT_PATH, 'plots/conditional_gaussians_3t_plot.png') 
-    #plt.savefig(plot_save_path)
-    #print(f"Plot saved to {plot_save_path}")
-
-    #-------------#
-    #  ARCH DATA  #
-    #-------------#
-    num_points = 5000
-    arch_points, labels, unique_labels = generate_arch_data(num_points=num_points)
-    print("arch points shape:", arch_points.shape)
-    arch_points = np.reshape(arch_points, (len(unique_labels), num_points, 2))
-
-    #save
-    arch_points = torch.tensor(arch_points)
-    arch_points = arch_points[[0,2]]
-    print("arch points shape:", arch_points.shape)
-    #torch.save(arch_points, 'scarvelis_data/arch_data.pt')
-
-    #---------------#
-    #  SPHERE DATA  #
-    #---------------#
-    sphere_points, labels, unique_labels = generate_sphere_data(num_points=num_points)
-    print("sphere points shape:", sphere_points.shape)
-    sphere_points = np.reshape(sphere_points, (len(unique_labels), num_points, 3))
-    sphere_points = torch.tensor(sphere_points)
-    sphere_points = sphere_points[[0,2]]
-    print("sphere points shape:", sphere_points.shape)
-    #torch.save(sphere_points, 'scarvelis_data/sphere_data.pt')
-
-    #plot 3D sphere points
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(sphere_points[0, :, 0], sphere_points[0, :, 1], sphere_points[0, :, 2], c='red')
-    ax.scatter(sphere_points[1, :, 0], sphere_points[1, :, 1], sphere_points[1, :, 2], c='blue')
-    #plt.savefig('plots/sphere_data.png')
+        #plot 3D sphere points
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(sphere_points[0, :, 0], sphere_points[0, :, 1], sphere_points[0, :, 2], c='red')
+        ax.scatter(sphere_points[1, :, 0], sphere_points[1, :, 1], sphere_points[1, :, 2], c='blue')
+        #plt.savefig('plots/sphere_data.png')

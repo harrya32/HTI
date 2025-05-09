@@ -57,7 +57,11 @@ class Workspace:
 
         self.samplers = data.get_samplers_scarvelis(self.cfg.data, num_pairs_requested=self.cfg.get('num_pairs', None))
 
-        self.all_samples = jnp.concatenate([next(s) for s in self.samplers][:-1], axis=0) #remove last time point for density calc
+        if self.cfg.data == 'conditional_circles' or self.cfg.data == 'conditional_circles_normal':
+            self.all_samples = jnp.concatenate([next(s) for s in self.samplers][:-1], axis=0) #remove last time point for density calc, as it returns to the origin
+        else:
+            self.all_samples = jnp.concatenate([next(s) for s in self.samplers], axis=0)
+        
         print(f"all_samples shape: {self.all_samples.shape}")
 
         if self.cfg.get('include_land_potential', False):
@@ -410,10 +414,12 @@ class Workspace:
                     self.plot_assignment_paths()
 
                     #marginals eval
-                    #read in testing data
-                    test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals.pkl'
+                    if self.cfg.data == 'conditional_circles':
+                        test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals.pkl'
+                    elif self.cfg.data == 'conditional_circles_normal':
+                        test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals_normal.pkl'
                     test_data = jnp.load(test_path, allow_pickle=True)
-                    time_0_points = test_data[0][1] #drop the time
+                    time_0_points = test_data[0][1] #drop the time for the initial samples from time 0
                     self.evaluate_marginals(time_0_points, test_data[1:], plot_results=True, verbose=False)
 
                 if self.train_step % self.cfg.plot_frequency == 0 and self.has_reference_geometry:
@@ -1191,7 +1197,7 @@ class Workspace:
                         print(f"Evaluated at time {eval_time:.4f} ({desc}): {metric_val_str}")
 
                 # Circle distance
-                if self.cfg.data == 'conditional_circles':
+                if self.cfg.data == 'conditional_circles' or self.cfg.data == 'conditional_circles_normal':
                     circle_centers = {0: jnp.array([-1.0, 0.0]), 1: jnp.array([-1.0, 0.0]), 2: jnp.array([1.0, 0.0]), 3: jnp.array([1.0, 0.0])}
                     circle_radius = 1.0
                     per_condition_circle_dist = []
@@ -1218,7 +1224,7 @@ class Workspace:
 
                 # Plotting
                 if plot_results and self.cfg.D >= 2:
-                    fig_comp, ax_comp = plt.subplots(figsize=(6, 6))
+                    fig_comp, ax_comp = plt.subplots(figsize=(8, 4))
                     self._setup_ax(ax_comp)
                     num_plot = self.cfg.plotting.get('num_eval_plot', 200)
                     pk1, pk2, plot_key = jax.random.split(plot_key, 3)
@@ -1232,22 +1238,13 @@ class Workspace:
                         for cond_idx, cond_vec in enumerate(unique_conditions):
                             cond_mask_true = jnp.all(true_conditions_all == cond_vec, axis=1)
                             cond_mask_pred = jnp.all(predicted_conditions_all == cond_vec, axis=1)
-
                             true_cond_samples = actual_spatial_overall[cond_mask_true]
                             pred_cond_samples = predicted_spatial_overall[cond_mask_pred]
-
                             idx_pred = jax.random.choice(pk1, pred_cond_samples.shape[0], shape=(min(num_plot, pred_cond_samples.shape[0]),), replace=False)
                             idx_actual = jax.random.choice(pk2, true_cond_samples.shape[0], shape=(min(num_plot, true_cond_samples.shape[0]),), replace=False)
-
-                            ax_comp.scatter(
-                                pred_cond_samples[idx_pred, 0], pred_cond_samples[idx_pred, 1],
-                                alpha=0.6, label=f'Predicted Cond {cond_idx} (t={eval_time:.3f})', s=20, color=cmap(cond_idx),
-                                edgecolors='black', linewidths=0.5
-                            )
-                            ax_comp.scatter(
-                                true_cond_samples[idx_actual, 0], true_cond_samples[idx_actual, 1],
-                                alpha=0.3, label=f'Actual Cond {cond_idx} (t={eval_time:.3f})', s=20, color=cmap(cond_idx), marker='x'
-                            )
+                            ax_comp.scatter(pred_cond_samples[idx_pred, 0], pred_cond_samples[idx_pred, 1], alpha=0.6, s=20, color=cmap(cond_idx), edgecolors='black', linewidths=0.5)
+                            ax_comp.scatter(true_cond_samples[idx_actual, 0], true_cond_samples[idx_actual, 1], alpha=0.3, s=20, color=cmap(cond_idx), marker='x')
+                       
                         circle1 = plt.Circle((-1, 0), 1, color='black', fill=False, linestyle='--', lw=0.5)
                         circle2 = plt.Circle((1, 0), 1, color='black', fill=False, linestyle='--', lw=0.5)
                         ax_comp.add_artist(circle1)
@@ -1255,18 +1252,10 @@ class Workspace:
                     else: 
                         idx_pred = jax.random.choice(pk1, predicted_spatial_overall.shape[0], shape=(min(num_plot, predicted_spatial_overall.shape[0]),), replace=False)
                         idx_actual = jax.random.choice(pk2, actual_spatial_overall.shape[0], shape=(min(num_plot, actual_spatial_overall.shape[0]),), replace=False)
+                        ax_comp.scatter(predicted_spatial_overall[idx_pred, 0], predicted_spatial_overall[idx_pred, 1], alpha=0.6, label=f'Predicted (t={eval_time:.3f})', s=20, color='blue')
+                        ax_comp.scatter(actual_spatial_overall[idx_actual, 0], actual_spatial_overall[idx_actual, 1], alpha=0.3, label=f'Actual Test (t={eval_time:.3f})', s=20, color='red', marker='x')
 
-                        ax_comp.scatter(
-                            predicted_spatial_overall[idx_pred, 0], predicted_spatial_overall[idx_pred, 1],
-                            alpha=0.6, label=f'Predicted (t={eval_time:.3f})', s=20, color='blue'
-                        )
-                        ax_comp.scatter(
-                            actual_spatial_overall[idx_actual, 0], actual_spatial_overall[idx_actual, 1],
-                            alpha=0.3, label=f'Actual Test (t={eval_time:.3f})', s=20, color='red', marker='x'
-                        )
-
-                    ax_comp.legend()
-                    ax_comp.set_title(f'Test Eval: t={eval_time:.3f} (Interval {k}, Step {self.train_step})')
+                    ax_comp.set_title(f'Test Eval: t={eval_time:.3f} (Interval {k}')
                     comp_fname = f'test_eval_time_{eval_time:.3f}.png'
                     fig_comp.savefig(comp_fname)
                     if wandb.run is not None:

@@ -12,6 +12,7 @@ Many machine learning models have hyperparameters that significantly affect thei
 Our method uses guided conditional flow matching, matching geodesic velocities estimated via an actively learned conditional Riemannian metric approach, to address the HTI problem and model these trajectories efficiently and accurately.
 
 ## TODO
+- Test Gaussian circle data, with inverse potential (it works on uniform data vs. just NLOT metric learning, and purely euclidean cost (need to test other ablation of euclidean, w potential term))
 - Define meaningful cancer reward fn., and the hyperparam of interest
 - Produce a few cancer datasets, and train NLOT on them to see if it can learn
 - Write down/check how our acq. fn. is working/averaging across pairs/conditions
