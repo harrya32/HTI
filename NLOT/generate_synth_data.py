@@ -877,9 +877,9 @@ if __name__ == "__main__":
     if True:  # Eval semicircle marginals
         # Parameters
         num_points_per_condition = 100
-        time = 0.1
+        time = 0.5
         radius = 1.0
-        angular_concentration = 15.0
+        angular_concentration = 5.0
         radial_std_dev = 0.05
 
         # Generate the marginal data for all 4 conditions at the selected time
@@ -966,7 +966,7 @@ if __name__ == "__main__":
         
         print(f"Semicircle marginals saved to {os.path.join(SCRIPT_PATH, 'eval_marginals_semicircle.pkl')}")
 
-    if False:  # Conditional semicircles
+    if True:  # Conditional semicircles
         #----------------------------------------------------#
         #  Conditional Semicircles Data                      #
         #----------------------------------------------------#
@@ -975,7 +975,7 @@ if __name__ == "__main__":
         num_points_per_condition = 100
         num_time_points = 3
         radius = 1.0
-        angular_concentration = 15.0  # Higher value -> more concentrated angle
+        angular_concentration = 5.0  # Higher value -> more concentrated angle
         radial_std_dev = 0.05  # Smaller value -> less spread in radius
 
         # Generate the conditional semicircles data

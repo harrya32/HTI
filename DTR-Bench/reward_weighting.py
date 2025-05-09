@@ -18,7 +18,6 @@ REWARD_PLOT_DIR = os.path.join(PLOT_DIR, "reward_plots")
 os.makedirs(ACTION_PLOT_DIR, exist_ok=True)
 os.makedirs(REWARD_PLOT_DIR, exist_ok=True)
 
-# --- Custom Reward Wrapper ---
 class CustomRewardWrapper(RewardWrapper):
     def __init__(self, env, lambda_nk: float = 0.5):
         super().__init__(env)
@@ -34,7 +33,6 @@ class CustomRewardWrapper(RewardWrapper):
         obs, reward, terminated, truncated, info = self.env.step(action)
 
         if self.init_obs is not None:
-            # direct indexing instead of starred unpack
             T_p  = obs[0]
             N_p  = obs[1]
             T_s  = obs[4]
@@ -53,13 +51,13 @@ class CustomRewardWrapper(RewardWrapper):
             logT,  logT0 = np.log(T),  np.log(T0)
             logN,  logN0 = np.log(N),  np.log(N0)
 
-            nk_penalty = -np.abs(logN / logN0 - 1)
+            nk_penalty = -np.abs(logN / logN0 - 1) * 10
             reward = reward + self.lambda_nk * nk_penalty
 
         return obs, reward, terminated, truncated, info
 
 # --- Create Environment ---
-lambda_nk = 0.1 # Tune this!
+lambda_nk = 0.99 
 def make_env():
     env = gym.make(ENV_NAME)
     env = CustomRewardWrapper(env, lambda_nk=lambda_nk)
