@@ -5,6 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 from scipy.stats import vonmises, lognorm
+from scipy.stats import vonmises as scipy_vonmises
+from scipy.stats import lognorm as scipy_lognorm
 import pickle
 import jax.numpy as jnp
 import seaborn as sns
@@ -873,8 +875,190 @@ def generate_conditional_semicircle_marginal(num_points_per_condition: int,
     
     return torch.cat(data_t_conds, dim=0)
 
+
+
+def log_likelihood_conditional_semicircle(
+        data: torch.Tensor, # Shape (N, 3): [x, y, condition]
+        time: float,
+        radius: float = 1.0,
+        angular_concentration: float = 5.0,
+        radial_std_dev: float = 0.05 # Std dev for log(radius), 's' parameter for lognorm
+    ) -> float:
+    """
+    Calculates the total log-likelihood of the given data under the semicircle model
+    for a specific time and model parameters.
+
+    Args:
+        data (torch.Tensor): Input data of shape (N, 3), where columns are [x, y, condition].
+                             Conditions should be integers 0, 1, 2, 3.
+        time (float): Continuous time at which the data is assumed to be generated.
+        radius (float): Radius of the semicircles.
+        angular_concentration (float): Concentration parameter for the von Mises distribution.
+        radial_std_dev (float): Standard deviation for the log of the radial distribution.
+
+    Returns:
+        float: The total log-likelihood of the dataset.
+    """
+    if data.ndim != 2 or data.shape[1] != 3:
+        raise ValueError("Input data must have shape (N, 3)")
+
+    data_np = data.cpu().numpy()
+    x_coords = data_np[:, 0]
+    y_coords = data_np[:, 1]
+    conditions = data_np[:, 2].astype(int)
+
+    total_log_likelihood = 0.0
+    
+    log_normal_mu_param = np.log(radius) # mu parameter for the underlying normal of lognorm
+
+    for c_val in range(4):
+        mask = (conditions == c_val)
+        if not np.any(mask):
+            continue
+
+        current_x = x_coords[mask]
+        current_y = y_coords[mask]
+
+        # Determine target angle and center for the condition and time
+        if c_val == 0:
+            target_angle = time * np.pi
+            center_x = -1.0
+        elif c_val == 1:
+            target_angle = -time * np.pi
+            center_x = -1.0
+        elif c_val == 2:
+            target_angle = np.pi - time * np.pi
+            center_x = 1.0
+        else:  # c_val == 3
+            target_angle = -np.pi + time * np.pi
+            center_x = 1.0
+        
+        x_local = current_x - center_x
+        y_local = current_y 
+
+        epsilon = 1e-9 # To avoid log(0) or issues with r_polar=0
+        r_polar = np.sqrt(x_local**2 + y_local**2)
+        theta_polar = np.arctan2(y_local, x_local)
+
+        log_pdf_angles = scipy_vonmises.logpdf(theta_polar, loc=target_angle, kappa=angular_concentration)
+        valid_radii_mask = r_polar > epsilon
+        log_pdf_radii = np.full_like(r_polar, -np.inf)
+
+        if np.any(valid_radii_mask):
+            log_pdf_radii[valid_radii_mask] = scipy_lognorm.logpdf(
+                r_polar[valid_radii_mask],
+                s=radial_std_dev,                # Shape parameter (sigma of underlying log)
+                loc=0,                           # Shift parameter
+                scale=np.exp(log_normal_mu_param) # Scale parameter (exp(mu of underlying log))
+            )
+
+        # Jacobian for polar to Cartesian transformation: pdf_cartesian = pdf_polar / r
+        # So, log_pdf_cartesian = log_pdf_polar - log(r)
+        log_jacobian_term = np.full_like(r_polar, -np.inf)
+        if np.any(valid_radii_mask):
+            log_jacobian_term[valid_radii_mask] = -np.log(r_polar[valid_radii_mask])
+
+        # Sum log likelihoods for points in this condition (only for valid radii)
+        current_log_likelihood = np.sum(
+            log_pdf_angles[valid_radii_mask] + \
+            log_pdf_radii[valid_radii_mask] + \
+            log_jacobian_term[valid_radii_mask]
+        )
+        
+        total_log_likelihood += current_log_likelihood
+        
+    return float(total_log_likelihood)
+
 if __name__ == "__main__":
-    if True:  # Eval semicircle marginals
+
+    if True: # Log likelihood
+
+        # Test the log-likelihood function (same test code as before)
+        num_test_points_per_cond = 100
+        test_time = 0.5
+        test_radius = 1.0
+        test_angular_concentration = 5.0
+        test_radial_std_dev = 0.05
+
+        print(f"Generating test data at time {test_time}...")
+        generated_data = generate_conditional_semicircle_marginal(
+            num_points_per_condition=num_test_points_per_cond,
+            time=test_time,
+            radius=test_radius,
+            angular_concentration=test_angular_concentration,
+            radial_std_dev=test_radial_std_dev,
+            device=DEVICE
+        )
+        print(f"Generated data shape: {generated_data.shape}")
+
+        ll_correct_params = log_likelihood_conditional_semicircle(
+            data=generated_data,
+            time=test_time,
+            radius=test_radius,
+            angular_concentration=test_angular_concentration,
+            radial_std_dev=test_radial_std_dev
+        )
+        print(f"Log-likelihood with correct parameters: {ll_correct_params:.4f}")
+
+        ll_wrong_time = log_likelihood_conditional_semicircle(
+            data=generated_data,
+            time=test_time + 0.2,
+            radius=test_radius,
+            angular_concentration=test_angular_concentration,
+            radial_std_dev=test_radial_std_dev
+        )
+        print(f"Log-likelihood with wrong time ({test_time + 0.2:.1f}): {ll_wrong_time:.4f}")
+        assert ll_wrong_time < ll_correct_params, "LL with wrong time should be lower"
+
+        ll_wrong_radius = log_likelihood_conditional_semicircle(
+            data=generated_data,
+            time=test_time,
+            radius=test_radius + 0.5,
+            angular_concentration=test_angular_concentration,
+            radial_std_dev=test_radial_std_dev
+        )
+        print(f"Log-likelihood with wrong radius ({test_radius + 0.5:.1f}): {ll_wrong_radius:.4f}")
+        assert ll_wrong_radius < ll_correct_params, "LL with wrong radius should be lower"
+
+        ll_wrong_concentration = log_likelihood_conditional_semicircle(
+            data=generated_data,
+            time=test_time,
+            radius=test_radius,
+            angular_concentration=test_angular_concentration / 2,
+            radial_std_dev=test_radial_std_dev
+        )
+        print(f"Log-likelihood with wrong angular_concentration ({test_angular_concentration/2:.1f}): {ll_wrong_concentration:.4f}")
+        assert ll_wrong_concentration < ll_correct_params, "LL with wrong concentration should be lower"
+        
+        ll_wrong_std_dev = log_likelihood_conditional_semicircle(
+            data=generated_data,
+            time=test_time,
+            radius=test_radius,
+            angular_concentration=test_angular_concentration,
+            radial_std_dev=test_radial_std_dev * 2
+        )
+        print(f"Log-likelihood with wrong radial_std_dev ({test_radial_std_dev*2:.2f}): {ll_wrong_std_dev:.4f}")
+        assert ll_wrong_std_dev < ll_correct_params, "LL with wrong radial_std_dev should be lower"
+
+        num_total_points = 4 * num_test_points_per_cond
+        random_x = np.random.uniform(-3, 3, num_total_points)
+        random_y = np.random.uniform(-2, 2, num_total_points)
+        random_conds = np.random.randint(0, 4, num_total_points)
+        noise_data_np = np.stack((random_x, random_y, random_conds), axis=-1)
+        noise_data = torch.tensor(noise_data_np, dtype=torch.float32, device=DEVICE)
+
+        ll_noise = log_likelihood_conditional_semicircle(
+            data=noise_data,
+            time=test_time,
+            radius=test_radius,
+            angular_concentration=test_angular_concentration,
+            radial_std_dev=test_radial_std_dev
+        )
+        print(f"Log-likelihood for random noise data: {ll_noise:.4f}")
+        assert ll_noise < ll_correct_params, "LL for noise data should be lower"
+
+        print("\nAll tests passed (if asserts didn't fire).")
+    if False:  # Eval semicircle marginals
         # Parameters
         num_points_per_condition = 100
         time = 0.5
@@ -966,7 +1150,7 @@ if __name__ == "__main__":
         
         print(f"Semicircle marginals saved to {os.path.join(SCRIPT_PATH, 'eval_marginals_semicircle.pkl')}")
 
-    if True:  # Conditional semicircles
+    if False:  # Conditional semicircles
         #----------------------------------------------------#
         #  Conditional Semicircles Data                      #
         #----------------------------------------------------#

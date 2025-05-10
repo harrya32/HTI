@@ -17,11 +17,11 @@ num_categories: 4
 include_land_potential: False
 include_inverse_potential: True
 bandwidth: 0.4
-lambda: 0.15
+lambda: 0.05
 
 seed: 0
 num_pairs: 2
-num_train_iters: 3000
+num_train_iters: 2000
 batch_size: 1024
 potential_lr: 1e-4
 wandb: True
@@ -42,10 +42,10 @@ metric:
 
 geometry_kwargs:
   spline_solver_kwargs:
-    num_spline_nodes: 30
+    num_spline_nodes: 15
     grad_tol: 1e-5
     init_lr: 1e-2
-    num_spline_points_eval: 20
+    num_spline_points_eval: 50
     max_iter: 0
 
 ctransform_solver:

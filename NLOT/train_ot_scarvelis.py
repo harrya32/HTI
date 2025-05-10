@@ -25,6 +25,8 @@ import hydra
 from omegaconf import OmegaConf
 
 from lagrangian_ot import models, neuraldual, metrics, geodesics, geometries, data, lagrangian_potentials
+from generate_synth_data import log_likelihood_conditional_semicircle
+import torch
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -1112,6 +1114,7 @@ class Workspace:
 
         all_wasserstein_distances = []
         all_circle_distances = []
+        all_log_likelihoods = []
         for k in range(self.num_pairs):
             T_k = self.time_points[k]
             T_k_plus_1 = self.time_points[k+1]
@@ -1226,6 +1229,25 @@ class Workspace:
                         if verbose:
                             print(f"Avg Circle Distance Across Conditions: {avg_circle_dist:.4e}")
 
+                if "semicircle" in self.cfg.data and self.cfg.C > 0:
+                    if predicted_eval_samples.shape[1] == self.cfg.D + self.cfg.C:
+                        predicted_data_torch = torch.from_numpy(np.array(predicted_eval_samples))
+                        try:
+                            log_likelihood_val = log_likelihood_conditional_semicircle(
+                                data=predicted_data_torch,
+                                time=eval_time
+                            )
+                            metrics_log[f"time_{eval_time:.4f}_log_likelihood"] = float(log_likelihood_val)
+                            all_log_likelihoods.append(log_likelihood_val)
+                            if verbose:
+                                print(f"Log Likelihood at t={eval_time:.4f}: {log_likelihood_val:.4e}")
+                        except Exception as e:
+                            if verbose:
+                                print(f"Error computing log-likelihood for semicircles at t={eval_time:.4f}: {e}")
+                    else:
+                        if verbose:
+                            print(f"Skipping log-likelihood for semicircles at t={eval_time:.4f}: predicted_eval_samples shape {predicted_eval_samples.shape} incorrect for conditional data.")
+
                 # Plotting
                 if plot_results and self.cfg.D >= 2:
                     fig_comp, ax_comp = plt.subplots(figsize=(8, 4))
@@ -1281,6 +1303,12 @@ class Workspace:
             metrics_log["overall_avg_circle_dist"] = float(overall_avg_circle_dist)
             if verbose:
                 print(f"Overall Avg Circle Distance Across All Conditions and Time Points: {overall_avg_circle_dist:.4e}")
+
+        if all_log_likelihoods:
+            overall_avg_log_likelihood = np.mean(np.array(all_log_likelihoods))
+            metrics_log["overall_avg_log_likelihood"] = float(overall_avg_log_likelihood)
+            if verbose:
+                print(f"Overall Avg Log Likelihood Across All Time Points: {overall_avg_log_likelihood:.4e}")
         
         if verbose:
             print("--- Finished Marginal Evaluation ---")

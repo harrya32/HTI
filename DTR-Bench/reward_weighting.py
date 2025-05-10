@@ -9,9 +9,9 @@ from stable_baselines3.common.env_util import make_vec_env
 
 # --- Parameters ---
 ENV_NAME = 'GhaffariCancerEnv-continuous'
-TOTAL_TRAINING_TIMESTEPS = 100000  
+TOTAL_TRAINING_TIMESTEPS = 500000  
 NUM_EVAL_EPISODES = 20         
-MODEL_SAVE_PATH = "ppo_ghaffari_cancer_model"
+MODEL_SAVE_PATH = "ppo_ghaffari_cancer_model_75"
 PLOT_DIR = "rl_agent_plots"
 ACTION_PLOT_DIR = os.path.join(PLOT_DIR, "action_scatter_plots")
 REWARD_PLOT_DIR = os.path.join(PLOT_DIR, "reward_plots")
@@ -51,13 +51,13 @@ class CustomRewardWrapper(RewardWrapper):
             logT,  logT0 = np.log(T),  np.log(T0)
             logN,  logN0 = np.log(N),  np.log(N0)
 
-            nk_penalty = -np.abs(logN / logN0 - 1) * 10
+            nk_penalty = -np.abs(logN / logN0 - 1)
             reward = reward + self.lambda_nk * nk_penalty
 
         return obs, reward, terminated, truncated, info
 
 # --- Create Environment ---
-lambda_nk = 0.99 
+lambda_nk = 0.75
 def make_env():
     env = gym.make(ENV_NAME)
     env = CustomRewardWrapper(env, lambda_nk=lambda_nk)
