@@ -12,8 +12,8 @@ Many machine learning models have hyperparameters that significantly affect thei
 Our method uses guided conditional flow matching, matching geodesic velocities estimated via an actively learned conditional Riemannian metric approach, to address the HTI problem and model these trajectories efficiently and accurately.
 
 ## TODO
-- Produce a few cancer datasets for the different n_k weights, and train NLOT on them to see if it can learn
-- Devise a metric for success/behaviour change here (how do we show the surrogate model performs well, outside of wass. distance from the reals)
+- Produce a few cancer datasets for the different n_k weights, and train NLOT on them to see if it can learn. Run on larger lambdas ~ 5.
+- Devise a metric for success/behaviour change here (how do we show the surrogate model performs well, outside of wass. distance from the reals) (just check nk avg. nk change per episode, across different surrogate models. Need a way to use surrogate model directly in RL env.)
 - Write down/check how our acq. fn. is working/averaging across pairs/conditions
 - Plots for synthetic experiment, and write up of it
 - Adversarial robustness in time series forecasting example, ideally on MIMIC data

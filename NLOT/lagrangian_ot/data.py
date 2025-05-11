@@ -232,7 +232,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         #normalise the dataset
         #dataset[:,:,2:] = (dataset[:,:,2:] - dataset[:,:,2:].mean(axis=0)) / dataset[:,:,2:].std(axis=0)
     if geometry_str == "reward_weighting_data":
-        dataset = dataset[[0, 2], :1000, :]
+        dataset = dataset[[0, 2, 4], :1000, :]
 
 
     print('Dataset shape:', dataset.shape)

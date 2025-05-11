@@ -4,14 +4,23 @@ import DTRGym
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import argparse
 from stable_baselines3 import PPO 
 from stable_baselines3.common.env_util import make_vec_env 
+
+# --- Parse Arguments ---
+parser = argparse.ArgumentParser(description='Train RL agent with custom reward weighting')
+parser.add_argument('--lambda_nk', type=float, default=1.0, help='Lambda value for reward weighting (default: 1.0)')
+args = parser.parse_args()
+
+# Use the provided lambda value
+lambda_nk = args.lambda_nk
 
 # --- Parameters ---
 ENV_NAME = 'GhaffariCancerEnv-continuous'
 TOTAL_TRAINING_TIMESTEPS = 500000  
 NUM_EVAL_EPISODES = 20         
-MODEL_SAVE_PATH = "ppo_ghaffari_cancer_model_75"
+MODEL_SAVE_PATH = f"ppo_ghaffari_cancer_model__{int(lambda_nk * 100)}"
 PLOT_DIR = "rl_agent_plots"
 ACTION_PLOT_DIR = os.path.join(PLOT_DIR, "action_scatter_plots")
 REWARD_PLOT_DIR = os.path.join(PLOT_DIR, "reward_plots")

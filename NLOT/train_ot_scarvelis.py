@@ -425,11 +425,11 @@ class Workspace:
 
                         if self.cfg.data == 'reward_weighting_data':
                             test_path = '/home/azureuser/localfiles/HTI/NLOT/scarvelis_data/reward_weighting_data.pt'
-                            test_data = torch.load(test_path)[[0,1], :1000, :].cpu().numpy()
+                            test_data = torch.load(test_path)[[0,1,3], :1000, :].cpu().numpy()
                             #to jnp
                             test_data = jnp.array(test_data)
                             time_0_points = test_data[0]
-                            test_data = [(0, test_data[0]), (0.5, test_data[1])]
+                            test_data = [(0, test_data[0]), (0.25, test_data[1]), (0.75, test_data[2])]
 
                         self.evaluate_marginals(time_0_points, test_data[1:], plot_results=True, verbose=False)
 
@@ -1278,10 +1278,11 @@ class Workspace:
                             ax_comp.scatter(pred_cond_samples[idx_pred, 0], pred_cond_samples[idx_pred, 1], alpha=0.6, s=20, color=cmap(cond_idx), edgecolors='black', linewidths=0.5)
                             ax_comp.scatter(true_cond_samples[idx_actual, 0], true_cond_samples[idx_actual, 1], alpha=0.3, s=20, color=cmap(cond_idx), marker='x')
                        
-                        circle1 = plt.Circle((-1, 0), 1, color='black', fill=False, linestyle='--', lw=0.5)
-                        circle2 = plt.Circle((1, 0), 1, color='black', fill=False, linestyle='--', lw=0.5)
-                        ax_comp.add_artist(circle1)
-                        ax_comp.add_artist(circle2)
+                        if "circle" in self.cfg.data:
+                            circle1 = plt.Circle((-1, 0), 1, color='black', fill=False, linestyle='--', lw=0.5)
+                            circle2 = plt.Circle((1, 0), 1, color='black', fill=False, linestyle='--', lw=0.5)
+                            ax_comp.add_artist(circle1)
+                            ax_comp.add_artist(circle2)
                     else: 
                         idx_pred = jax.random.choice(pk1, predicted_spatial_overall.shape[0], shape=(min(num_plot, predicted_spatial_overall.shape[0]),), replace=False)
                         idx_actual = jax.random.choice(pk2, actual_spatial_overall.shape[0], shape=(min(num_plot, actual_spatial_overall.shape[0]),), replace=False)
