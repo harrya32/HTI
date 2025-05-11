@@ -210,10 +210,6 @@ def main(cfg: DictConfig):
         print(f"Error loading pickled workspace: {e}")
         return
 
-    full_eval_samples_sequence = []
-    actual_time_points_for_workspace = []
-    evaluation_data_tuples: List[Tuple[float, jnp.ndarray]] = []
-
 
     if cfg.data_source == "pkl":
         print(f"Preparing evaluation data by loading from PKL file: {cfg.eval_data_pkl_path}")
@@ -231,28 +227,13 @@ def main(cfg: DictConfig):
             return
             
     elif cfg.data_source == "generate":
-        print("Preparing evaluation data by generating it...")
-        try:
-            evaluation_data_tuples = generate_evaluation_data(
-                generation_cfg=cfg.data_generation_config,
-                num_total_time_points_config=cfg.num_evaluation_time_points,
-                samples_per_total_tp=cfg.num_samples_per_time_point,
-                evaluation_time_points_values_config=cfg.get('evaluation_time_points_values', None),
-                key=prng_key
-            )
-            # Extract times and samples from the tuples
-            actual_time_points_for_workspace = [t for t, s in evaluation_data_tuples]
-            full_eval_samples_sequence = [s for t, s in evaluation_data_tuples]
-
-        except Exception as e:
-            print(f"Error generating evaluation data: {e}")
-            # Print more detailed traceback if possible, or re-raise for Hydra to catch
-            import traceback
-            traceback.print_exc()
-            return
-    else:
-        print(f"Error: Unknown data_source specified in config: {cfg.data_source}. Must be 'pkl' or 'generate'.")
-        return
+        evaluation_data_tuples = generate_evaluation_data(
+            generation_cfg=cfg.data_generation_config,
+            num_total_time_points_config=cfg.num_evaluation_time_points,
+            samples_per_total_tp=cfg.num_samples_per_time_point,
+            evaluation_time_points_values_config=cfg.get('evaluation_time_points_values', None),
+            key=prng_key
+        )
     
     num_actual_time_points = len(evaluation_data_tuples) # Based on the list of tuples
     print(f"Successfully obtained data with {num_actual_time_points} time points.")

@@ -7,17 +7,17 @@ geometry: 'neural_net_metric_eig'
 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, 
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
-# agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, conditional_circles_normal, conditional_semicircles
-data: 'conditional_semicircles'
+# agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, conditional_circles_normal, conditional_semicircles, reward_weighting_data
+data: 'reward_weighting_data'
 D: 2
-C: 1
-categorical: True
+C: 7
+categorical: False
 num_categories: 4
 
 include_land_potential: False
 include_inverse_potential: True
-bandwidth: 0.4
-lambda: 0.05
+bandwidth: 1
+lambda: 0.01
 
 seed: 0
 num_pairs: 2

@@ -102,6 +102,13 @@ def get_bounds(name):
             jnp.array((xbounds[0], ybounds[0])),
             jnp.array((xbounds[1], ybounds[1])),
         )
+    elif name == "reward_weighting_data":
+        xbounds = (0, 10)
+        ybounds = (0, 8)
+        bounds = (
+            jnp.array((xbounds[0], ybounds[0])),
+            jnp.array((xbounds[1], ybounds[1])),
+        )
     else:
         raise ValueError(f"Invalid data choice: {name}")
 
@@ -204,6 +211,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         "conditional_circles": "conditional_circles.pt",
         "conditional_circles_normal": "conditional_circles_normal.pt",
         "conditional_semicircles": "conditional_semicircles.pt",
+        "reward_weighting_data": "reward_weighting_data.pt",
     }
     if geometry_str not in paths:
         raise ValueError(f"Invalid geometry choice: {geometry_str}")
@@ -223,6 +231,8 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         dataset = dataset[:, :, :]
         #normalise the dataset
         #dataset[:,:,2:] = (dataset[:,:,2:] - dataset[:,:,2:].mean(axis=0)) / dataset[:,:,2:].std(axis=0)
+    if geometry_str == "reward_weighting_data":
+        dataset = dataset[[0, 2], :1000, :]
 
 
     print('Dataset shape:', dataset.shape)

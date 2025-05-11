@@ -54,14 +54,8 @@ class Workspace:
 
         self.key = jax.random.PRNGKey(self.cfg.seed)
         self.elapsed_time = 0.
-        
         self.frobenius_weight = self.cfg.metric.get('frobenius_reg_weight', 0.0)
-
         self.samplers = data.get_samplers_scarvelis(self.cfg.data, num_pairs_requested=self.cfg.get('num_pairs', None))
-
-        #if "circle" in self.cfg.data:
-        #    self.all_samples = jnp.concatenate([next(s) for s in self.samplers][:-1], axis=0) #remove last time point for density calc, as it returns to the origin
-        #else:
         self.all_samples = jnp.concatenate([next(s) for s in self.samplers], axis=0)
         
         print(f"all_samples shape: {self.all_samples.shape}")
@@ -416,17 +410,30 @@ class Workspace:
                     self.plot_assignment_paths()
 
                     #marginals eval
-                    if self.cfg.data == 'conditional_circles':
-                        test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals.pkl'
-                    elif self.cfg.data == 'conditional_circles_normal':
-                        test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals_normal.pkl'
-                    elif self.cfg.data == 'conditional_semicircles':
-                        test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals_semicircle.pkl'
-                    else:
-                        test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals_normal.pkl'
-                    test_data = jnp.load(test_path, allow_pickle=True)
-                    time_0_points = test_data[0][1] #drop the time for the initial samples from time 0
-                    self.evaluate_marginals(time_0_points, test_data[1:], plot_results=True, verbose=False)
+                    if 'circles' in self.cfg.data or 'reward' in self.cfg.data:
+                        if self.cfg.data == 'conditional_circles':
+                            test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals.pkl'
+                        elif self.cfg.data == 'conditional_circles_normal':
+                            test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals_normal.pkl'
+                        elif self.cfg.data == 'conditional_semicircles':
+                            test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals_semicircle.pkl'
+                        else:
+                            test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals.pkl'
+                        
+                        test_data = jnp.load(test_path, allow_pickle=True)
+                        time_0_points = test_data[0][1]
+
+                        if self.cfg.data == 'reward_weighting_data':
+                            test_path = '/home/azureuser/localfiles/HTI/NLOT/scarvelis_data/reward_weighting_data.pt'
+                            test_data = torch.load(test_path)[[0,1], :1000, :].cpu().numpy()
+                            #to jnp
+                            test_data = jnp.array(test_data)
+                            time_0_points = test_data[0]
+                            test_data = [(0, test_data[0]), (0.5, test_data[1])]
+
+                        self.evaluate_marginals(time_0_points, test_data[1:], plot_results=True, verbose=False)
+
+                    
 
                 if self.train_step % self.cfg.plot_frequency == 0 and self.has_reference_geometry:
                     alignment, true_eigen_vals, learned_eigen_vals = self.eval_alignment()
@@ -598,7 +605,7 @@ class Workspace:
         all_init_xs = jax.random.choice(
             jax.random.PRNGKey(0), self.eval_samples[0], shape=(num_samples,), replace=False)
 
-        if self.cfg.C > 0: #and self.cfg.categorical:
+        if self.cfg.C > 0 and self.cfg.categorical:
             condition_vectors = all_init_xs[:, self.cfg.D:]
             unique_conditions = jnp.unique(condition_vectors, axis=0)
             num_conditions = unique_conditions.shape[0]

@@ -33,24 +33,13 @@ class CustomRewardWrapper(RewardWrapper):
         obs, reward, terminated, truncated, info = self.env.step(action)
 
         if self.init_obs is not None:
-            T_p  = obs[0]
             N_p  = obs[1]
-            T_s  = obs[4]
             N_s  = obs[5]
-
-            T_p0 = self.init_obs[0]
             N_p0 = self.init_obs[1]
-            T_s0 = self.init_obs[4]
             N_s0 = self.init_obs[5]
-
-            T  = max(np.e,  T_p  + T_s)
-            T0 = max(np.e,  T_p0 + T_s0)
             N  = max(np.e,  N_p  + N_s)
             N0 = max(np.e,  N_p0 + N_s0)
-
-            logT,  logT0 = np.log(T),  np.log(T0)
-            logN,  logN0 = np.log(N),  np.log(N0)
-
+            logN, logN0 = np.log(N), np.log(N0)
             nk_penalty = -np.abs(logN / logN0 - 1)
             reward = reward + self.lambda_nk * nk_penalty
 
