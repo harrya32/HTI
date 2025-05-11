@@ -12,9 +12,9 @@ Many machine learning models have hyperparameters that significantly affect thei
 Our method uses guided conditional flow matching, matching geodesic velocities estimated via an actively learned conditional Riemannian metric approach, to address the HTI problem and model these trajectories efficiently and accurately.
 
 ## TODO
-- Test Gaussian circle data, with inverse potential (it works on uniform data vs. just NLOT metric learning, and purely euclidean cost (need to test other ablation of euclidean, w potential term))
-- Define meaningful cancer reward fn., and the hyperparam of interest
-- Produce a few cancer datasets, and train NLOT on them to see if it can learn
+- Produce a few cancer datasets for the different n_k weights, and train NLOT on them to see if it can learn
+- Devise a metric for success/behaviour change here (how do we show the surrogate model performs well, outside of wass. distance from the reals)
 - Write down/check how our acq. fn. is working/averaging across pairs/conditions
+- Plots for synthetic experiment, and write up of it
 - Adversarial robustness in time series forecasting example, ideally on MIMIC data
 - HIV/diabetes/sepsis sims are secondary options which need varying adaptations to get into our setting. Start with HIV, doing similar reward shaping to cancer example.
