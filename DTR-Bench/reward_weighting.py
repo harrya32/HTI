@@ -55,7 +55,6 @@ class CustomRewardWrapper(RewardWrapper):
         return obs, reward, terminated, truncated, info
 
 # --- Create Environment ---
-lambda_nk = 0.75
 def make_env():
     env = gym.make(ENV_NAME)
     env = CustomRewardWrapper(env, lambda_nk=lambda_nk)

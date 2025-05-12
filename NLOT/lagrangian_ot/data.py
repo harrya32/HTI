@@ -232,7 +232,12 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         #normalise the dataset
         #dataset[:,:,2:] = (dataset[:,:,2:] - dataset[:,:,2:].mean(axis=0)) / dataset[:,:,2:].std(axis=0)
     if geometry_str == "reward_weighting_data":
-        dataset = dataset[[0, 2, 4], :1000, :]
+        dataset = dataset[[0, 2, 4], :1000, :] 
+        dataset = jnp.asarray(dataset)
+
+        #add tiny amount of noise for spline stability
+        noise = 0.001 * jax.random.normal(jax.random.PRNGKey(0), dataset[:, :, :2].shape)
+        dataset = dataset.at[:, :, :2].set(dataset[:, :, :2] + noise)
 
 
     print('Dataset shape:', dataset.shape)

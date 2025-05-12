@@ -425,7 +425,7 @@ class Workspace:
 
                         if self.cfg.data == 'reward_weighting_data':
                             test_path = '/home/azureuser/localfiles/HTI/NLOT/scarvelis_data/reward_weighting_data.pt'
-                            test_data = torch.load(test_path)[[0,1,3], :1000, :].cpu().numpy()
+                            test_data = torch.load(test_path)[[0,1,3], :1000, :self.cfg.D + self.cfg.C].cpu().numpy()
                             #to jnp
                             test_data = jnp.array(test_data)
                             time_0_points = test_data[0]
