@@ -8,11 +8,12 @@ import torch
 
 #load in agent
 agent_0 = PPO.load("ppo_ghaffari_cancer_model__0.zip")
-agent_01 = PPO.load("ppo_ghaffari_cancer_model.zip")
-agent_025 = PPO.load("ppo_ghaffari_cancer_model_25.zip")
-agent_05 = PPO.load("ppo_ghaffari_cancer_model_05.zip")
-agent_075 = PPO.load("ppo_ghaffari_cancer_model_75.zip")
-agent_09 = PPO.load("ppo_ghaffari_cancer_model_09.zip")
+#agent_01 = PPO.load("ppo_ghaffari_cancer_model.zip")
+#agent_025 = PPO.load("ppo_ghaffari_cancer_model_25.zip")
+#agent_05 = PPO.load("ppo_ghaffari_cancer_model_05.zip")
+#agent_075 = PPO.load("ppo_ghaffari_cancer_model_75.zip")
+#agent_09 = PPO.load("ppo_ghaffari_cancer_model_09.zip")
+agent_1 = PPO.load("ppo_ghaffari_cancer_model__100.zip")
 agent_2 = PPO.load("ppo_ghaffari_cancer_model__200.zip")
 agent_3 = PPO.load("ppo_ghaffari_cancer_model__300.zip")
 agent_4 = PPO.load("ppo_ghaffari_cancer_model__400.zip")
@@ -22,7 +23,7 @@ agent_7 = PPO.load("ppo_ghaffari_cancer_model__700.zip")
 agent_8 = PPO.load("ppo_ghaffari_cancer_model__800.zip")
 agent_9 = PPO.load("ppo_ghaffari_cancer_model__900.zip")
 agent_10 = PPO.load("ppo_ghaffari_cancer_model__1000.zip")
-models = [agent_0, agent_01, agent_025, agent_05, agent_075, agent_09, agent_2, agent_3, agent_4, agent_5, agent_6, agent_7, agent_8, agent_9, agent_10]
+models = [agent_0, agent_1, agent_2, agent_3, agent_4, agent_5, agent_6, agent_7, agent_8, agent_9, agent_10]
 
 # --- Parameters ---
 ENV_NAME = 'GhaffariCancerEnv-continuous'
@@ -37,7 +38,7 @@ os.makedirs(DATASET_DIR, exist_ok=True)
 
 env = make_vec_env(ENV_NAME, n_envs=1)
 
-print('Evaluating agents, using states from agent_10')
+print('Evaluating agents, using states from agent_0')
 
 state_action_data = [[] for _ in range(len(models))] 
 total_steps = 0
@@ -54,7 +55,7 @@ for episode in range(NUM_EVAL_EPISODES):
                 model_actions.append(action)
             actions_by_model.append(model_actions)
 
-        next_obs, reward, done_array, info = env.step(actions_by_model[-1][0])
+        next_obs, reward, done_array, info = env.step(actions_by_model[0][0])
 
         state = obs[0]
         for i, model_actions in enumerate(actions_by_model):
@@ -80,7 +81,7 @@ for i in range(len(models)):
     tensor_data.append(torch.tensor(agent_data, dtype=torch.float32))
 
 dataset = torch.stack(tensor_data)
-dataset_path = os.path.join(DATASET_DIR, "reward_weighting_data_extended.pt")
+dataset_path = os.path.join(DATASET_DIR, "reward_weighting_data_0_10.pt")
 print("Shape of dataset:", dataset.shape)
 torch.save(dataset, dataset_path)
 
