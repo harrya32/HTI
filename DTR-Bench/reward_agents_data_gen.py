@@ -38,7 +38,7 @@ os.makedirs(DATASET_DIR, exist_ok=True)
 
 env = make_vec_env(ENV_NAME, n_envs=1)
 
-print('Evaluating agents, using states from agent_0')
+print('Evaluating agents, using states from agent_10')
 
 state_action_data = [[] for _ in range(len(models))] 
 total_steps = 0
@@ -55,7 +55,7 @@ for episode in range(NUM_EVAL_EPISODES):
                 model_actions.append(action)
             actions_by_model.append(model_actions)
 
-        next_obs, reward, done_array, info = env.step(actions_by_model[0][0])
+        next_obs, reward, done_array, info = env.step(actions_by_model[-1][0])
 
         state = obs[0]
         for i, model_actions in enumerate(actions_by_model):
