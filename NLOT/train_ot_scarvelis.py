@@ -386,6 +386,12 @@ class Workspace:
                     "train/amor_loss": info.amor_loss,
                     "train/geom_loss": geom_loss,
                     "train/elapsed_time": self.elapsed_time,
+                    "train/mean_potential_target": info.mean_potential_target,
+                    "train/min_potential_target": info.min_potential_target,
+                    "train/max_potential_target": info.max_potential_target,
+                    "train/mean_potential_target_hat": info.mean_potential_target_hat,
+                    "train/min_potential_target_hat": info.min_potential_target_hat,
+                    "train/max_potential_target_hat": info.max_potential_target_hat,
                 }, step=self.train_step)
 
             else:
@@ -395,9 +401,15 @@ class Workspace:
                     f'update_step_time: {update_step_time:.2f}s '
                 )
                 wandb.log({
-                     "train/dual_loss": info.dual_loss,
-                     "train/amor_loss": info.amor_loss,
-                     "train/elapsed_time": self.elapsed_time,
+                    "train/dual_loss": info.dual_loss,
+                    "train/amor_loss": info.amor_loss,
+                    "train/elapsed_time": self.elapsed_time,
+                    "train/mean_potential_target": info.mean_potential_target,
+                    "train/min_potential_target": info.min_potential_target,
+                    "train/max_potential_target": info.max_potential_target,
+                    "train/mean_potential_target_hat": info.mean_potential_target_hat,
+                    "train/min_potential_target_hat": info.min_potential_target_hat,
+                    "train/max_potential_target_hat": info.max_potential_target_hat,
                  }, step=self.train_step)
 
 

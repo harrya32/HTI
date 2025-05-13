@@ -45,7 +45,7 @@ Callback_t = Callable
 Conj_t = Optional[ctransform_solvers.CTransformSolver]
 Potential_t = Callable[[jnp.ndarray], float]
 
-Info = collections.namedtuple("Info", "dual_loss amor_loss num_ctransform_iter target_hat")
+Info = collections.namedtuple("Info", "dual_loss amor_loss num_ctransform_iter target_hat mean_potential_target min_potential_target max_potential_target mean_potential_target_hat min_potential_target_hat max_potential_target_hat")
 UpdateOut = collections.namedtuple("UpdateOut", "states info")
 
 
@@ -188,6 +188,18 @@ class ManifoldW2NeuralDual:
             target_hat_detach = init_target_hat
             num_ctransform_iter = 0
 
+        # Potential evaluated at actual target samples
+        potential_at_target = target_potential_partial(target)
+        mean_pot_target = jnp.mean(potential_at_target)
+        min_pot_target = jnp.min(potential_at_target)
+        max_pot_target = jnp.max(potential_at_target)
+
+        # Potential evaluated at c-transform of source samples
+        potential_at_target_hat = target_potential_partial(target_hat_detach)
+        mean_pot_target_hat = jnp.mean(potential_at_target_hat)
+        min_pot_target_hat = jnp.min(potential_at_target_hat)
+        max_pot_target_hat = jnp.max(potential_at_target_hat)
+
         target_potential = target_potential_partial(target)
         cost_vmap = jax.vmap(lambda x, y: self.geometry.apply(
             {'params': params_geometry}, x, y, method=self.geometry.cost))
@@ -215,7 +227,7 @@ class ManifoldW2NeuralDual:
             raise ValueError("Amortization loss has been misspecified.")
 
         loss = dual_loss + amor_loss
-        return loss, Info(dual_loss, amor_loss, num_ctransform_iter, target_hat_detach)
+        return loss, Info(dual_loss, amor_loss, num_ctransform_iter, target_hat_detach, mean_pot_target, min_pot_target, max_pot_target, mean_pot_target_hat, min_pot_target_hat, max_pot_target_hat)
 
 
     def update_fn(self, state_target_potential, state_source_map, params_geometry, batch):

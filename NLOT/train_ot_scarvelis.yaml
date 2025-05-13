@@ -22,7 +22,7 @@ lambda: 0.0001
 
 seed: 0
 num_pairs: 2
-num_train_iters: 2001
+num_train_iters: 3001
 batch_size: 1024
 potential_lr: 1e-4
 wandb: True
@@ -52,7 +52,7 @@ geometry_kwargs:
 ctransform_solver:
   _target_: lagrangian_ot.ctransform_solvers.CTransformLBFGS
   gtol: 1e-5
-  max_iter: 10
+  max_iter: 3
   max_linesearch_iter: 20
   linesearch_type: "backtracking"
 

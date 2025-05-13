@@ -14,7 +14,6 @@ Our method uses guided conditional flow matching, matching geodesic velocities e
 ## TODO
 - Produce a few cancer datasets for the different n_k weights, and train NLOT on them to see if it can learn. Run on larger lambdas ~ 5.
 - Devise a metric for success/behaviour change here (how do we show the surrogate model performs well, outside of wass. distance from the reals) (just check nk avg. nk change per episode, across different surrogate models. Need a way to use surrogate model directly in RL env.)
-- Write down/check how our acq. fn. is working/averaging across pairs/conditions
 - Plots for synthetic experiment, and write up of it
 - Adversarial robustness in time series forecasting example, ideally on MIMIC data
 - HIV/diabetes/sepsis sims are secondary options which need varying adaptations to get into our setting. Start with HIV, doing similar reward shaping to cancer example.

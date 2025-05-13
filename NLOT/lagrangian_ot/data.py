@@ -240,9 +240,9 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         noise = 0.001 * jax.random.normal(jax.random.PRNGKey(0), dataset[:, :, :2].shape)
         dataset = dataset.at[:, :, :2].set(dataset[:, :, :2] + noise)
         #clip first column to be (0,10)
-        #dataset = dataset.at[:, :, 0].set(jnp.clip(dataset[:, :, 0], 0, 10))
+        dataset = dataset.at[:, :, 0].set(jnp.clip(dataset[:, :, 0], 0, 10))
         #clip second column to be (0,8)
-        #dataset = dataset.at[:, :, 1].set(jnp.clip(dataset[:, :, 1], 0, 8))
+        dataset = dataset.at[:, :, 1].set(jnp.clip(dataset[:, :, 1], 0, 8))
 
 
     print('Dataset shape:', dataset.shape)
