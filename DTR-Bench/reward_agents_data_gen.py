@@ -7,6 +7,7 @@ from stable_baselines3.common.env_util import make_vec_env
 import torch
 
 #load in agent
+agent_0 = PPO.load("ppo_ghaffari_cancer_model__0.zip")
 agent_01 = PPO.load("ppo_ghaffari_cancer_model.zip")
 agent_025 = PPO.load("ppo_ghaffari_cancer_model_25.zip")
 agent_05 = PPO.load("ppo_ghaffari_cancer_model_05.zip")
@@ -21,7 +22,7 @@ agent_7 = PPO.load("ppo_ghaffari_cancer_model__700.zip")
 agent_8 = PPO.load("ppo_ghaffari_cancer_model__800.zip")
 agent_9 = PPO.load("ppo_ghaffari_cancer_model__900.zip")
 agent_10 = PPO.load("ppo_ghaffari_cancer_model__1000.zip")
-models = [agent_01, agent_025, agent_05, agent_075, agent_09, agent_2, agent_3, agent_4, agent_5, agent_6, agent_7, agent_8, agent_9, agent_10]
+models = [agent_0, agent_01, agent_025, agent_05, agent_075, agent_09, agent_2, agent_3, agent_4, agent_5, agent_6, agent_7, agent_8, agent_9, agent_10]
 
 # --- Parameters ---
 ENV_NAME = 'GhaffariCancerEnv-continuous'
