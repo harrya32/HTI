@@ -16,7 +16,7 @@ num_categories: 4
 
 include_land_potential: False
 include_inverse_potential: True
-bandwidth: 1
+bandwidth: 0.5
 lambda: 0.01
 
 seed: 0
