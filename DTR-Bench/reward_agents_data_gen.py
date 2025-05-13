@@ -1,5 +1,3 @@
-import gymnasium as gym
-from gymnasium.core import RewardWrapper
 import DTRGym  
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,12 +15,13 @@ agent_09 = PPO.load("ppo_ghaffari_cancer_model_09.zip")
 agent_2 = PPO.load("ppo_ghaffari_cancer_model__200.zip")
 agent_3 = PPO.load("ppo_ghaffari_cancer_model__300.zip")
 agent_4 = PPO.load("ppo_ghaffari_cancer_model__400.zip")
+agent_5 = PPO.load("ppo_ghaffari_cancer_model__500.zip")
 agent_6 = PPO.load("ppo_ghaffari_cancer_model__600.zip")
 agent_7 = PPO.load("ppo_ghaffari_cancer_model__700.zip")
 agent_8 = PPO.load("ppo_ghaffari_cancer_model__800.zip")
 agent_9 = PPO.load("ppo_ghaffari_cancer_model__900.zip")
 agent_10 = PPO.load("ppo_ghaffari_cancer_model__1000.zip")
-models = [agent_01, agent_025, agent_05, agent_075, agent_09, agent_2, agent_3, agent_4, agent_6, agent_7, agent_8, agent_9, agent_10]
+models = [agent_01, agent_025, agent_05, agent_075, agent_09, agent_2, agent_3, agent_4, agent_5, agent_6, agent_7, agent_8, agent_9, agent_10]
 
 # --- Parameters ---
 ENV_NAME = 'GhaffariCancerEnv-continuous'
@@ -37,7 +36,7 @@ os.makedirs(DATASET_DIR, exist_ok=True)
 
 env = make_vec_env(ENV_NAME, n_envs=1)
 
-print('Evaluating agents, using states from agent_01')
+print('Evaluating agents, using states from agent_10')
 
 state_action_data = [[] for _ in range(len(models))] 
 total_steps = 0
@@ -54,7 +53,7 @@ for episode in range(NUM_EVAL_EPISODES):
                 model_actions.append(action)
             actions_by_model.append(model_actions)
 
-        next_obs, reward, done_array, info = env.step(actions_by_model[0][0])
+        next_obs, reward, done_array, info = env.step(actions_by_model[-1][0])
 
         state = obs[0]
         for i, model_actions in enumerate(actions_by_model):
@@ -89,6 +88,8 @@ for i, model in enumerate(models):
     agent_data = state_action_data[i][:1000]
     agent_data = np.array(agent_data)
     actions = agent_data[:, :2]
+    #print the average of each action for each model
+    print(f"Model {i+1} - Action 1 mean: {np.mean(actions[:, 0])}, Action 2 mean: {np.mean(actions[:, 1])}")
     states = agent_data[:, 2:]
     states = np.concatenate([np.repeat(i, 10) for i in range(10)])
     
