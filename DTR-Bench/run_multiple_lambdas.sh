@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the lambda values you want to test
-lambda_values=(2.0 3.0 4.0 5.0)
+lambda_values=(6.0 7.0 8.0 9.0 10.0)
 
 # Run the script for each lambda value
 for lambda in "${lambda_values[@]}"

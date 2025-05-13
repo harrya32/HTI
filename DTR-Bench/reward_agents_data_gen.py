@@ -9,12 +9,20 @@ from stable_baselines3.common.env_util import make_vec_env
 import torch
 
 #load in agent
-agent_1 = PPO.load("ppo_ghaffari_cancer_model.zip")
-agent_25 = PPO.load("ppo_ghaffari_cancer_model_25.zip")
-agent_5 = PPO.load("ppo_ghaffari_cancer_model_05.zip")
-agent_75 = PPO.load("ppo_ghaffari_cancer_model_75.zip")
-agent_9 = PPO.load("ppo_ghaffari_cancer_model_09.zip")
-models = [agent_1, agent_25, agent_5, agent_75, agent_9]
+agent_01 = PPO.load("ppo_ghaffari_cancer_model.zip")
+agent_025 = PPO.load("ppo_ghaffari_cancer_model_25.zip")
+agent_05 = PPO.load("ppo_ghaffari_cancer_model_05.zip")
+agent_075 = PPO.load("ppo_ghaffari_cancer_model_75.zip")
+agent_09 = PPO.load("ppo_ghaffari_cancer_model_09.zip")
+agent_2 = PPO.load("ppo_ghaffari_cancer_model__200.zip")
+agent_3 = PPO.load("ppo_ghaffari_cancer_model__300.zip")
+agent_4 = PPO.load("ppo_ghaffari_cancer_model__400.zip")
+agent_6 = PPO.load("ppo_ghaffari_cancer_model__600.zip")
+agent_7 = PPO.load("ppo_ghaffari_cancer_model__700.zip")
+agent_8 = PPO.load("ppo_ghaffari_cancer_model__800.zip")
+agent_9 = PPO.load("ppo_ghaffari_cancer_model__900.zip")
+agent_10 = PPO.load("ppo_ghaffari_cancer_model__1000.zip")
+models = [agent_01, agent_025, agent_05, agent_075, agent_09, agent_2, agent_3, agent_4, agent_6, agent_7, agent_8, agent_9, agent_10]
 
 # --- Parameters ---
 ENV_NAME = 'GhaffariCancerEnv-continuous'
@@ -29,7 +37,7 @@ os.makedirs(DATASET_DIR, exist_ok=True)
 
 env = make_vec_env(ENV_NAME, n_envs=1)
 
-print('Evaluating agents, using states from agent_1')
+print('Evaluating agents, using states from agent_01')
 
 state_action_data = [[] for _ in range(len(models))] 
 total_steps = 0
@@ -72,7 +80,7 @@ for i in range(len(models)):
     tensor_data.append(torch.tensor(agent_data, dtype=torch.float32))
 
 dataset = torch.stack(tensor_data)
-dataset_path = os.path.join(DATASET_DIR, "reward_weighting_data.pt")
+dataset_path = os.path.join(DATASET_DIR, "reward_weighting_data_extended.pt")
 print("Shape of dataset:", dataset.shape)
 torch.save(dataset, dataset_path)
 

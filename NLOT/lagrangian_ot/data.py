@@ -241,6 +241,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
 
 
     print('Dataset shape:', dataset.shape)
+    print("Example data:", dataset[0, :10, :])
     dataset = jnp.asarray(dataset)
     if geometry_str == "scarvelis_xpath":
         assert dataset.shape[0] == 2
