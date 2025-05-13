@@ -69,7 +69,7 @@ class Workspace:
                 lambda_weight=self.cfg.get('lambda', 0.01),
             )
         elif self.cfg.get('include_inverse_potential', False):
-            lagrangian_potential_initializer_fn = lagrangian_potentials.InverseDensityPotential(
+            lagrangian_potential_initializer_fn = lagrangian_potentials.InverseDensityPotentialNW(
                 D=self.cfg.get('D', 2),
                 C=self.cfg.get('C', 0),
                 samples=self.all_samples,
@@ -424,12 +424,12 @@ class Workspace:
                         time_0_points = test_data[0][1]
 
                         if self.cfg.data == 'reward_weighting_data':
-                            test_path = '/home/azureuser/localfiles/HTI/NLOT/scarvelis_data/reward_weighting_data.pt'
-                            test_data = torch.load(test_path)[[0,1,3], :1000, :self.cfg.D + self.cfg.C].cpu().numpy()
+                            test_path = '/home/azureuser/localfiles/HTI/NLOT/scarvelis_data/reward_weighting_data_extended.pt'
+                            test_data = torch.load(test_path)[[0,6], :1000, :self.cfg.D + self.cfg.C].cpu().numpy()
                             #to jnp
                             test_data = jnp.array(test_data)
                             time_0_points = test_data[0]
-                            test_data = [(0, test_data[0]), (0.25, test_data[1]), (0.75, test_data[2])]
+                            test_data = [(0, test_data[0]), (0.5, test_data[1])]
 
                         self.evaluate_marginals(time_0_points, test_data[1:], plot_results=True, verbose=False)
 
@@ -1266,7 +1266,7 @@ class Workspace:
                         true_conditions_all = true_eval_samples[:, self.cfg.D:]
                         predicted_conditions_all = predicted_eval_samples[:, self.cfg.D:]
                         unique_conditions = jnp.unique(true_conditions_all, axis=0)
-                        cmap = plt.cm.get_cmap('tab10', len(unique_conditions)) 
+                        cmap = plt.cm.get_cmap('nipy_spectral', len(unique_conditions)) 
 
                         for cond_idx, cond_vec in enumerate(unique_conditions):
                             cond_mask_true = jnp.all(true_conditions_all == cond_vec, axis=1)

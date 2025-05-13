@@ -211,7 +211,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         "conditional_circles": "conditional_circles.pt",
         "conditional_circles_normal": "conditional_circles_normal.pt",
         "conditional_semicircles": "conditional_semicircles.pt",
-        "reward_weighting_data": "reward_weighting_data.pt",
+        "reward_weighting_data": "reward_weighting_data_extended.pt",
     }
     if geometry_str not in paths:
         raise ValueError(f"Invalid geometry choice: {geometry_str}")
@@ -232,12 +232,17 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         #normalise the dataset
         #dataset[:,:,2:] = (dataset[:,:,2:] - dataset[:,:,2:].mean(axis=0)) / dataset[:,:,2:].std(axis=0)
     if geometry_str == "reward_weighting_data":
-        dataset = dataset[[0, 2, 4], :1000, :] 
+        #dataset = dataset[[0, 2, 4], :1000, :] 
+        dataset = dataset[[0, -1], :1000, :]
         dataset = jnp.asarray(dataset)
 
         #add tiny amount of noise for spline stability
         noise = 0.001 * jax.random.normal(jax.random.PRNGKey(0), dataset[:, :, :2].shape)
         dataset = dataset.at[:, :, :2].set(dataset[:, :, :2] + noise)
+        #clip first column to be (0,10)
+        #dataset = dataset.at[:, :, 0].set(jnp.clip(dataset[:, :, 0], 0, 10))
+        #clip second column to be (0,8)
+        #dataset = dataset.at[:, :, 1].set(jnp.clip(dataset[:, :, 1], 0, 8))
 
 
     print('Dataset shape:', dataset.shape)
