@@ -424,12 +424,12 @@ class Workspace:
                         time_0_points = test_data[0][1]
 
                         if self.cfg.data == 'reward_weighting_data':
-                            test_path = '/home/azureuser/localfiles/HTI/NLOT/scarvelis_data/reward_weighting_data_extended.pt'
-                            test_data = torch.load(test_path)[[0,6], :1000, :self.cfg.D + self.cfg.C].cpu().numpy()
+                            test_path = '/home/azureuser/localfiles/HTI/NLOT/scarvelis_data/reward_weighting_data_0_10.pt'
+                            test_data = torch.load(test_path)[[0,1,2,3,4,6,7,8,9], :1000, :self.cfg.D + self.cfg.C].cpu().numpy()
                             #to jnp
                             test_data = jnp.array(test_data)
                             time_0_points = test_data[0]
-                            test_data = [(0, test_data[0]), (0.5, test_data[1])]
+                            test_data = [(0, test_data[0]), (0.1, test_data[1]), (0.2, test_data[2]), (0.3, test_data[3]), (0.4, test_data[4]), (0.6, test_data[5]), (0.7, test_data[6]), (0.8, test_data[7]), (0.9, test_data[8])]
 
                         self.evaluate_marginals(time_0_points, test_data[1:], plot_results=True, verbose=False)
 
