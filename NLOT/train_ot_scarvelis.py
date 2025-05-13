@@ -74,6 +74,7 @@ class Workspace:
                 C=self.cfg.get('C', 0),
                 samples=self.all_samples,
                 bandwidth=self.cfg.get('bandwidth', 1.0),
+                conditional_bandwidth=self.cfg.get('conditional_bandwidth', 1.0),
                 lambda_repel=self.cfg.get('lambda', 0.01),
             )
         else:
@@ -1258,7 +1259,8 @@ class Workspace:
                 # Plotting
                 if plot_results and self.cfg.D >= 2:
                     fig_comp, ax_comp = plt.subplots(figsize=(8, 4))
-                    self._setup_ax(ax_comp)
+                    #with the 100th condition for background
+                    self._setup_ax(ax_comp, condition = true_eval_samples[100, self.cfg.D:])
                     num_plot = self.cfg.plotting.get('num_eval_plot', 200)
                     pk1, pk2, plot_key = jax.random.split(plot_key, 3)
 
