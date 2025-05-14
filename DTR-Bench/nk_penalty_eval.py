@@ -3,48 +3,47 @@ import numpy as np
 import os
 from stable_baselines3 import PPO 
 from stable_baselines3.common.env_util import make_vec_env 
-import torch # Required by Stable Baselines3
+import torch
 import matplotlib.pyplot as plt
 
-# --- Agent Loading ---
-# IMPORTANT: Ensure the order of agents here matches the order in `lambda_values` below.
+
 agent_configs = [
-    ("agent_lambda0", "ppo_ghaffari_cancer_model__0.zip"),       # Corresponds to lambda_values[0]
-    ("agent_lambda0.1", "ppo_ghaffari_cancer_model.zip"),      # Corresponds to lambda_values[1]
-    ("agent_lambda0.25", "ppo_ghaffari_cancer_model_25.zip"),    # Corresponds to lambda_values[2]
-    ("agent_lambda0.5", "ppo_ghaffari_cancer_model_05.zip"),     # Corresponds to lambda_values[3]
-    ("agent_lambda0.75", "ppo_ghaffari_cancer_model_75.zip"),    # Corresponds to lambda_values[4]
-    ("agent_lambda0.9", "ppo_ghaffari_cancer_model_09.zip"),     # Corresponds to lambda_values[5]
-    ("agent_lambda2", "ppo_ghaffari_cancer_model__200.zip"),     # Corresponds to lambda_values[6]
-    ("agent_lambda3", "ppo_ghaffari_cancer_model__300.zip"),     # Corresponds to lambda_values[7]
-    ("agent_lambda4", "ppo_ghaffari_cancer_model__400.zip"),     # Corresponds to lambda_values[8]
-    ("agent_lambda5", "ppo_ghaffari_cancer_model__500.zip"),     # Corresponds to lambda_values[9]
-    ("agent_lambda6", "ppo_ghaffari_cancer_model__600.zip"),     # Corresponds to lambda_values[10]
-    ("agent_lambda7", "ppo_ghaffari_cancer_model__700.zip"),     # Corresponds to lambda_values[11]
-    ("agent_lambda8", "ppo_ghaffari_cancer_model__800.zip"),     # Corresponds to lambda_values[12]
-    ("agent_lambda9", "ppo_ghaffari_cancer_model__900.zip"),     # Corresponds to lambda_values[13]
-    ("agent_lambda10", "ppo_ghaffari_cancer_model__1000.zip"),   # Corresponds to lambda_values[14]
+    ("agent_lambda0", "ppo_ghaffari_cancer_model__0.zip"),       
+    ("agent_lambda0.1", "ppo_ghaffari_cancer_model.zip"),      
+    ("agent_lambda0.25", "ppo_ghaffari_cancer_model_25.zip"),    
+    ("agent_lambda0.5", "ppo_ghaffari_cancer_model_05.zip"),     
+    ("agent_lambda0.75", "ppo_ghaffari_cancer_model_75.zip"),    
+    ("agent_lambda0.9", "ppo_ghaffari_cancer_model_09.zip"),     
+    ("agent_lambda2", "ppo_ghaffari_cancer_model__200.zip"),     
+    ("agent_lambda2.5", "ppo_ghaffari_cancer_model__250.zip"),
+    ("agent_lambda3", "ppo_ghaffari_cancer_model__300.zip"),     
+    ("agent_lambda4", "ppo_ghaffari_cancer_model__400.zip"),     
+    ("agent_lambda5", "ppo_ghaffari_cancer_model__500.zip"),    
+    ("agent_lambda6", "ppo_ghaffari_cancer_model__600.zip"),     
+    ("agent_lambda7", "ppo_ghaffari_cancer_model__700.zip"),     
+    ("agent_lambda8", "ppo_ghaffari_cancer_model__800.zip"),     
+    ("agent_lambda9", "ppo_ghaffari_cancer_model__900.zip"),     
+    ("agent_lambda10", "ppo_ghaffari_cancer_model__1000.zip"),   
 ]
 
-# --- Lambda Values ---
-# EDIT THIS LIST to match your agents and their corresponding lambda_nk values.
-# The order and length must match `agent_configs`.
+
 lambda_values = [
-    0.0,  # For agent_lambda0
-    0.1,  # For agent_lambda0.1 (assuming ppo_ghaffari_cancer_model.zip is lambda 0.1 or 1.0, adjust as needed)
-    0.25, # For agent_lambda0.25
-    0.5,  # For agent_lambda0.5
-    0.75, # For agent_lambda0.75
-    0.9,  # For agent_lambda0.9
-    2.0,  # For agent_lambda2
-    3.0,  # For agent_lambda3
-    4.0,  # For agent_lambda4
-    5.0,  # For agent_lambda5
-    6.0,  # For agent_lambda6
-    7.0,  # For agent_lambda7
-    8.0,  # For agent_lambda8
-    9.0,  # For agent_lambda9
-    10.0  # For agent_lambda10
+    0.0,  
+    0.1,  
+    0.25, 
+    0.5,  
+    0.75, 
+    0.9,  
+    2.0,  
+    2.5,
+    3.0,  
+    4.0,  
+    5.0,  
+    6.0,  
+    7.0,  
+    8.0,  
+    9.0,  
+    10.0 
 ]
 
 
@@ -62,15 +61,6 @@ for i, (name, path) in enumerate(agent_configs):
     else:
         print(f"Model file not found for '{name}' at '{path}'. Skipping.")
 
-if not loaded_models_info:
-    print("No models were loaded. Exiting.")
-    exit()
-
-if len(loaded_models_info) != len(lambda_values):
-    print("Warning: The number of loaded models does not match the number of lambda values provided.")
-    print("Plotting might be affected or incorrect. Please check `agent_configs` and `lambda_values`.")
-
-# --- Parameters ---
 ENV_NAME = 'GhaffariCancerEnv-continuous'
 NUM_EVAL_EPISODES = 100         
 PLOT_DIR = "nk_penalty_plots"
@@ -83,10 +73,10 @@ def calculate_nk_penalty(current_obs_vec, initial_obs_vec):
     current_obs = current_obs_vec[0] 
     initial_obs = initial_obs_vec[0]
 
-    N_p  = current_obs[1]  # Proliferating tumor cell count
-    N_s  = current_obs[5]  # Normal stem cell count
-    N_p0 = initial_obs[1] # Initial Proliferating tumor cell count
-    N_s0 = initial_obs[5] # Initial Normal stem cell count
+    N_p  = current_obs[1]  
+    N_s  = current_obs[5]  
+    N_p0 = initial_obs[1]
+    N_s0 = initial_obs[5]
     
     N  = max(np.e,  N_p  + N_s)
     N0 = max(np.e,  N_p0 + N_s0)
