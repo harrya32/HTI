@@ -1,0 +1,58 @@
+geometry: neural_net_metric_eig
+data: reward_weighting_data
+D: 2
+C: 7
+categorical: false
+num_categories: 4
+include_land_potential: false
+include_inverse_potential: false
+bandwidth: 1.0
+conditional_bandwidth: 1.0
+lambda: 0.0001
+seed: 4
+num_pairs: 2
+num_train_iters: 2001
+batch_size: 1024
+potential_lr: 0.0001
+wandb: true
+plot_frequency: 50
+save_frequency: ${plot_frequency}
+plotting:
+  disable: false
+  num_pairs_plot: 100
+metric:
+  warmup_steps: 50
+  update_frequency: 10
+  update_repeat: 1
+  frobenius_reg_weight: 0
+  lr: 0.005
+geometry_kwargs:
+  spline_solver_kwargs:
+    num_spline_nodes: 15
+    grad_tol: 1.0e-05
+    init_lr: 0.01
+    num_spline_points_eval: 50
+    max_iter: 0
+ctransform_solver:
+  _target_: lagrangian_ot.ctransform_solvers.CTransformLBFGS
+  gtol: 1.0e-05
+  max_iter: 3
+  max_linesearch_iter: 20
+  linesearch_type: backtracking
+spline:
+  init_train_iters: 1001
+  train_iters: 1001
+  update_frequency: 25
+  grad_norm_threshold: 0.0001
+  noise: 0.0
+  update_on_conjugates: false
+target_potential_dim_hidden:
+- 64
+- 64
+- 64
+- 64
+source_map_dim_hidden:
+- 64
+- 64
+- 64
+- 64

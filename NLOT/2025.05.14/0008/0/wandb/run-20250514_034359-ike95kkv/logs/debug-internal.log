@@ -1,0 +1,16 @@
+{"time":"2025-05-14T03:44:00.983765364Z","level":"INFO","msg":"stream: starting","core version":"0.19.9","symlink path":"/home/azureuser/localfiles/HTI/NLOT/exp/2025.05.14/0008/0/wandb/run-20250514_034359-ike95kkv/logs/debug-core.log"}
+{"time":"2025-05-14T03:44:01.231773022Z","level":"INFO","msg":"created new stream","id":"ike95kkv"}
+{"time":"2025-05-14T03:44:01.231806021Z","level":"INFO","msg":"stream: started","id":"ike95kkv"}
+{"time":"2025-05-14T03:44:01.231830621Z","level":"INFO","msg":"writer: Do: started","stream_id":"ike95kkv"}
+{"time":"2025-05-14T03:44:01.23186372Z","level":"INFO","msg":"sender: started","stream_id":"ike95kkv"}
+{"time":"2025-05-14T03:44:01.23183962Z","level":"INFO","msg":"handler: started","stream_id":"ike95kkv"}
+{"time":"2025-05-14T03:44:01.491995078Z","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-05-14T04:27:26.433135388Z","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-05-14T04:27:26.433178988Z","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-05-14T04:27:27.296065522Z","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-05-14T04:27:27.434424176Z","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading history steps 2000-2001, summary, console lines 2517-2728","runtime_seconds":0.137598065}],"total_operations":1}}
+{"time":"2025-05-14T04:27:27.632821641Z","level":"INFO","msg":"stream: closing","id":"ike95kkv"}
+{"time":"2025-05-14T04:27:27.63284034Z","level":"INFO","msg":"handler: closed","stream_id":"ike95kkv"}
+{"time":"2025-05-14T04:27:27.63285474Z","level":"INFO","msg":"writer: Close: closed","stream_id":"ike95kkv"}
+{"time":"2025-05-14T04:27:27.63286804Z","level":"INFO","msg":"sender: closed","stream_id":"ike95kkv"}
+{"time":"2025-05-14T04:27:27.632928439Z","level":"INFO","msg":"stream: closed","id":"ike95kkv"}

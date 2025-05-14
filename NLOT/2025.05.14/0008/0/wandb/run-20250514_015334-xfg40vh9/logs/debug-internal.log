@@ -1,0 +1,16 @@
+{"time":"2025-05-14T01:53:35.471791817Z","level":"INFO","msg":"stream: starting","core version":"0.19.9","symlink path":"/home/azureuser/localfiles/HTI/NLOT/exp/2025.05.14/0008/0/wandb/run-20250514_015334-xfg40vh9/logs/debug-core.log"}
+{"time":"2025-05-14T01:53:35.732137181Z","level":"INFO","msg":"created new stream","id":"xfg40vh9"}
+{"time":"2025-05-14T01:53:35.732170581Z","level":"INFO","msg":"stream: started","id":"xfg40vh9"}
+{"time":"2025-05-14T01:53:35.732263779Z","level":"INFO","msg":"writer: Do: started","stream_id":"xfg40vh9"}
+{"time":"2025-05-14T01:53:35.732280179Z","level":"INFO","msg":"sender: started","stream_id":"xfg40vh9"}
+{"time":"2025-05-14T01:53:35.732298579Z","level":"INFO","msg":"handler: started","stream_id":"xfg40vh9"}
+{"time":"2025-05-14T01:53:35.99073937Z","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-05-14T02:27:28.500866272Z","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-05-14T02:27:28.500908971Z","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-05-14T02:27:29.372677569Z","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-05-14T02:27:29.502200571Z","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading history steps 2001-2001, summary, console lines 2444-2655","runtime_seconds":0.129068308}],"total_operations":1}}
+{"time":"2025-05-14T02:27:29.697184564Z","level":"INFO","msg":"stream: closing","id":"xfg40vh9"}
+{"time":"2025-05-14T02:27:29.697202864Z","level":"INFO","msg":"handler: closed","stream_id":"xfg40vh9"}
+{"time":"2025-05-14T02:27:29.697211864Z","level":"INFO","msg":"writer: Close: closed","stream_id":"xfg40vh9"}
+{"time":"2025-05-14T02:27:29.697235464Z","level":"INFO","msg":"sender: closed","stream_id":"xfg40vh9"}
+{"time":"2025-05-14T02:27:29.697287163Z","level":"INFO","msg":"stream: closed","id":"xfg40vh9"}
