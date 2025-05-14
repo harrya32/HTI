@@ -52,37 +52,33 @@ def _generate_semicircle_marginal_at_time_jax(
     """
     data_for_all_conditions = []
     for c in range(4):
-        if c == 0:  # Top half of left circle (moving from 0 to π)
+        if c == 0:  
             target_angle = time * np.pi
             center_x = -1.0
-        elif c == 1:  # Bottom half of left circle (moving from 0 to -π)
+        elif c == 1:  
             target_angle = -time * np.pi
             center_x = -1.0
-        elif c == 2:  # Top half of right circle (moving from π to 0)
+        elif c == 2:  
             target_angle = np.pi - time * np.pi
             center_x = 1.0
-        else:  # c == 3, Bottom half of right circle (moving from -π to 0)
+        else:  
             target_angle = -np.pi + time * np.pi
             center_x = 1.0
-        
-        # Sample angles from von Mises distribution
-        # Note: scipy.stats uses numpy.random, which should be seeded by JAX's global seed
+
         sampled_angles = vonmises.rvs(
             loc=target_angle,
             kappa=angular_concentration,
             size=num_points_per_condition
         )
         
-        # Sample radii from log-normal distribution
         log_normal_mu = np.log(radius) 
         sampled_radii = lognorm.rvs(
-            s=radial_std_dev, # This is sigma for lognorm
+            s=radial_std_dev, 
             loc=0, 
-            scale=np.exp(log_normal_mu), # This is exp(mu) for lognorm
+            scale=np.exp(log_normal_mu), 
             size=num_points_per_condition
         )
         
-        # Convert to Cartesian coordinates
         x_coords = center_x + sampled_radii * np.cos(sampled_angles)
         y_coords = sampled_radii * np.sin(sampled_angles)
         
@@ -98,11 +94,11 @@ def _generate_semicircle_marginal_at_time_jax(
 
 def generate_evaluation_data(
     generation_cfg: DictConfig,
-    num_total_time_points_config: int, # From cfg.num_evaluation_time_points
+    num_total_time_points_config: int, 
     samples_per_total_tp: int,
-    evaluation_time_points_values_config: Optional[List[float] | ListConfig], # Corrected type hint
+    evaluation_time_points_values_config: Optional[List[float] | ListConfig],
     key: jax.random.PRNGKey
-) -> List[Tuple[float, jnp.ndarray]]: # Changed return type
+) -> List[Tuple[float, jnp.ndarray]]:
     """
     Generates evaluation data. Currently supports "semicircle" type.
     Returns:
@@ -123,7 +119,6 @@ def generate_evaluation_data(
         )
     num_points_per_condition = samples_per_total_tp // 4
 
-    # Determine time points for generation
     times_to_generate = []
     if evaluation_time_points_values_config is not None:
         resolved_times_from_config = [float(t) for t in list(evaluation_time_points_values_config)]
@@ -135,7 +130,7 @@ def generate_evaluation_data(
                   f"does not match 'num_evaluation_time_points' ({num_total_time_points_config}). "
                   "Will fall back to linspace or default for single point.")
     
-    if not times_to_generate: # Fallback if not specified, mismatch, or num_total_time_points_config is primary
+    if not times_to_generate:
         if num_total_time_points_config == 1:
             times_to_generate = [0.5] # Default for a single point (e.g. mid-time)
             print(f"Generating for a single time point as per num_evaluation_time_points=1, using default t={times_to_generate[0]}")
@@ -153,11 +148,8 @@ def generate_evaluation_data(
     print(f"Number of points per condition per time point: {num_points_per_condition}")
 
     full_eval_samples_sequence = []
-    # The JAX key is passed but _generate_semicircle_marginal_at_time_jax uses scipy.stats,
-    # which relies on numpy.random. Seeding JAX globally should also seed numpy.random.
-    # key_t = jax.random.fold_in(key, t_idx) # If JAX-based sampling were used directly.
 
-    evaluation_data_tuples = [] # Store (time, samples) tuples
+    evaluation_data_tuples = []
 
     for t_idx, current_time in enumerate(times_to_generate):
         print(f"Generating data for time point {t_idx + 1}/{len(times_to_generate)}: t = {current_time:.4f}")
@@ -169,9 +161,9 @@ def generate_evaluation_data(
             radial_std_dev=semicircle_params.radial_std_dev
         )
         full_eval_samples_sequence.append(samples_at_t)
-        evaluation_data_tuples.append((float(current_time), samples_at_t)) # Store as tuple
+        evaluation_data_tuples.append((float(current_time), samples_at_t)) 
 
-    if not evaluation_data_tuples: # Check the new list of tuples
+    if not evaluation_data_tuples: 
         raise ValueError("Data generation resulted in an empty sequence of (time, samples) tuples.")
 
     print(f"Shape of generated samples at t0 (time={evaluation_data_tuples[0][0]:.4f}): {evaluation_data_tuples[0][1].shape}")
@@ -179,7 +171,7 @@ def generate_evaluation_data(
         for i, (t, s) in enumerate(evaluation_data_tuples[1:]):
             print(f"Shape of generated samples at t_{i+1} (time={t:.4f}): {s.shape}")
         
-    return evaluation_data_tuples # Return the list of tuples
+    return evaluation_data_tuples 
 
 
 @hydra.main(config_path=".", config_name="evaluate_config.yaml", version_base="1.1")
@@ -235,7 +227,7 @@ def main(cfg: DictConfig):
             key=prng_key
         )
     
-    num_actual_time_points = len(evaluation_data_tuples) # Based on the list of tuples
+    num_actual_time_points = len(evaluation_data_tuples) 
     print(f"Successfully obtained data with {num_actual_time_points} time points.")
         
     if cfg.num_evaluation_time_points != num_actual_time_points:

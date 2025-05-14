@@ -1147,6 +1147,7 @@ class Workspace:
                 {'params': params_source_map_k},
                 current_transported_samples
             )
+            end_samples_pred_at_Tk_plus_1 = self.geometry.batch_project(end_samples_pred_at_Tk_plus_1)
 
             @jax.jit
             def interpolate_batch_in_interval(current_geom_params, start_samples_batch, end_samples_pred_for_batch, s_fraction_val):
@@ -1186,6 +1187,7 @@ class Workspace:
                     )
                     desc = f"interpolated at s={s_fraction:.3f} in [{T_k:.4f}, {T_k_plus_1:.4f}]"
                 
+                predicted_eval_samples = self.geometry.batch_project(predicted_eval_samples)
                 predicted_spatial_overall = predicted_eval_samples[:, :self.cfg.D]
                 actual_spatial_overall = true_eval_samples[:, :self.cfg.D]
 
