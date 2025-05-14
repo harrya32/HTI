@@ -8,23 +8,23 @@ import matplotlib.pyplot as plt
 
 
 agent_configs = [
-    ("agent_lambda0", "ppo_ghaffari_cancer_model__0.zip"),       
+    ("agent_lambda0", "policies/ppo_ghaffari_cancer_model__0.zip"),       
     #("agent_lambda0.1", "ppo_ghaffari_cancer_model.zip"),      
     #("agent_lambda0.25", "ppo_ghaffari_cancer_model_25.zip"),    
     #("agent_lambda0.5", "ppo_ghaffari_cancer_model_05.zip"),     
     #("agent_lambda0.75", "ppo_ghaffari_cancer_model_75.zip"),    
     #("agent_lambda0.9", "ppo_ghaffari_cancer_model_09.zip"),  
-    ("agent_lambda1", "ppo_ghaffari_cancer_model__100.zip"),   
-    ("agent_lambda2", "ppo_ghaffari_cancer_model__200.zip"),     
+    ("agent_lambda1", "policies/ppo_ghaffari_cancer_model__100.zip"),   
+    ("agent_lambda2", "policies/ppo_ghaffari_cancer_model__200.zip"),     
     #("agent_lambda2.5", "ppo_ghaffari_cancer_model__250.zip"),
-    ("agent_lambda3", "ppo_ghaffari_cancer_model__300.zip"),     
-    ("agent_lambda4", "ppo_ghaffari_cancer_model__400.zip"),     
-    ("agent_lambda5", "ppo_ghaffari_cancer_model__500.zip"),    
-    ("agent_lambda6", "ppo_ghaffari_cancer_model__600.zip"),     
-    ("agent_lambda7", "ppo_ghaffari_cancer_model__700.zip"),     
-    ("agent_lambda8", "ppo_ghaffari_cancer_model__800.zip"),     
-    ("agent_lambda9", "ppo_ghaffari_cancer_model__900.zip"),     
-    ("agent_lambda10", "ppo_ghaffari_cancer_model__1000.zip"),   
+    ("agent_lambda3", "policies/ppo_ghaffari_cancer_model__300.zip"),     
+    ("agent_lambda4", "policies/ppo_ghaffari_cancer_model__400.zip"),     
+    ("agent_lambda5", "policies/ppo_ghaffari_cancer_model__500.zip"),    
+    ("agent_lambda6", "policies/ppo_ghaffari_cancer_model__600.zip"),     
+    ("agent_lambda7", "policies/ppo_ghaffari_cancer_model__700.zip"),     
+    ("agent_lambda8", "policies/ppo_ghaffari_cancer_model__800.zip"),     
+    ("agent_lambda9", "policies/ppo_ghaffari_cancer_model__900.zip"),     
+    ("agent_lambda10", "policies/ppo_ghaffari_cancer_model__1000.zip"),   
 ]
 
 
@@ -171,7 +171,7 @@ if penalties_for_plot:
     plt.legend()
     plt.tight_layout()
     
-    plot_filename = os.path.join(PLOT_DIR, "overall_avg_nk_penalty_vs_lambda_episodic_stddev.png")
+    plot_filename = os.path.join(PLOT_DIR, "nk_penalty_vs_lambda.png")
     plt.savefig(plot_filename)
     print(f"\nSaved overall average NK penalty plot with episodic std dev error bars to {plot_filename}")
     plt.close()

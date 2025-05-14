@@ -12,10 +12,10 @@ import jax.numpy as jnp
 
 sys.path.append('/mnt/pdata/hmka3/HTI/NLOT')
 
-AGENT_PATH = "ppo_ghaffari_cancer_model.zip" 
+AGENT_PATH = "policies/ppo_ghaffari_cancer_model__0.zip" 
 AGENT_NAME = "single_agent_eval"
 ENV_NAME = 'GhaffariCancerEnv-continuous'
-NUM_EVAL_EPISODES = 20
+NUM_EVAL_EPISODES = 5
 
 # Define the lambda values to evaluate
 LAMBDA_VALUES = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
@@ -24,7 +24,7 @@ os.makedirs(PLOT_DIR, exist_ok=True)
 
 parser = argparse.ArgumentParser(description='Evaluate a single agent with a pushforward function.')
 parser.add_argument('--lambda_pushforward', type=float, default=0, help='Lambda value for the pushforward function.')
-parser.add_argument('--workspace_path', type=str, default="../NLOT/2025.05.14/eucl_w_potential/0/latest.pkl", help='Path to the trained OT workspace pickle file.')
+parser.add_argument('--workspace_path', type=str, default="../NLOT/2025.05.14/ours/0/latest.pkl", help='Path to the trained OT workspace pickle file.')
 parser.add_argument('--all_lambdas', action='store_true', help='Evaluate all lambda values and generate plot')
 args = parser.parse_args()
 LAMBDA_PUSHFORWARD = args.lambda_pushforward
@@ -137,7 +137,7 @@ def evaluate_lambda(model, lambda_val):
         print(f"Starting Episode {episode_num + 1}/{NUM_EVAL_EPISODES}")
 
         while not done:
-            action, _ = model.predict(obs, deterministic=False)
+            action, _ = model.predict(obs, deterministic=True)
             
             modified_action = pushforward(action, obs, lambda_val)
             
@@ -213,14 +213,14 @@ if args.all_lambdas:
         
         plt.tight_layout()
         
-        plot_filename = os.path.join(PLOT_DIR, "surrogate_avg_nk_penalty_vs_lambda_eucl_w_potential.png")
+        plot_filename = os.path.join(PLOT_DIR, "surrogate_avg_nk_penalty_vs_lambda_ours.png")
         plt.savefig(plot_filename)
         print(f"\nSaved overall average NK penalty plot to {plot_filename}")
         plt.close()
         
         # Save results to CSV
         import csv
-        csv_filename = os.path.join(PLOT_DIR, "surrogate_nk_penalty_data_eucl_w_potential.csv")
+        csv_filename = os.path.join(PLOT_DIR, "surrogate_nk_penalty_data_ours.csv")
         with open(csv_filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(['Lambda', 'Average Penalty', 'Standard Deviation'])
