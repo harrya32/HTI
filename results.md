@@ -55,3 +55,20 @@ Learned, w potential
         ours_1	-999.7874291894074
         ours_0	-1172.655852419242
         ours_3	-1408.1058272320402
+
+
+
+CANCER
+Euclidean, no potential
+    eucl_cancer_3	2.5555343627929688
+    eucl_cancer_4	2.4398186206817627
+    eucl_cancer_2	2.038227081298828
+    eucl_cancer_0	1.648943305015564
+    eucl_cancer_1	1.5883475542068481
+
+Learned, no potential
+    NLOT_cancer_4	2.45242977142334
+    NLOT_cancer_3	2.095038652420044
+    NLOT_cancer_2	1.9149770736694336
+    NLOT_cancer_1	1.8525232076644897
+    NLOT_cancer_0	1.6159017086029053

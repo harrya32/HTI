@@ -24,7 +24,7 @@ seed: 0
 num_pairs: 2
 num_train_iters: 2001
 batch_size: 1024
-potential_lr: 1e-4
+potential_lr: 1e-3
 wandb: True
 
 plot_frequency: 50
