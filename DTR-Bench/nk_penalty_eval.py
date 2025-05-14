@@ -9,13 +9,14 @@ import matplotlib.pyplot as plt
 
 agent_configs = [
     ("agent_lambda0", "ppo_ghaffari_cancer_model__0.zip"),       
-    ("agent_lambda0.1", "ppo_ghaffari_cancer_model.zip"),      
-    ("agent_lambda0.25", "ppo_ghaffari_cancer_model_25.zip"),    
-    ("agent_lambda0.5", "ppo_ghaffari_cancer_model_05.zip"),     
-    ("agent_lambda0.75", "ppo_ghaffari_cancer_model_75.zip"),    
-    ("agent_lambda0.9", "ppo_ghaffari_cancer_model_09.zip"),     
+    #("agent_lambda0.1", "ppo_ghaffari_cancer_model.zip"),      
+    #("agent_lambda0.25", "ppo_ghaffari_cancer_model_25.zip"),    
+    #("agent_lambda0.5", "ppo_ghaffari_cancer_model_05.zip"),     
+    #("agent_lambda0.75", "ppo_ghaffari_cancer_model_75.zip"),    
+    #("agent_lambda0.9", "ppo_ghaffari_cancer_model_09.zip"),  
+    ("agent_lambda1", "ppo_ghaffari_cancer_model__100.zip"),   
     ("agent_lambda2", "ppo_ghaffari_cancer_model__200.zip"),     
-    ("agent_lambda2.5", "ppo_ghaffari_cancer_model__250.zip"),
+    #("agent_lambda2.5", "ppo_ghaffari_cancer_model__250.zip"),
     ("agent_lambda3", "ppo_ghaffari_cancer_model__300.zip"),     
     ("agent_lambda4", "ppo_ghaffari_cancer_model__400.zip"),     
     ("agent_lambda5", "ppo_ghaffari_cancer_model__500.zip"),    
@@ -29,13 +30,8 @@ agent_configs = [
 
 lambda_values = [
     0.0,  
-    0.1,  
-    0.25, 
-    0.5,  
-    0.75, 
-    0.9,  
+    1.0,
     2.0,  
-    2.5,
     3.0,  
     4.0,  
     5.0,  
@@ -179,6 +175,14 @@ if penalties_for_plot:
     plt.savefig(plot_filename)
     print(f"\nSaved overall average NK penalty plot with episodic std dev error bars to {plot_filename}")
     plt.close()
+    import csv
+    csv_filename = os.path.join(PLOT_DIR, "nk_penalty_data.csv")
+    with open(csv_filename, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['Lambda', 'Average Penalty', 'Standard Deviation'])
+        for row in penalties_for_plot:
+            writer.writerow(row)
+    print(f"Saved NK penalty data to {csv_filename}")
 else:
     print("\nNo valid data to plot for NK penalty vs Lambda.")
 
