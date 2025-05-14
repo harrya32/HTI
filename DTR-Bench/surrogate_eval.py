@@ -1,11 +1,16 @@
 import DTRGym
 import numpy as np
 import os
+import sys
+import pickle as pkl
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 import torch
 import matplotlib.pyplot as plt
 import argparse
+import jax.numpy as jnp
+
+sys.path.append('/mnt/pdata/hmka3/HTI/NLOT')
 
 AGENT_PATH = "ppo_ghaffari_cancer_model.zip" 
 AGENT_NAME = "single_agent_eval"
@@ -13,18 +18,78 @@ ENV_NAME = 'GhaffariCancerEnv-continuous'
 NUM_EVAL_EPISODES = 20
 
 parser = argparse.ArgumentParser(description='Evaluate a single agent with a pushforward function.')
-parser.add_argument('--lambda_pushforward', type=float, default=1.0, help='Lambda value for the pushforward function.')
+parser.add_argument('--lambda_pushforward', type=float, default=0, help='Lambda value for the pushforward function.')
+parser.add_argument('--workspace_path', type=str, default="../NLOT/2025.05.14/0014/0/latest.pkl", help='Path to the trained OT workspace pickle file.')
 args = parser.parse_args()
 LAMBDA_PUSHFORWARD = args.lambda_pushforward
 
+workspace = None
+
+#print current working directory
+print(f"Current working directory: {os.getcwd()}")
+print(args.workspace_path)
+if args.workspace_path and os.path.exists(args.workspace_path):
+    print(f"Loading OT workspace from {args.workspace_path}")
+    try:
+        with open(args.workspace_path, "rb") as f:
+            workspace = pkl.load(f)
+        print("Workspace loaded successfully")
+    except Exception as e:
+        print(f"Error loading workspace: {e}")
+        workspace = None
+
 def pushforward(action, obs, lambda_val):
     """
-    Modifies the agent's action.
-    Implement the pushforward logic here.
-    For now, it returns the action unmodified.
+    Uses trained OT model to push actions forward to target lambda.
     """
-    modified_action = action * lambda_val
-    return modified_action
+        
+    time_points = workspace.time_points
+    
+    if lambda_val in time_points:
+        time_idx = list(time_points).index(lambda_val)
+        if time_idx == 0:
+            return action
+    
+    current_sample = np.concatenate([action.flatten(), obs.flatten()])
+    
+    for k in range(len(time_points) - 1):
+        T_k = time_points[k]
+        T_k_plus_1 = time_points[k+1]
+        
+        if T_k <= lambda_val <= T_k_plus_1:
+            params_source_map_k = workspace.state_source_maps[k].params
+            end_sample = workspace.neural_dual_solver.source_map_apply_jit(
+                {'params': params_source_map_k},
+                current_sample
+            )
+            
+            if lambda_val < T_k_plus_1:
+                s_fraction = (lambda_val - T_k) / (T_k_plus_1 - T_k)
+                current_sample = workspace.geometry.apply(
+                    {'params': workspace.params_geometry},
+                    current_sample,
+                    end_sample,
+                    s_fraction,
+                    method=workspace.geometry.point_on_path
+                )
+            else:
+                current_sample = end_sample
+            break
+        
+        params_source_map_k = workspace.state_source_maps[k].params
+        current_sample = workspace.neural_dual_solver.source_map_apply_jit(
+            {'params': params_source_map_k},
+            current_sample
+        )
+    
+    action_dim = action.shape[1] if len(action.shape) > 1 else action.shape[0]
+    pushforward_action = current_sample[:action_dim].reshape(action.shape)
+    
+    pushforward_action = np.array(pushforward_action, dtype=np.float32)
+   #print("Initital action:", action)
+   # print("Pushforward action:", pushforward_action)
+
+    return pushforward_action
 
 def calculate_nk_penalty(current_obs_vec, initial_obs_vec):
     current_obs = current_obs_vec[0]
