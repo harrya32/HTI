@@ -2,6 +2,7 @@ import torch
 import os
 from torchcfm.optimal_transport import OTPlanSampler
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import math
 from scipy.stats import vonmises, lognorm
@@ -10,9 +11,54 @@ from scipy.stats import lognorm as scipy_lognorm
 import pickle
 import jax.numpy as jnp
 import seaborn as sns
+import pickle as pkl
+import sys
+
+sys.path.append('/mnt/pdata/hmka3/HTI/NLOT')
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
+
+def load_workspace(workspace_path):
+    if os.path.exists(workspace_path):
+        print(f"Loading OT workspace from {workspace_path}")
+        try:
+            with open(workspace_path, "rb") as f:
+                ws = pkl.load(f)
+            print("Workspace loaded successfully")
+            return ws
+        except Exception as e:
+            print(f"Error loading workspace: {e}")
+    return None
+
+def generate_pushforward(workspace, all_init_xs, num_points=20):
+    condition_vectors = all_init_xs[:,2:]
+    unique_conditions = jnp.unique(condition_vectors, axis=0)
+    num_conditions = unique_conditions.shape[0]
+    paths = []
+    for c_idx in range(num_conditions):
+        cond_paths=[]
+        current_condition = unique_conditions[c_idx]
+        condition_matches = jnp.all(condition_vectors == current_condition, axis=1)
+        condition_indices = jnp.where(condition_matches)[0]
+        init_xs_condition = all_init_xs[condition_indices]
+
+        for i in range(init_xs_condition.shape[0]):
+            init_x = init_xs_condition[i]
+            x = init_x
+            for t in range(2):
+                prev_x = x
+                x = workspace.neural_dual_solver.pushforward_jit(
+                    workspace.state_source_maps[t].params,
+                    workspace.state_target_potentials[t].params,
+                    workspace.params_geometry,
+                    x
+                ).solution
+                path = workspace.neural_dual_solver.path_jit(
+                    workspace.params_geometry, prev_x, x, num_points=num_points)
+                cond_paths.append(path)
+        paths.append(cond_paths)
+    return paths
 
 def generate_sphere_data(num_points: int = 5000):
     time_0_samples = np.abs(
@@ -971,7 +1017,57 @@ def log_likelihood_conditional_semicircle(
 
 if __name__ == "__main__":
 
-    if True: # Log likelihood
+
+    if True: # Semicircles marginal data for plotting results
+        t = np.linspace(0, 1, 20)
+        num_points_per_condition = 10
+        radius = 1.0
+        angular_concentration = 5.0
+        radial_std_dev = 0.05
+        semicircle_marginal_data = []
+        for time in t:
+            semicircle_marginal_data_t = generate_conditional_semicircle_marginal(
+                num_points_per_condition=num_points_per_condition,
+                time=time,
+                radius=radius,
+                angular_concentration=angular_concentration,
+                radial_std_dev=radial_std_dev,
+                device=DEVICE
+            )
+            semicircle_marginal_data.append(semicircle_marginal_data_t.cpu().numpy())
+        
+        plt.figure(figsize=(10, 8))
+        markers = ['o', 'x', '^', 'D']  
+        condition_colormaps = ['Blues', 'Reds', 'Greens', 'Purples']  
+        color_gradients = []
+        
+        for cmap_name in condition_colormaps:
+            color_gradients.append(matplotlib.colormaps[cmap_name](np.linspace(0.9, 0.2, len(semicircle_marginal_data))))
+        
+        for i, data_t in enumerate(semicircle_marginal_data):
+            x = data_t[:, 0]
+            y = data_t[:, 1]
+            conditions = data_t[:, 2].astype(int)
+            for c in range(4):
+                mask = (conditions == c)
+                plt.scatter(x[mask], y[mask], color=color_gradients[c][i], marker=markers[c], alpha=0.3)
+        plt.xlim(-2.5, 2.5)
+        plt.ylim(-2.5, 2.5)
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.axis('off')
+        workspace_fp = "exp/local/2025.05.15/1418.sq_euclidean_manifold/latest.pkl"
+        workspace = load_workspace(workspace_fp)
+        semicircle_marginal_data_t0 = semicircle_marginal_data[0]
+        paths = generate_pushforward(workspace, semicircle_marginal_data_t0, num_points=50)
+
+        for condition, cond_paths in enumerate(paths):
+            colour = color_gradients[condition][0] 
+            for path in cond_paths:
+                plt.plot(path[:, 0], path[:, 1], color=colour, alpha=0.3)
+
+        plt.savefig("semicircle_results_plot.pdf", bbox_inches='tight', pad_inches=0)
+
+    if False: # Log likelihood
 
         # Test the log-likelihood function (same test code as before)
         num_test_points_per_cond = 100
@@ -1058,6 +1154,7 @@ if __name__ == "__main__":
         assert ll_noise < ll_correct_params, "LL for noise data should be lower"
 
         print("\nAll tests passed (if asserts didn't fire).")
+    
     if False:  # Eval semicircle marginals
         # Parameters
         num_points_per_condition = 100

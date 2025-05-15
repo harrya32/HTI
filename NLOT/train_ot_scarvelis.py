@@ -69,12 +69,11 @@ class Workspace:
                 lambda_weight=self.cfg.get('lambda', 0.01),
             )
         elif self.cfg.get('include_inverse_potential', False):
-            lagrangian_potential_initializer_fn = lagrangian_potentials.InverseDensityPotentialNW(
+            lagrangian_potential_initializer_fn = lagrangian_potentials.InverseDensityPotential(
                 D=self.cfg.get('D', 2),
                 C=self.cfg.get('C', 0),
                 samples=self.all_samples,
                 bandwidth=self.cfg.get('bandwidth', 1.0),
-                conditional_bandwidth=self.cfg.get('conditional_bandwidth', 1.0),
                 lambda_repel=self.cfg.get('lambda', 0.01),
             )
         else:

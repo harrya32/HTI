@@ -120,12 +120,14 @@ class ManifoldW2NeuralDual:
         self.pushforward_jit_vmap = jax.jit(jax.vmap(self.pushforward, in_axes=(None, None, None, 0)))
 
         self.path_jit = jax.jit(
-            lambda params_geometry, x, y: self.geometry.apply(
-                {'params': params_geometry}, x, y, method=self.geometry.path))
+            lambda params_geometry, x, y, num_points=20: self.geometry.apply(
+                {'params': params_geometry}, x, y, num_points=num_points, method=self.geometry.path),
+            static_argnums=(3,))
         self.path_jit_vmap = jax.jit(jax.vmap(
-            lambda params_geometry, x, y: self.geometry.apply(
-                {'params': params_geometry}, x, y, method=self.geometry.path),
-            in_axes=(None, 0, 0)))
+            lambda params_geometry, x, y, num_points=20: self.geometry.apply(
+                {'params': params_geometry}, x, y, num_points=num_points, method=self.geometry.path),
+            in_axes=(None, 0, 0, None)), 
+            static_argnums=(3,))
 
         self.update_fn_jit = jax.jit(self.update_fn)
 
