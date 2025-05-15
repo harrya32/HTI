@@ -25,7 +25,7 @@ os.makedirs(PLOT_DIR, exist_ok=True)
 
 parser = argparse.ArgumentParser(description='Evaluate a single agent with a pushforward function.')
 parser.add_argument('--lambda_pushforward', type=float, default=0, help='Lambda value for the pushforward function.')
-parser.add_argument('--workspace_path', type=str, default="../NLOT/2025.05.14/ours.pkl", help='Path to the trained OT workspace pickle file.')
+parser.add_argument('--workspace_path', type=str, default="../NLOT/surrogate_models/ours_new.pkl", help='Path to the trained OT workspace pickle file.')
 parser.add_argument('--all_lambdas', action='store_true', help='Evaluate all lambda values and generate plot')
 args = parser.parse_args()
 LAMBDA_PUSHFORWARD = args.lambda_pushforward
