@@ -18,10 +18,14 @@ sys.path.append('/mnt/pdata/hmka3/HTI/NLOT')
 AGENT_PATH = "policies/ppo_ghaffari_cancer_model__0.zip" 
 AGENT_NAME = "single_agent_eval"
 ENV_NAME = 'GhaffariCancerEnv-continuous'
-NUM_EVAL_EPISODES = 5
+NUM_EVAL_EPISODES = 3
 LAMBDA_VALUES = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-PLOT_DIR = "surrogate_plots"
+PLOT_DIR = "surrogate_plots/eucl_no_potential"
 os.makedirs(PLOT_DIR, exist_ok=True)
+
+# Directory containing workspace files
+WORKSPACES_DIR = "../NLOT/surrogate_models/eucl_no_potential/"
+RUN_NAME = "eucl_no_potential"
 
 parser = argparse.ArgumentParser(description='Evaluate a single agent with a pushforward function.')
 parser.add_argument('--lambda_pushforward', type=float, default=0, help='Lambda value for the pushforward function.')
@@ -29,8 +33,6 @@ parser.add_argument('--workspace_path', type=str, default="../NLOT/surrogate_mod
 parser.add_argument('--all_lambdas', action='store_true', help='Evaluate all lambda values and generate plot')
 args = parser.parse_args()
 LAMBDA_PUSHFORWARD = args.lambda_pushforward
-
-workspace = None
 
 class CustomRewardWrapper(RewardWrapper):
     def __init__(self, env, lambda_nk: float = 0.5):
@@ -59,20 +61,19 @@ class CustomRewardWrapper(RewardWrapper):
 
         return obs, reward, terminated, truncated, info
 
-#print current working directory
-print(f"Current working directory: {os.getcwd()}")
-print(args.workspace_path)
-if args.workspace_path and os.path.exists(args.workspace_path):
-    print(f"Loading OT workspace from {args.workspace_path}")
-    try:
-        with open(args.workspace_path, "rb") as f:
-            workspace = pkl.load(f)
-        print("Workspace loaded successfully")
-    except Exception as e:
-        print(f"Error loading workspace: {e}")
-        workspace = None
+def load_workspace(workspace_path):
+    if os.path.exists(workspace_path):
+        print(f"Loading OT workspace from {workspace_path}")
+        try:
+            with open(workspace_path, "rb") as f:
+                ws = pkl.load(f)
+            print("Workspace loaded successfully")
+            return ws
+        except Exception as e:
+            print(f"Error loading workspace: {e}")
+    return None
 
-def pushforward(action, obs, lambda_val):
+def pushforward(action, obs, lambda_val, workspace):
     """
     Uses trained OT model to push actions forward to target lambda.
     """
@@ -145,7 +146,7 @@ def calculate_nk_penalty(current_obs_vec, initial_obs_vec):
     penalty = -np.abs(logN / logN0 - 1)
     return penalty
 
-def evaluate_lambda(model, lambda_val):
+def evaluate_lambda(model, lambda_val, workspace):
     """Evaluate the agent with a specific lambda pushforward value."""
     def make_env():
         env = gym.make(ENV_NAME)
@@ -171,7 +172,7 @@ def evaluate_lambda(model, lambda_val):
 
         while not done:
             action, _ = model.predict(obs, deterministic=True)
-            modified_action = pushforward(action, obs, lambda_val)
+            modified_action = pushforward(action, obs, lambda_val, workspace)
             next_obs, reward, done_array, info = env.step(modified_action)
             penalty = calculate_nk_penalty(next_obs, initial_obs_for_episode)
             penalties_this_episode.append(penalty)
@@ -196,48 +197,7 @@ def evaluate_lambda(model, lambda_val):
 
     return final_avg_nk_penalty, std_dev_nk_penalty, final_avg_reward
 
-
-print(f"--- Loading Agent: {AGENT_NAME} ---")
-
-model = PPO.load(AGENT_PATH)
-print(f"Successfully loaded model '{AGENT_NAME}' from '{AGENT_PATH}'")
-
-if args.all_lambdas:
-    lambda_results = []
-    all_lambda_rewards = [] 
-    for lambda_val in LAMBDA_VALUES:
-        avg_penalty, std_dev, avg_reward = evaluate_lambda(model, lambda_val)
-        lambda_results.append((lambda_val, avg_penalty, std_dev))
-        all_lambda_rewards.append(avg_reward)
-    
-    overall_avg_reward = np.mean(all_lambda_rewards)
-    print(f"Average Reward across all lambda values = {overall_avg_reward:.4f}")
-    plot_lambdas = [item[0] for item in lambda_results]
-    plot_avg_penalties = [item[1] for item in lambda_results]
-    plot_std_devs = [item[2] for item in lambda_results]
-
-    plt.figure(figsize=(10, 6))
-    plt.errorbar(plot_lambdas, plot_avg_penalties, yerr=plot_std_devs, marker='o', linestyle='-', capsize=5)
-    plt.title(f"Overall Average NK Penalty vs. Lambda Value ({NUM_EVAL_EPISODES} Episodes)")
-    plt.xlabel("Lambda Value")
-    plt.ylabel("Overall Average NK Penalty")
-    plt.grid(True)
-    plt.xticks(plot_lambdas)
-    plt.tight_layout()
-    plot_filename = os.path.join(PLOT_DIR, "surrogate_avg_nk_penalty_vs_lambda_ours.png")
-    plt.savefig(plot_filename)
-    print(f"\nSaved overall average NK penalty plot to {plot_filename}")
-    plt.close()
-    
-    csv_filename = os.path.join(PLOT_DIR, "surrogate_nk_penalty_data_ours.csv")
-    with open(csv_filename, 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(['Lambda', 'Average Penalty', 'Standard Deviation'])
-        for row in lambda_results:
-            writer.writerow(row)
-    print(f"Saved data to {csv_filename}")
-    print("\nEvaluation complete.")
-else:
+def evaluate_single_lambda(model, lambda_val, workspace):
     env = make_vec_env(ENV_NAME, n_envs=1)
 
     print(f'\n--- Evaluating agent {AGENT_NAME} for NK penalty with pushforward function ---')
@@ -258,7 +218,7 @@ else:
         while not done:
             action, _ = model.predict(obs, deterministic=False)
             
-            modified_action = pushforward(action, obs, LAMBDA_PUSHFORWARD)
+            modified_action = pushforward(action, obs, lambda_val, workspace)
             
             next_obs, reward, done_array, info = env.step(modified_action)
             
@@ -288,7 +248,177 @@ else:
         print(f"Overall Average NK Penalty across {NUM_EVAL_EPISODES} episodes = {final_avg_nk_penalty:.4f}")
         print(f"Standard Deviation of Per-Episode Average NK Penalties = {std_dev_nk_penalty:.4f}")
         print(f"Overall Average Reward across {NUM_EVAL_EPISODES} episodes = {final_avg_reward:.4f}")
+        return final_avg_nk_penalty, std_dev_nk_penalty, final_avg_reward
     else:
         print(f"\nNo penalties recorded for agent {AGENT_NAME} across {NUM_EVAL_EPISODES} episodes.")
+        return None, None, None
 
-    print("\nEvaluation complete.")
+# Main code
+print(f"Current working directory: {os.getcwd()}")
+
+print(f"--- Loading Agent: {AGENT_NAME} ---")
+model = PPO.load(AGENT_PATH)
+print(f"Successfully loaded model '{AGENT_NAME}' from '{AGENT_PATH}'")
+
+# Find all workspace files
+workspace_files = [f for f in os.listdir(WORKSPACES_DIR) if f.endswith('.pkl')]
+print(f"Found {len(workspace_files)} workspace files in {WORKSPACES_DIR}")
+
+# For storing results from all workspaces
+all_workspace_results = {}
+
+if args.all_lambdas:
+    # Dictionary to store combined results across all workspaces
+    combined_results = {}
+    for lambda_val in LAMBDA_VALUES:
+        combined_results[lambda_val] = {
+            'penalties': [],
+            'rewards': []
+        }
+
+    # Process each workspace
+    for workspace_file in workspace_files:
+        workspace_path = os.path.join(WORKSPACES_DIR, workspace_file)
+        workspace_name = os.path.splitext(os.path.basename(workspace_path))[0]
+        print(f"\n===== Processing Workspace: {workspace_name} =====")
+        
+        workspace = load_workspace(workspace_path)
+        if workspace is None:
+            print(f"Could not load workspace from {workspace_path}, skipping...")
+            continue
+            
+        lambda_results = []
+        all_lambda_rewards = [] 
+        
+        for lambda_val in LAMBDA_VALUES:
+            avg_penalty, std_dev, avg_reward = evaluate_lambda(model, lambda_val, workspace)
+            lambda_results.append((lambda_val, avg_penalty, std_dev))
+            all_lambda_rewards.append(avg_reward)
+            
+            # Add to combined results
+            combined_results[lambda_val]['penalties'].append(avg_penalty)
+            combined_results[lambda_val]['rewards'].append(avg_reward)
+        
+        overall_avg_reward = np.mean(all_lambda_rewards)
+        print(f"Average Reward across all lambda values for {workspace_name} = {overall_avg_reward:.4f}")
+        all_workspace_results[workspace_name] = overall_avg_reward
+        
+        # Save individual workspace results
+        plot_lambdas = [item[0] for item in lambda_results]
+        plot_avg_penalties = [item[1] for item in lambda_results]
+        plot_std_devs = [item[2] for item in lambda_results]
+
+        plt.figure(figsize=(10, 6))
+        plt.errorbar(plot_lambdas, plot_avg_penalties, yerr=plot_std_devs, marker='o', linestyle='-', capsize=5)
+        plt.title(f"{workspace_name}: Overall Average NK Penalty vs. Lambda Value ({NUM_EVAL_EPISODES} Episodes)")
+        plt.xlabel("Lambda Value")
+        plt.ylabel("Overall Average NK Penalty")
+        plt.grid(True)
+        plt.xticks(plot_lambdas)
+        plt.tight_layout()
+        plot_filename = os.path.join(PLOT_DIR, f"surrogate_avg_nk_penalty_vs_lambda_{RUN_NAME}_{workspace_name}.png")
+        plt.savefig(plot_filename)
+        plt.close()
+        
+        csv_filename = os.path.join(PLOT_DIR, f"surrogate_nk_penalty_data_{RUN_NAME}_{workspace_name}.csv")
+        with open(csv_filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['Lambda', 'Average Penalty', 'Standard Deviation', 'Average Reward'])
+            for i, row in enumerate(lambda_results):
+                writer.writerow(list(row) + [all_lambda_rewards[i]])
+        print(f"Saved data for {workspace_name} to {csv_filename}")
+    
+    # Calculate and plot average results across all workspaces
+    avg_penalties = []
+    std_penalties = []
+    avg_rewards = []
+    
+    for lambda_val in LAMBDA_VALUES:
+        penalties = combined_results[lambda_val]['penalties']
+        rewards = combined_results[lambda_val]['rewards']
+        if penalties:
+            avg_penalties.append(np.mean(penalties))
+            std_penalties.append(np.std(penalties))
+            avg_rewards.append(np.mean(rewards))
+        else:
+            avg_penalties.append(0)
+            std_penalties.append(0)
+            avg_rewards.append(0)
+    
+    # Plot average penalties across all workspaces
+    plt.figure(figsize=(10, 6))
+    plt.errorbar(LAMBDA_VALUES, avg_penalties, yerr=std_penalties, marker='o', linestyle='-', capsize=5)
+    plt.title(f"Average NK Penalty vs. Lambda Value (Across All Workspaces)")
+    plt.xlabel("Lambda Value")
+    plt.ylabel("Average NK Penalty")
+    plt.grid(True)
+    plt.xticks(LAMBDA_VALUES)
+    plt.tight_layout()
+    avg_plot_filename = os.path.join(PLOT_DIR, "surrogate_avg_nk_penalty_vs_lambda_all_{RUN_NAME}.png")
+    plt.savefig(avg_plot_filename)
+    print(f"\nSaved average plot across all workspaces to {avg_plot_filename}")
+    plt.close()
+    
+    # Plot average rewards across all workspaces
+    plt.figure(figsize=(10, 6))
+    plt.plot(LAMBDA_VALUES, avg_rewards, marker='o', linestyle='-')
+    plt.title(f"Average Reward vs. Lambda Value (Across All Workspaces)")
+    plt.xlabel("Lambda Value")
+    plt.ylabel("Average Reward")
+    plt.grid(True)
+    plt.xticks(LAMBDA_VALUES)
+    plt.tight_layout()
+    reward_plot_filename = os.path.join(PLOT_DIR, "surrogate_avg_reward_vs_lambda_all_{RUN_NAME}.png")
+    plt.savefig(reward_plot_filename)
+    print(f"Saved average reward plot across all workspaces to {reward_plot_filename}")
+    plt.close()
+    
+    # Save combined results to CSV
+    combined_csv = os.path.join(PLOT_DIR, "surrogate_results_{RUN_NAME}.csv")
+    with open(combined_csv, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['Lambda', 'Average Penalty', 'Penalty StdDev', 'Average Reward'])
+        for i, lambda_val in enumerate(LAMBDA_VALUES):
+            writer.writerow([lambda_val, avg_penalties[i], std_penalties[i], avg_rewards[i]])
+    print(f"Saved combined data to {combined_csv}")
+    
+    # Calculate overall average reward across all lambdas and workspaces
+    overall_reward = np.mean([r for r in all_workspace_results.values() if r is not None])
+    print(f"\n===== Overall Results =====")
+    print(f"Average Reward across all lambda values and all workspaces = {overall_reward:.4f}")
+    
+    # Print comparison of workspaces
+    print("\n===== Workspace Comparison =====")
+    for workspace_name, avg_reward in all_workspace_results.items():
+        print(f"{workspace_name}: Average Reward = {avg_reward:.4f}")
+    
+else:
+    # Single lambda evaluation for each workspace
+    for workspace_file in workspace_files:
+        workspace_path = os.path.join(WORKSPACES_DIR, workspace_file)
+        workspace_name = os.path.splitext(os.path.basename(workspace_path))[0]
+        print(f"\n===== Processing Workspace: {workspace_name} with Lambda = {LAMBDA_PUSHFORWARD} =====")
+        
+        workspace = load_workspace(workspace_path)
+        if workspace is None:
+            print(f"Could not load workspace from {workspace_path}, skipping...")
+            continue
+            
+        avg_penalty, std_dev, avg_reward = evaluate_single_lambda(model, LAMBDA_PUSHFORWARD, workspace)
+        all_workspace_results[workspace_name] = avg_reward
+    
+    # Print comparison of workspaces for single lambda
+    print("\n===== Workspace Comparison =====")
+    valid_rewards = []
+    for workspace_name, avg_reward in all_workspace_results.items():
+        if avg_reward is not None:
+            print(f"{workspace_name}: Average Reward = {avg_reward:.4f}")
+            valid_rewards.append(avg_reward)
+        else:
+            print(f"{workspace_name}: Evaluation failed")
+    
+    if valid_rewards:
+        overall_avg = np.mean(valid_rewards)
+        print(f"\nAverage reward across all workspaces = {overall_avg:.4f}")
+
+print("\nEvaluation complete.")
