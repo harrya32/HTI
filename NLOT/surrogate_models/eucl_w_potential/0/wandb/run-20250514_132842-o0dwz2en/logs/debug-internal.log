@@ -1,7 +1,0 @@
-{"time":"2025-05-14T13:28:43.859964769Z","level":"INFO","msg":"stream: starting","core version":"0.19.9","symlink path":"/home/azureuser/localfiles/HTI/NLOT/exp/2025.05.14/1232/0/wandb/run-20250514_132842-o0dwz2en/logs/debug-core.log"}
-{"time":"2025-05-14T13:28:44.087393438Z","level":"INFO","msg":"created new stream","id":"o0dwz2en"}
-{"time":"2025-05-14T13:28:44.087437037Z","level":"INFO","msg":"stream: started","id":"o0dwz2en"}
-{"time":"2025-05-14T13:28:44.087484536Z","level":"INFO","msg":"writer: Do: started","stream_id":"o0dwz2en"}
-{"time":"2025-05-14T13:28:44.087482536Z","level":"INFO","msg":"sender: started","stream_id":"o0dwz2en"}
-{"time":"2025-05-14T13:28:44.087487736Z","level":"INFO","msg":"handler: started","stream_id":"o0dwz2en"}
-{"time":"2025-05-14T13:28:44.32686522Z","level":"INFO","msg":"Starting system monitor"}
