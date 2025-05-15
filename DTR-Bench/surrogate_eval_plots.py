@@ -12,27 +12,30 @@ import argparse
 import jax.numpy as jnp
 import csv
 from gymnasium.core import RewardWrapper
+from scipy import stats
 
 sys.path.append('/mnt/pdata/hmka3/HTI/NLOT')
 
 AGENT_PATH = "policies/ppo_ghaffari_cancer_model__0.zip" 
 AGENT_NAME = "single_agent_eval"
 ENV_NAME = 'GhaffariCancerEnv-continuous'
-NUM_EVAL_EPISODES = 3
+NUM_EVAL_EPISODES = 10
 LAMBDA_VALUES = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-PLOT_DIR = "surrogate_plots/eucl_no_potential"
-os.makedirs(PLOT_DIR, exist_ok=True)
-
-# Directory containing workspace files
-WORKSPACES_DIR = "../NLOT/surrogate_models/eucl_no_potential/"
-RUN_NAME = "eucl_no_potential"
 
 parser = argparse.ArgumentParser(description='Evaluate a single agent with a pushforward function.')
 parser.add_argument('--lambda_pushforward', type=float, default=0, help='Lambda value for the pushforward function.')
 parser.add_argument('--workspace_path', type=str, default="../NLOT/surrogate_models/ours_new.pkl", help='Path to the trained OT workspace pickle file.')
 parser.add_argument('--all_lambdas', action='store_true', help='Evaluate all lambda values and generate plot')
+parser.add_argument('--name', type=str, default="learned_w_potential", help='method to evaluate')
+parser.add_argument('--iter', type=int, default=0, help='number to put on results')
 args = parser.parse_args()
 LAMBDA_PUSHFORWARD = args.lambda_pushforward
+RUN_NAME = args.name
+ITER = args.iter
+
+PLOT_DIR = f"surrogate_plots/{RUN_NAME}"
+os.makedirs(PLOT_DIR, exist_ok=True)
+WORKSPACES_DIR = f"../NLOT/surrogate_models/{RUN_NAME}/"
 
 class CustomRewardWrapper(RewardWrapper):
     def __init__(self, env, lambda_nk: float = 0.5):
@@ -354,7 +357,7 @@ if args.all_lambdas:
     plt.grid(True)
     plt.xticks(LAMBDA_VALUES)
     plt.tight_layout()
-    avg_plot_filename = os.path.join(PLOT_DIR, "surrogate_avg_nk_penalty_vs_lambda_all_{RUN_NAME}.png")
+    avg_plot_filename = os.path.join(PLOT_DIR, f"surrogate_avg_nk_penalty_vs_lambda_all_{RUN_NAME}_{ITER}.png")
     plt.savefig(avg_plot_filename)
     print(f"\nSaved average plot across all workspaces to {avg_plot_filename}")
     plt.close()
@@ -368,25 +371,46 @@ if args.all_lambdas:
     plt.grid(True)
     plt.xticks(LAMBDA_VALUES)
     plt.tight_layout()
-    reward_plot_filename = os.path.join(PLOT_DIR, "surrogate_avg_reward_vs_lambda_all_{RUN_NAME}.png")
+    reward_plot_filename = os.path.join(PLOT_DIR, f"surrogate_avg_reward_vs_lambda_all_{RUN_NAME}_{ITER}.png")
     plt.savefig(reward_plot_filename)
     print(f"Saved average reward plot across all workspaces to {reward_plot_filename}")
     plt.close()
     
     # Save combined results to CSV
-    combined_csv = os.path.join(PLOT_DIR, "surrogate_results_{RUN_NAME}.csv")
+    combined_csv = os.path.join(PLOT_DIR, f"surrogate_results_{RUN_NAME}_{ITER}.csv")
     with open(combined_csv, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['Lambda', 'Average Penalty', 'Penalty StdDev', 'Average Reward'])
         for i, lambda_val in enumerate(LAMBDA_VALUES):
             writer.writerow([lambda_val, avg_penalties[i], std_penalties[i], avg_rewards[i]])
     print(f"Saved combined data to {combined_csv}")
+
+    valid_rewards = [r for r in all_workspace_results.values() if r is not None]
+    overall_reward = np.mean(valid_rewards)
+    n = len(valid_rewards)
+    if n > 1:
+        reward_std = np.std(valid_rewards)
+        reward_se = reward_std / np.sqrt(n)
+        t_value = stats.t.ppf(0.975, n-1)  # 97.5th percentile for 95% CI
+        reward_ci = t_value * reward_se
+        
+        print(f"\n===== Overall Results =====")
+        print(f"Average Reward across all lambda values and all workspaces = {overall_reward:.4f}")
+        print(f"95% CI for Final Average: [{overall_reward - reward_ci:.4f}, {overall_reward + reward_ci:.4f}]")
+    else:
+        print(f"\n===== Overall Results =====")
+        print(f"Average Reward across all lambda values and all workspaces = {overall_reward:.4f}")
+        print("(Not enough samples to calculate confidence interval)")
     
-    # Calculate overall average reward across all lambdas and workspaces
-    overall_reward = np.mean([r for r in all_workspace_results.values() if r is not None])
-    print(f"\n===== Overall Results =====")
-    print(f"Average Reward across all lambda values and all workspaces = {overall_reward:.4f}")
-    
+    final_results_file = os.path.join(PLOT_DIR, f"final_avg_reward_{RUN_NAME}_{ITER}.txt")
+    with open(final_results_file, 'w') as f:
+        f.write(f"===== Overall Results =====\n")
+        f.write(f"Average Reward across all lambda values and all workspaces = {overall_reward:.4f}\n")
+        if n > 1:
+            f.write(f"95% CI for Final Average: [{overall_reward - reward_ci:.4f}, {overall_reward + reward_ci:.4f}]\n")
+        else:
+            f.write("(Not enough samples to calculate confidence interval)\n")
+    print(f"Saved final average reward to {final_results_file}")
     # Print comparison of workspaces
     print("\n===== Workspace Comparison =====")
     for workspace_name, avg_reward in all_workspace_results.items():

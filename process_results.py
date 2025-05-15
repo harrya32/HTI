@@ -96,12 +96,12 @@ if semicircle:
 
 ### CANCER ###
 if cancer:
-    euclidean_no_potential_wass = [2.5555343627929688,2.4398186206817627,2.038227081298828,1.648943305015564,1.5883475542068481]
+    leared_w_potential = [58.0591, 59.9051, 59.5262, 57.7009, 59.5101]
 
-    learned_no_potential_wass = [2.45242977142334,2.095038652420044,1.9149770736694336,1.8525232076644897,1.6159017086029053]
+    learned_no_potential= [56.8460, 55.4440, 56.1040, 58.0044, 57.9242]
 
     print("\nCancer Results")
-    print("Euclidean No Potential")
-    print_results(euclidean_no_potential_wass, "Euclidean No Potential Wasserstein Distance")
+    print("Learned W Potential")
+    print_results(leared_w_potential, "Learned W Potential Reward")
     print("Learned No Potential")
-    print_results(learned_no_potential_wass, "Learned No Potential Wasserstein Distance")
+    print_results(learned_no_potential, "Learned No Potential Reward")
