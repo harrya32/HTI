@@ -59,16 +59,21 @@ Learned, w potential
 
 
 CANCER
-Euclidean, no potential
+Euclidean, no potential - 52.8 reward avg. (folder 0?), nk_penalty MAE = 0.0031
     eucl_cancer_3	2.5555343627929688
     eucl_cancer_4	2.4398186206817627
     eucl_cancer_2	2.038227081298828
     eucl_cancer_0	1.648943305015564
     eucl_cancer_1	1.5883475542068481
 
-Learned, no potential
+Euclidean, w. potential - 16.0 reward avg. (eucl_w_p_new), nk_penalty MAE = 0.0031
+
+
+Learned, no potential - 57.9 reward avg. (folder 5), nk_penalty MAE = 0.0075
     NLOT_cancer_4	2.45242977142334
     NLOT_cancer_3	2.095038652420044
     NLOT_cancer_2	1.9149770736694336
     NLOT_cancer_1	1.8525232076644897
     NLOT_cancer_0	1.6159017086029053
+
+Learned, w potential - 75.3 reward avg. (ours_new), nk_penalty MAE = 0.0030
