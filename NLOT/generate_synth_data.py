@@ -1016,7 +1016,9 @@ def log_likelihood_conditional_semicircle(
     return float(total_log_likelihood)
 
 if __name__ == "__main__":
-
+    #set seed
+    torch.manual_seed(1)
+    np.random.seed(1)
 
     if True: # Semicircles marginal data for plotting results
         t = np.linspace(0, 1, 20)
@@ -1050,12 +1052,12 @@ if __name__ == "__main__":
             conditions = data_t[:, 2].astype(int)
             for c in range(4):
                 mask = (conditions == c)
-                plt.scatter(x[mask], y[mask], color=color_gradients[c][i], marker=markers[c], alpha=0.3)
-        plt.xlim(-2.5, 2.5)
-        plt.ylim(-2.5, 2.5)
+                plt.scatter(x[mask], y[mask], color=color_gradients[c][i], marker=markers[c], alpha=0.5)
+        plt.xlim(-2.2, 2.2)
+        plt.ylim(-1.2, 1.2)
         plt.gca().set_aspect('equal', adjustable='box')
         plt.axis('off')
-        workspace_fp = "exp/local/2025.05.15/1418.sq_euclidean_manifold/latest.pkl"
+        workspace_fp = "exp/local/2025.05.15/1702.neural_net_metric_eig/latest.pkl"
         workspace = load_workspace(workspace_fp)
         semicircle_marginal_data_t0 = semicircle_marginal_data[0]
         paths = generate_pushforward(workspace, semicircle_marginal_data_t0, num_points=50)
@@ -1065,7 +1067,7 @@ if __name__ == "__main__":
             for path in cond_paths:
                 plt.plot(path[:, 0], path[:, 1], color=colour, alpha=0.3)
 
-        plt.savefig("semicircle_results_plot.pdf", bbox_inches='tight', pad_inches=0)
+        plt.savefig("semicircle_plot_test.pdf", bbox_inches='tight', pad_inches=0)
 
     if False: # Log likelihood
 

@@ -324,7 +324,8 @@ class ManifoldW2NeuralDual:
         paths = self.path_jit_vmap(
             params_geometry, 
             base_samples, 
-            transported_samples
+            transported_samples,
+            num_points=20
         )
 
         for i in range(N):
