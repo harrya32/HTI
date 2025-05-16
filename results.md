@@ -74,14 +74,14 @@ ABLATION: Learned, w potential, NN rotation metric
 
 
 CANCER
-Euclidean, no potential - 52.8 reward avg. (folder 0?), nk_penalty MAE = 0.0031  (45.9 avg. reward on new runs)
+Euclidean, no potential - 49.8550, 50.6025, 52.0376, 52.4575, 54.5995
     eucl_cancer_3	2.5555343627929688
     eucl_cancer_4	2.4398186206817627
     eucl_cancer_2	2.038227081298828
     eucl_cancer_0	1.648943305015564
     eucl_cancer_1	1.5883475542068481
 
-Euclidean, w. potential - 16.0 reward avg. (eucl_w_p_new), nk_penalty MAE = 0.0031 (25.76 avg. reward on new runs)
+Euclidean, w. potential - 27.3268, 28.3476, 24.8110, 26.2228, 26.9399
 
 
 Learned, no potential - rewards:  56.8460, 55.4440, 56.1040, 58.0044, 57.9242

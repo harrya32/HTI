@@ -118,8 +118,16 @@ if cancer:
 
     learned_no_potential= [56.8460, 55.4440, 56.1040, 58.0044, 57.9242]
 
+    eucl_w_potential = [27.3268, 28.3476, 24.8110, 26.2228, 26.9399]
+
+    eucl_no_potential = [49.8550, 50.6025, 52.0376, 52.4575, 54.5995]
+
     print("\nCancer Results")
     print("Learned W Potential")
     print_results(leared_w_potential, "Learned W Potential Reward")
     print("Learned No Potential")
     print_results(learned_no_potential, "Learned No Potential Reward")
+    print("Euclidean W Potential")
+    print_results(eucl_w_potential, "Euclidean W Potential Reward")
+    print("Euclidean No Potential")
+    print_results(eucl_no_potential, "Euclidean No Potential Reward")
