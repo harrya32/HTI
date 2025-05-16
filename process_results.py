@@ -1,7 +1,7 @@
 import numpy as np
 
 semicircle=True
-cancer=True
+cancer=False
 
 
 ### SYNTHETIC SEMICIRCLE ###
@@ -65,13 +65,28 @@ if semicircle:
         -854.351464746798,   # ours_2
         -682.9412110213909   # ours_4
     ]
+    circle_ablation = [
+        0.12398120760917664,
+        0.11444838345050812,
+        0.11328815668821335,
+        0.09702225774526596,
+        0.09437358379364014
+    ]
 
+    nll_ablation = [
+        -777.8702795935536,
+        -1378.1410263173366,
+        -1550.995868883021,
+        -1716.6841440784901,
+        -1800.00983051697
+    ]
 
     # for each NLL, divide by 400 and make negative to get NLL per sample
     nll_euclidean_no_potential = -np.array(nll_euclidean_no_potential) / 400
     nll_euclidean_w_potential = -np.array(nll_euclidean_w_potential) / 400
     nll_learned_no_potential = -np.array(nll_learned_no_potential) / 400
     nll_learned_w_potential = -np.array(nll_learned_w_potential) / 400
+    nll_ablation = -np.array(nll_ablation) / 400
 
     def print_results(results, name):
         mean = np.mean(results)
@@ -92,6 +107,9 @@ if semicircle:
     print("\nLearned With Potential")
     print_results(circle_learned_w_potential, "Learned With Potential Circle Dist")
     print_results(nll_learned_w_potential, "Learned With Potential NLL")
+    print("\nAblation")
+    print_results(circle_ablation, "Ablation Circle Dist")
+    print_results(nll_ablation, "Ablation NLL")
 
 
 ### CANCER ###
