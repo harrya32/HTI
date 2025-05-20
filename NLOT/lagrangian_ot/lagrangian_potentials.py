@@ -323,11 +323,11 @@ class InverseDensityPotentialNW(LagrangianPotentialBase):
       calculated using standard Kernel Density Estimation.
     """
     samples: jnp.ndarray = None
-    bandwidth: float = 1.0  # Bandwidth for ambient dimensions' KDE
-    conditional_bandwidth: float = 1.0 # Bandwidth for conditional dimensions' KDE
+    bandwidth: float = 1.0 
+    conditional_bandwidth: float = 1.0 
     lambda_repel: float = 0.01
-    epsilon: float = 1e-8 # Small constant added to density estimate before log
-    denominator_epsilon: float = 1e-8 # Small constant for Nadaraya-Watson denominator stability
+    epsilon: float = 1e-8 
+    denominator_epsilon: float = 1e-8
 
     def __call__(self, x):
         assert x.ndim == 1 and x.shape[0] == self.D + self.C, f"Input x must have shape (D+C,), got {x.shape}"

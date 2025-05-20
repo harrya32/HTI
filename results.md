@@ -56,7 +56,9 @@ Learned, w potential
         ours_0	-1172.655852419242
         ours_3	-1408.1058272320402
 
-ABLATION: Learned, w potential, NN rotation metric
+NEURAL METRIC ABLATION
+
+Learned, w potential, NN rotation metric
     Circle:
         ours_4	0.12398120760917664
         ours_3	0.11444838345050812
@@ -71,9 +73,8 @@ ABLATION: Learned, w potential, NN rotation metric
         ours_4	-1716.6841440784901
         ours_3	-1800.00983051697
 
-
-
 CANCER
+
 Euclidean, no potential - 49.8550, 50.6025, 52.0376, 52.4575, 54.5995
     eucl_cancer_3	2.5555343627929688
     eucl_cancer_4	2.4398186206817627
