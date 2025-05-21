@@ -10,8 +10,8 @@ import copy
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
-TRAIN_AND_VALID_INPUT_NOISE_STD = 0.1
-TEST_INPUT_NOISE_STD = 0.15
+TRAIN_AND_VALID_INPUT_NOISE_STD = 0.4
+TEST_INPUT_NOISE_STD = 0.5
 
 def generate_synthetic_data(num_total_points=20000, num_series_features=1):
     t = np.arange(0, num_total_points)
@@ -100,7 +100,7 @@ NUM_TRANSFORMER_BLOCKS = 2
 MLP_UNITS = [64]
 DROPOUT_RATE = 0.15
 MLP_DROPOUT_RATE = 0.15
-EPOCHS = 100
+EPOCHS = 1000
 BATCH_SIZE = 64
 LEARNING_RATE = 1e-3
 PATIENCE_EARLY_STOPPING = 10
@@ -227,7 +227,7 @@ plt.ylabel("Value")
 plt.legend(loc='best')
 plt.grid(True)
 plt.tight_layout()
-plt.savefig(f"preds_train_val_std_{TRAIN_AND_VALID_INPUT_NOISE_STD}_test_std_{TEST_INPUT_NOISE_STD}.png")
+plt.savefig(f"plots/preds_train_val_std_{TRAIN_AND_VALID_INPUT_NOISE_STD}_test_std_{TEST_INPUT_NOISE_STD}.png")
 # plt.show()
 
 plt.figure(figsize=(10, 5))
@@ -238,7 +238,7 @@ plt.xlabel('Epoch')
 plt.ylabel('Mean Squared Error')
 plt.legend()
 plt.grid(True)
-plt.savefig(f"loss_train_val_std_{TRAIN_AND_VALID_INPUT_NOISE_STD}_test_std_{TEST_INPUT_NOISE_STD}.png")
+plt.savefig(f"plots/loss_train_val_std_{TRAIN_AND_VALID_INPUT_NOISE_STD}_test_std_{TEST_INPUT_NOISE_STD}.png")
 # plt.show()
 
 print("Script finished. Plots saved.")
