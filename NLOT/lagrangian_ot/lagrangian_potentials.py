@@ -1,17 +1,12 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates
-
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from typing import Tuple, Optional
 import copy
-
 import jax
 import jax.numpy as jnp
 from jax import nn
 import numpy as np
-
 import flax
-
 
 @dataclass
 class LagrangianPotentialBase(flax.linen.Module):

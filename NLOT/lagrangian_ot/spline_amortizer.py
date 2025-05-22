@@ -1,16 +1,10 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates
-
 import jax
 import jax.numpy as jnp
 import optax
-
 import flax
 from flax import linen as nn
-
 from typing import Any, Optional
-
 from dataclasses import dataclass
-
 from . import splines, meters, geodesics
 from abc import ABC, abstractmethod
 
@@ -131,9 +125,6 @@ class SplineAmortizer:
     def update_fn(self, params_geometry, opt_state, xs, ys):
         loss_value_and_grad = jax.value_and_grad(self.loss_fn, argnums=0)
         loss, grads = loss_value_and_grad(params_geometry, xs, ys)
-        # TODO: this is inefficiently computing all gradients w.r.t.
-        # the geometry but only using the spline ones, there may be
-        # a better way to do this
         grads = grads['spline_model']
         updates, opt_state = self.optimizer.update(grads, opt_state)
         new_params_spline_model = optax.apply_updates(params_geometry['spline_model'], updates)

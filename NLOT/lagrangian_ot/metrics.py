@@ -1,20 +1,13 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates
-
 import numpy as np
-
 import jax
 import jax.numpy as jnp
 from flax import linen as nn
 import optax
 from flax.training import train_state
 from sklearn.cluster import KMeans
-
 import copy
-
 from typing import Tuple, Optional
-
 from dataclasses import dataclass, field
-
 from abc import ABC, abstractmethod
 
 plot_cache = {}

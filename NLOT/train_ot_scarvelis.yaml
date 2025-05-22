@@ -15,11 +15,10 @@ C: 24
 categorical: False
 num_categories: 4
 
-include_land_potential: False
 include_inverse_potential: False
-bandwidth: 1.0 #0.25 # by silverman
+bandwidth: 1.0
 conditional_bandwidth: 1.0
-lambda: 0.1 #0.0001
+lambda: 0.01
 
 seed: 0
 num_pairs: 2
@@ -41,7 +40,7 @@ metric:
   update_frequency: 10
   update_repeat: 1
   frobenius_reg_weight: 0
-  lr: 5e-3
+  lr: 1e-3
 
 geometry_kwargs:
   spline_solver_kwargs:

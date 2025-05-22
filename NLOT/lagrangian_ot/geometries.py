@@ -1,22 +1,13 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates
-
 import numpy as np
-
 import jax
 import jax.numpy as jnp
 from flax import linen as nn
 import functools
-
 from dataclasses import dataclass
-
 from abc import ABC, abstractmethod
-
 import copy
 from typing import Callable, Optional, Tuple, Dict
-
-
 from enum import Enum
-
 from lagrangian_ot import (
     metrics,
     geodesics,
@@ -24,7 +15,6 @@ from lagrangian_ot import (
     splines,
     spline_amortizer,
 )
-
 
 class DistanceModes:
     GEODESIC = "geodesic"
@@ -190,7 +180,7 @@ def get(
             C=C,
             categorical=categorical,
             num_categories=num_categories,
-            lagrangian_potential_initializer_fn=lagrangian_potential_initializer_fn, #add in potential
+            lagrangian_potential_initializer_fn=lagrangian_potential_initializer_fn,
             **geometry_kwargs,
         )
     elif name == "neural_net_metric_direct":
@@ -447,9 +437,6 @@ class MetricManifold(GeometryBase):
                 )
         
         if self.lagrangian_potential_initializer_fn is not None:
-            #self.lagrangian_potential_module = (
-            #    self.lagrangian_potential_initializer_fn()
-            #)
             self.lagrangian_potential_module = self.lagrangian_potential_initializer_fn
 
         self.spline_model = self.spline_model_initializer_fn(
@@ -497,8 +484,6 @@ class MetricManifold(GeometryBase):
         initializing = self.is_mutable_collection("params")
         
         if initializing:
-            # don't improve the solution
-            # (linen doesn't work well with jax.lax.while_loop)
             ts = jnp.linspace(0, 1, num_points)
             xs = splines.compute_spline(
                 x=x[:self.D],
@@ -595,7 +580,6 @@ class MetricManifold(GeometryBase):
         assert x.ndim == 1 and y.ndim == 1, "Input points must be 1D arrays."
         assert x.shape == y.shape, "Input points must have the same shape."
         assert x.shape[0] == self.D + self.C, "Input points must have shape (D + C,)."
-        #assert 0.0 <= t_fraction <= 1.0, "t_fraction must be between 0 and 1."
 
         x_spatial = x[:self.D]
         y_spatial = y[:self.D]
@@ -703,7 +687,6 @@ class MetricManifold(GeometryBase):
                 ax.set_ylim(*ylims)
 
     def __hash__(self):
-        # not perfect, for passing as a static arg to jax.jit
         return hash(
             (
                 self.distance_mode,

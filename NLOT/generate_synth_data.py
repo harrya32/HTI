@@ -1021,7 +1021,7 @@ if __name__ == "__main__":
     np.random.seed(1)
 
     if True: #ett surrogate plots
-        dataset = torch.load("scarvelis_data/ett_forecasts_more_noise.pt")[-1, :, :]
+        dataset = torch.load("data/ett_forecasts_more_noise.pt")[-1, :, :]
         dataset = jnp.asarray(dataset)
         for i in range(50):
             plt.plot(dataset[i,:])
@@ -1293,7 +1293,7 @@ if __name__ == "__main__":
         print(f"Generated conditional semicircles data shape: {conditional_semicircles_data.shape}")
 
         # Save the data
-        save_path_semicircles = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_semicircles.pt')
+        save_path_semicircles = os.path.join(SCRIPT_PATH, 'data', 'conditional_semicircles.pt')
         torch.save(conditional_semicircles_data, save_path_semicircles)
         print(f"Conditional semicircles data saved to {save_path_semicircles}")
 
@@ -1455,7 +1455,7 @@ if __name__ == "__main__":
         print(f"Generated conditional circles data (normal) shape: {conditional_circles_data_normal.shape}")
 
         # Save the data
-        save_path_normal = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_circles_normal.pt')
+        save_path_normal = os.path.join(SCRIPT_PATH, 'data', 'conditional_circles_normal.pt')
         torch.save(conditional_circles_data_normal, save_path_normal)
         print(f"Conditional circles data (normal) saved to {save_path_normal}")
 
@@ -1648,7 +1648,7 @@ if __name__ == "__main__":
         print(f"Generated conditional circles data shape: {conditional_circles_data.shape}")
 
         # save
-        save_path_smr = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_circles.pt')
+        save_path_smr = os.path.join(SCRIPT_PATH, 'data', 'conditional_circles.pt')
         #torch.save(conditional_circles_data, save_path_smr)
         print(f"Conditional circles data saved to {save_path_smr}")
 
@@ -1724,7 +1724,7 @@ if __name__ == "__main__":
         #warped_circle_data = torch.cat((warped_circle_data, warped_circle_data[0:1]), dim=0) # Wrap around to first time point
         print(f"Generated warped circle data shape: {warped_circle_data.shape}")
 
-        save_path_circle = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'warped_circle.pt')
+        save_path_circle = os.path.join(SCRIPT_PATH, 'data', 'warped_circle.pt')
         #torch.save(warped_circle_data, save_path_circle)
         #print(f"Warped circle data saved to {save_path_circle}")
 
@@ -1776,7 +1776,7 @@ if __name__ == "__main__":
         print(f"Generated velocity conditioned data shape: {velocity_data.shape}")
 
         #save
-        save_path_vel = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_velocity.pt')
+        save_path_vel = os.path.join(SCRIPT_PATH, 'data', 'conditional_velocity.pt')
         #torch.save(velocity_data, save_path_vel)
         #print(f"Velocity conditioned data saved to {save_path_vel}")
 
@@ -1825,7 +1825,7 @@ if __name__ == "__main__":
         print(f"Generated rotation conditioned data shape: {rotation_data.shape}") 
 
         #save
-        save_path_rot = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_rotation.pt')
+        save_path_rot = os.path.join(SCRIPT_PATH, 'data', 'conditional_rotation.pt')
         #torch.save(rotation_data, save_path_rot)
         #print(f"Rotation conditioned data saved to {save_path_rot}")
 
@@ -1873,7 +1873,7 @@ if __name__ == "__main__":
         print(conditional_data_5t[0])
 
         #save
-        #save_path_5t = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_gaussians_complex.pt')
+        #save_path_5t = os.path.join(SCRIPT_PATH, 'data', 'conditional_gaussians_complex.pt')
         #torch.save(conditional_data_5t, save_path_5t)
         #print(f"5T Conditional data saved to {save_path_5t}")
 
@@ -1923,7 +1923,7 @@ if __name__ == "__main__":
         print(f"Generated conditional data shape: {conditional_data.shape}") 
 
         # save
-        save_path = os.path.join(SCRIPT_PATH, 'scarvelis_data', 'conditional_gaussians_3t.pt')
+        save_path = os.path.join(SCRIPT_PATH, 'data', 'conditional_gaussians_3t.pt')
         #torch.save(conditional_data, save_path)
         #print(f"Conditional data saved to {save_path}")
 
@@ -1985,7 +1985,7 @@ if __name__ == "__main__":
         arch_points = torch.tensor(arch_points)
         arch_points = arch_points[[0,2]]
         print("arch points shape:", arch_points.shape)
-        #torch.save(arch_points, 'scarvelis_data/arch_data.pt')
+        #torch.save(arch_points, 'data/arch_data.pt')
 
     if False: # Sphere data
         #---------------#
@@ -1997,7 +1997,7 @@ if __name__ == "__main__":
         sphere_points = torch.tensor(sphere_points)
         sphere_points = sphere_points[[0,2]]
         print("sphere points shape:", sphere_points.shape)
-        #torch.save(sphere_points, 'scarvelis_data/sphere_data.pt')
+        #torch.save(sphere_points, 'data/sphere_data.pt')
 
         #plot 3D sphere points
         fig = plt.figure()

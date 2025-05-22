@@ -1,8 +1,5 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates
-
 import abc
 from typing import Any, Callable, Optional, Sequence, Tuple, Union
-
 import flax.linen as nn
 import jax
 import jax.numpy as jnp

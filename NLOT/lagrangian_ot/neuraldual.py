@@ -1,5 +1,3 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates
-
 import numpy as np
 import warnings
 from typing import (
@@ -14,30 +12,23 @@ from typing import (
     Union,
     Sequence,
 )
-
 import functools
 import jax
 import jax.numpy as jnp
 import jax.tree_util as jtu
 import optax
-
 import collections
-
 import flax
 from flax import core
 from flax.core import frozen_dict
 from flax.training import train_state
 from flax.jax_utils import replicate, unreplicate
-
 from copy import copy
-
 from ott.geometry import costs
-
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import colorsys
-
 from lagrangian_ot import ctransform_solvers, models, geometries
 
 Train_t = Dict[Literal["train_logs", "valid_logs"], Dict[str, List[float]]]

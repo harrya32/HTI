@@ -1,19 +1,14 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates
-
 import abc
 from typing import Callable, Literal, NamedTuple, Optional
 import dataclasses
 import collections
-
 import jax
 import jax.numpy as jnp
 import optax
 import flax
 from jaxopt import LBFGS
-
 from ott import utils
 from lagrangian_ot import geometries
-
 
 class CTransformResults(NamedTuple):
     val: float

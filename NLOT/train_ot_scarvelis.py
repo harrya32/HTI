@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# Copyright (c) Meta Platforms, Inc. and affiliates
-
 import argparse
 import math
 import functools
@@ -61,23 +58,24 @@ class Workspace:
         
         print(f"all_samples shape: {self.all_samples.shape}")
 
-        if self.cfg.get('include_land_potential', False):
-            lagrangian_potential_initializer_fn = lagrangian_potentials.LandPotential(
-                D=self.cfg.get('D', 2),
-                C=self.cfg.get('C', 0),
-                samples=self.all_samples,
-                bandwidth=self.cfg.get('bandwidth', 1.0),
-                lambda_weight=self.cfg.get('lambda', 0.01),
-            )
-        elif self.cfg.get('include_inverse_potential', False):
-            lagrangian_potential_initializer_fn = lagrangian_potentials.InverseDensityPotentialNW(
-                D=self.cfg.get('D', 2),
-                C=self.cfg.get('C', 0),
-                samples=self.all_samples,
-                bandwidth=self.cfg.get('bandwidth', 1.0),
-                conditional_bandwidth=self.cfg.get('conditional_bandwidth', 1.0),
-                lambda_repel=self.cfg.get('lambda', 0.01),
-            )
+        if self.cfg.get('include_inverse_potential', False):
+            if self.cfg.data == "conditional_circles":
+                lagrangian_potential_initializer_fn = lagrangian_potentials.InverseDensityPotential(
+                    D=self.cfg.get('D', 2),
+                    C=self.cfg.get('C', 0),
+                    samples=self.all_samples,
+                    bandwidth=self.cfg.get('bandwidth', 1.0),
+                    lambda_repel=self.cfg.get('lambda', 0.01),
+                )
+            else:
+                lagrangian_potential_initializer_fn = lagrangian_potentials.InverseDensityPotentialNW(
+                    D=self.cfg.get('D', 2),
+                    C=self.cfg.get('C', 0),
+                    samples=self.all_samples,
+                    bandwidth=self.cfg.get('bandwidth', 1.0),
+                    conditional_bandwidth=self.cfg.get('conditional_bandwidth', 1.0),
+                    lambda_repel=self.cfg.get('lambda', 0.01),
+                )
         else:
             lagrangian_potential_initializer_fn = None
 
@@ -123,8 +121,6 @@ class Workspace:
 
         print(f'training on {self.num_pairs} pairs at times {self.time_points}')
         self.eval_samples = [next(s) for s in self.samplers]
-
-        #scheduler = optax.exponential_decay(init_value=5e-4, transition_steps=self.cfg.num_train_iters, decay_rate=0.9)
         self.optimizer_target_potential = optax.adamw(learning_rate=self.cfg.potential_lr)
         self.optimizer_source_map = self.optimizer_target_potential
         self.optimizer_geom = optax.adamw(learning_rate=self.cfg.metric.lr)
@@ -426,26 +422,26 @@ class Workspace:
                     #marginals eval
                     if 'circles' in self.cfg.data or 'reward' in self.cfg.data or 'ett' in self.cfg.data:
                         if self.cfg.data == 'conditional_circles':
-                            test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals.pkl'
+                            test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_data/eval_marginals.pkl'
                         elif self.cfg.data == 'conditional_circles_normal':
-                            test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals_normal.pkl'
+                            test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_data/eval_marginals_normal.pkl'
                         elif self.cfg.data == 'conditional_semicircles':
-                            test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals_semicircle.pkl'
+                            test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_data/eval_marginals_semicircle.pkl'
                         else:
-                            test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals.pkl'
+                            test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_data/eval_marginals.pkl'
                         
                         test_data = jnp.load(test_path, allow_pickle=True)
                         time_0_points = test_data[0][1]
 
                         if self.cfg.data == 'reward_weighting_data':
-                            test_path = '/home/azureuser/localfiles/HTI/NLOT/scarvelis_data/reward_weighting_data_0_10.pt'
+                            test_path = '/home/azureuser/localfiles/HTI/NLOT/data/reward_weighting_data_0_10.pt'
                             test_data = torch.load(test_path)[[0,1,2,3,4,6,7,8,9], :1000, :self.cfg.D + self.cfg.C].cpu().numpy()
                             test_data = jnp.array(test_data)
                             time_0_points = test_data[0]
                             test_data = [(0, test_data[0]), (0.1, test_data[1]), (0.2, test_data[2]), (0.3, test_data[3]), (0.4, test_data[4]), (0.6, test_data[5]), (0.7, test_data[6]), (0.8, test_data[7]), (0.9, test_data[8])]
                         
                         if self.cfg.data == 'ett_forecasts':
-                            test_path = '/home/azureuser/localfiles/HTI/NLOT/scarvelis_data/ett_forecasts_more_noise.pt'
+                            test_path = '/home/azureuser/localfiles/HTI/NLOT/data/ett_forecasts_more_noise.pt'
                             test_data = torch.load(test_path)[[0,1,3], :, :self.cfg.D + self.cfg.C].cpu().numpy()
                             test_data = jnp.array(test_data)
                             test_data_ambient = test_data[:, :, self.cfg.C:]
@@ -470,13 +466,6 @@ class Workspace:
             self.train_step += 1
             if self.train_step % self.cfg.save_frequency == 0:
                 self.save()
-
-        if not self.cfg.plotting.get('disable', False):
-            self.plot()
-
-
-        
-
 
     def eval_alignment(self):
         xflat, x1, x2 = geometries._get_grid(
@@ -698,10 +687,7 @@ class Workspace:
             # Restore samplers
             self.samplers = samplers_backup
 
-##############################
-### UNCERTAINTY ESTIMATION ###
-##############################
-
+#uncert. quant.
     def _compute_geodesic_distance(self, x, y):
         """
         Computes geodesic distance d(x, y) using the learned metric.
@@ -1001,8 +987,6 @@ class Workspace:
 
         return all_assigned_pairs
 
-    # ... rest of the Workspace class ...
-
     def plot_assignment_paths(self, num_samples=100):
         """
         Computes the optimal transport assignment between consecutive time points
@@ -1241,7 +1225,7 @@ class Workspace:
                 actual_spatial_overall = true_eval_samples[:, :self.cfg.D]
 
                 #Wasserstein distance
-                if False:#self.cfg.C:
+                if self.cfg.C and self.cfg.data != "ett_forecasts":
                     true_conditions_all = true_eval_samples[:, self.cfg.D:]
                     predicted_conditions_all = predicted_eval_samples[:, self.cfg.D:]
                     unique_true_conditions = jnp.unique(true_conditions_all, axis=0)
@@ -1417,7 +1401,6 @@ def main(cfg):
         print(f"Resuming fom {fname}")
         with open(fname, "rb") as f:
             workspace = pkl.load(f)
-        # Re-initialize samplers after loading, as they were removed before saving
         workspace.samplers = data.get_samplers_scarvelis(
             workspace.cfg.data,
             num_pairs_requested=workspace.cfg.get("num_pairs", None)
@@ -1427,11 +1410,6 @@ def main(cfg):
         workspace = W(cfg)
 
     workspace.run()
-
-    # Example uncertainty usage after running workspace through training cycle:
-    uncertain_time, uncertainty_value = workspace.find_most_uncertain_time()
-
-    # insert resampling logic here
 
 if __name__ == '__main__':
     main()

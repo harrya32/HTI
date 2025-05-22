@@ -1,5 +1,3 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates
-
 class EMAMeter:
     def __init__(self, alpha):
         self.alpha = alpha

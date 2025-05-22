@@ -1,17 +1,12 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates
-
 import jax
 import jax.numpy as jnp
 from jax import lax
 from jax.scipy import optimize
 import jaxopt
 import optax
-
 from collections import namedtuple
-
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-
 from lagrangian_ot import splines
 
 GPState = namedtuple("GPState", "i ddc mu dmu cost")

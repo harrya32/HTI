@@ -1,31 +1,21 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates
-
 import os
-
 import jax
 import jax.numpy as jnp
 import numpy as np
 import torch as th
-
 import requests
-
 import dataclasses
 from typing import Iterator
-
 import ott
-
 from abc import ABC, abstractmethod
-
 from lagrangian_ot.geometries import Sphere
 import gdown
-
 import scanpy as sc
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
 def get_bounds(name):
-    # This could be cleaned up and better-merged with the bounds in geometries.
     if name == "scarvelis_circle":
         bounds = (-1.5, 1.5)
         xbounds = ybounds = bounds
@@ -220,9 +210,9 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
     if geometry_str not in paths:
         raise ValueError(f"Invalid geometry choice: {geometry_str}")
 
-    fname = SCRIPT_PATH + "/../scarvelis_data/" + paths[geometry_str]
+    fname = SCRIPT_PATH + "/../data/" + paths[geometry_str]
     if not os.path.exists(fname):
-        os.makedirs(SCRIPT_PATH + "/../scarvelis_data/", exist_ok=True)
+        os.makedirs(SCRIPT_PATH + "/../data/", exist_ok=True)
         print(f"=== File {fname} does not exist. Trying to download from https://github.com/cscarv/riemannian-metric-learning-ot")
         url = 'https://github.com/cscarv/riemannian-metric-learning-ot/raw/master/data/synthetic/' + paths[geometry_str]
         r = requests.get(url, allow_redirects=True)
@@ -231,10 +221,6 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
 
     dataset = th.load(fname, map_location="cpu", weights_only=False).detach()
 
-    if geometry_str == "agent_data":
-        dataset = dataset[:, :, :]
-        #normalise the dataset
-        #dataset[:,:,2:] = (dataset[:,:,2:] - dataset[:,:,2:].mean(axis=0)) / dataset[:,:,2:].std(axis=0)
     if geometry_str == "reward_weighting_data":
         dataset = dataset[[0, 5, 10], :1000, :]
         dataset = jnp.asarray(dataset)
@@ -450,7 +436,6 @@ def sampler_from_data(data, batch_size=None):
         else:
             idx = np.random.choice(data.shape[0], batch_size, replace=False)
             yield data[idx]
-            # assert False # sample from data
 
 
 @dataclasses.dataclass
@@ -496,4 +481,4 @@ class WrappedNormal(ABC):
             yield z
 
     def __hash__(self):
-        return 0  # For jitting
+        return 0  
