@@ -109,6 +109,9 @@ def get_bounds(name):
             jnp.array((xbounds[0], ybounds[0])),
             jnp.array((xbounds[1], ybounds[1])),
         )
+    elif name == "ett_forecasts":
+        bounds = (-5, 15)
+        xbounds = ybounds = bounds
     else:
         raise ValueError(f"Invalid data choice: {name}")
 
@@ -212,6 +215,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         "conditional_circles_normal": "conditional_circles_normal.pt",
         "conditional_semicircles": "conditional_semicircles.pt",
         "reward_weighting_data": "reward_weighting_data_0_10.pt",
+        "ett_forecasts": "ett_forecasts.pt",
     }
     if geometry_str not in paths:
         raise ValueError(f"Invalid geometry choice: {geometry_str}")
@@ -239,6 +243,13 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         dataset = dataset.at[:, :, :2].set(dataset[:, :, :2] + noise)
         dataset = dataset.at[:, :, 0].set(jnp.clip(dataset[:, :, 0], 0, 10))
         dataset = dataset.at[:, :, 1].set(jnp.clip(dataset[:, :, 1], 0, 8))
+    elif geometry_str == "ett_forecasts":
+        #flip first and last 12 columns, to get the data and conditioning correct
+        dataset = jnp.asarray(dataset)
+        dataset_ambient = dataset[:, :, 22:]
+        dataset_conditioning = dataset[:, :, :12]
+        dataset = jnp.concatenate((dataset_ambient, dataset_conditioning), axis=2)
+
 
 
     print('Dataset shape:', dataset.shape)

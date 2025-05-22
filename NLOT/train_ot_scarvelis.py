@@ -69,11 +69,12 @@ class Workspace:
                 lambda_weight=self.cfg.get('lambda', 0.01),
             )
         elif self.cfg.get('include_inverse_potential', False):
-            lagrangian_potential_initializer_fn = lagrangian_potentials.InverseDensityPotential(
+            lagrangian_potential_initializer_fn = lagrangian_potentials.InverseDensityPotentialNW(
                 D=self.cfg.get('D', 2),
                 C=self.cfg.get('C', 0),
                 samples=self.all_samples,
                 bandwidth=self.cfg.get('bandwidth', 1.0),
+                conditional_bandwidth=self.cfg.get('conditional_bandwidth', 1.0),
                 lambda_repel=self.cfg.get('lambda', 0.01),
             )
         else:
@@ -417,12 +418,12 @@ class Workspace:
 
             if not self.cfg.plotting.get('disable', False):
                 if self.train_step % self.cfg.plot_frequency == 0:
-                    #self.plot_all_pairs()
-                    #self.plot_pushforward()
-                    #self.plot_assignment_paths()
+                    self.plot_all_pairs()
+                    self.plot_pushforward()
+                    self.plot_assignment_paths()
 
                     #marginals eval
-                    if 'circles' in self.cfg.data or 'reward' in self.cfg.data:
+                    if 'circles' in self.cfg.data or 'reward' in self.cfg.data or 'ett' in self.cfg.data:
                         if self.cfg.data == 'conditional_circles':
                             test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_marginals.pkl'
                         elif self.cfg.data == 'conditional_circles_normal':
@@ -442,6 +443,14 @@ class Workspace:
                             time_0_points = test_data[0]
                             test_data = [(0, test_data[0]), (0.1, test_data[1]), (0.2, test_data[2]), (0.3, test_data[3]), (0.4, test_data[4]), (0.6, test_data[5]), (0.7, test_data[6]), (0.8, test_data[7]), (0.9, test_data[8])]
                         
+                        if self.cfg.data == 'ett_forecasts':
+                            test_path = '/home/azureuser/localfiles/HTI/NLOT/scarvelis_data/ett_forecasts.pt'
+                            test_data = torch.load(test_path)[[0,1,2,3,4,6,7,8,9], :, :self.cfg.D + self.cfg.C].cpu().numpy()
+                            test_data = jnp.array(test_data)
+                            time_0_points = test_data[0]
+                            test_data = [(0, test_data[0]), (0.1, test_data[1]), (0.2, test_data[2]), (0.3, test_data[3]), (0.4, test_data[4]), (0.6, test_data[5]), (0.7, test_data[6]), (0.8, test_data[7]), (0.9, test_data[8])]
+
+
                         print("Evaluating marginals")
                         self.evaluate_marginals(time_0_points, test_data[1:], plot_results=True, verbose=False)
 
@@ -1191,7 +1200,7 @@ class Workspace:
                 actual_spatial_overall = true_eval_samples[:, :self.cfg.D]
 
                 #Wasserstein distance
-                if self.cfg.C:
+                if False:#self.cfg.C:
                     true_conditions_all = true_eval_samples[:, self.cfg.D:]
                     predicted_conditions_all = predicted_eval_samples[:, self.cfg.D:]
                     unique_true_conditions = jnp.unique(true_conditions_all, axis=0)
