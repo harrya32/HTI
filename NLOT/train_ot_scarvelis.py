@@ -38,6 +38,7 @@ sys.excepthook = ultratb.FormattedTB(mode='Plain', color_scheme='Neutral', call_
 
 import wandb
 import ot
+from scipy.spatial.distance import cdist # Add this import
 
 class Workspace:
     def __init__(self, cfg):
@@ -418,9 +419,9 @@ class Workspace:
 
             if not self.cfg.plotting.get('disable', False):
                 if self.train_step % self.cfg.plot_frequency == 0:
-                    self.plot_all_pairs()
-                    self.plot_pushforward()
-                    self.plot_assignment_paths()
+                    #self.plot_all_pairs()
+                    #self.plot_pushforward()
+                    #self.plot_assignment_paths()
 
                     #marginals eval
                     if 'circles' in self.cfg.data or 'reward' in self.cfg.data or 'ett' in self.cfg.data:
@@ -444,23 +445,20 @@ class Workspace:
                             test_data = [(0, test_data[0]), (0.1, test_data[1]), (0.2, test_data[2]), (0.3, test_data[3]), (0.4, test_data[4]), (0.6, test_data[5]), (0.7, test_data[6]), (0.8, test_data[7]), (0.9, test_data[8])]
                         
                         if self.cfg.data == 'ett_forecasts':
-                            test_path = '/home/azureuser/localfiles/HTI/NLOT/scarvelis_data/ett_forecasts.pt'
-                            test_data = torch.load(test_path)[[0,1,2,3,4,6,7,8,9], :, :self.cfg.D + self.cfg.C].cpu().numpy()
+                            test_path = '/home/azureuser/localfiles/HTI/NLOT/scarvelis_data/ett_forecasts_more_noise.pt'
+                            test_data = torch.load(test_path)[[0,1,3], :, :self.cfg.D + self.cfg.C].cpu().numpy()
                             test_data = jnp.array(test_data)
+                            test_data_ambient = test_data[:, :, self.cfg.C:]
+                            test_data_conditioning = test_data[:, :, :self.cfg.C]
+                            test_data = jnp.concatenate((test_data_ambient, test_data_conditioning), axis=2)
                             time_0_points = test_data[0]
-                            test_data = [(0, test_data[0]), (0.1, test_data[1]), (0.2, test_data[2]), (0.3, test_data[3]), (0.4, test_data[4]), (0.6, test_data[5]), (0.7, test_data[6]), (0.8, test_data[7]), (0.9, test_data[8])]
+                            test_data = [(0, test_data[0]), (0.25, test_data[1]), (0.75, test_data[2])]
 
 
                         print("Evaluating marginals")
-                        self.evaluate_marginals(time_0_points, test_data[1:], plot_results=True, verbose=False)
+                        self.evaluate_marginals(time_0_points, test_data[1:], plot_results=False, verbose=False)
 
                     
-
-                if self.train_step % self.cfg.plot_frequency == 0 and self.has_reference_geometry:
-                    alignment, true_eigen_vals, learned_eigen_vals = self.eval_alignment()
-                    wandb.log({
-                        "train/geom_alignment": alignment,
-                    }, step=self.train_step)
 
             writer.writerow({
                 'iter': self.train_step,
@@ -475,8 +473,6 @@ class Workspace:
 
         if not self.cfg.plotting.get('disable', False):
             self.plot()
-            if self.has_reference_geometry: 
-                self.eval_alignment()
 
 
         
@@ -1098,6 +1094,50 @@ class Workspace:
         b = np.ones(samples2_np.shape[0]) / samples2_np.shape[0]  # uniform weights
             
         return float(ot.emd2(a, b, M))
+    
+    def _rbf_kernel(self, X, Y, gamma=1.0):
+        """
+        Computes the RBF kernel matrix between X and Y.
+        K(x, y) = exp(-gamma * ||x-y||^2)
+        """
+        XY_sqdist = cdist(X, Y, 'sqeuclidean')
+        return np.exp(-gamma * XY_sqdist)
+
+    def compute_mmd_rbf(self, samples1_np, samples2_np, gamma=None):
+        """
+        Computes MMD^2 (squared) between two sets of samples using an RBF kernel.
+        Assumes samples1_np and samples2_np are numpy arrays.
+        """
+        if samples1_np.ndim == 1:
+            samples1_np = samples1_np[:, np.newaxis]
+        if samples2_np.ndim == 1:
+            samples2_np = samples2_np[:, np.newaxis]
+
+        if gamma is None:
+            # Heuristic for gamma: median of pairwise squared distances
+            all_samples = np.vstack([samples1_np, samples2_np])
+            pairwise_sq_dists = cdist(all_samples, all_samples, 'sqeuclidean')
+            # Use only upper triangle to avoid diagonal zeros and duplicates
+            median_sq_dist = np.median(pairwise_sq_dists[np.triu_indices_from(pairwise_sq_dists, k=1)])
+            if median_sq_dist <= 0: # Handle case where all points are identical or very close
+                median_sq_dist = 1e-6
+            gamma = 1.0 / (2 * median_sq_dist)
+
+
+        K_XX = self._rbf_kernel(samples1_np, samples1_np, gamma)
+        K_YY = self._rbf_kernel(samples2_np, samples2_np, gamma)
+        K_XY = self._rbf_kernel(samples1_np, samples2_np, gamma)
+
+        n = K_XX.shape[0]
+        m = K_YY.shape[0]
+
+        # Biased estimator of MMD^2
+        mmd_sq = (np.sum(K_XX) / (n * n) +
+                  np.sum(K_YY) / (m * m) -
+                  2 * np.sum(K_XY) / (n * m))
+        
+        # Ensure non-negativity due to potential floating point issues for very similar distributions
+        return max(0, mmd_sq)
         
     def evaluate_marginals(self, initial_samples_at_t0, evaluation_points, plot_results=False, verbose=False):
         """
@@ -1143,6 +1183,7 @@ class Workspace:
         all_wasserstein_distances = []
         all_circle_distances = []
         all_log_likelihoods = []
+        all_mmd_scores = []
         for k in range(self.num_pairs):
             T_k = self.time_points[k]
             T_k_plus_1 = self.time_points[k+1]
@@ -1230,6 +1271,16 @@ class Workspace:
                     metrics_log[f"time_{eval_time:.4f}_wass"] = float(wasserstein_dist)
                     all_wasserstein_distances.append(wasserstein_dist)
                     metric_val_str = f"Wasserstein: {wasserstein_dist:.4e} (Pred N={predicted_spatial_overall.shape[0]}, Actual N={actual_spatial_overall.shape[0]})"
+
+                    mmd_score = np.nan
+                    if predicted_spatial_overall.shape[0] > 0 and actual_spatial_overall.shape[0] > 0:
+                        predicted_np = np.array(predicted_spatial_overall)
+                        actual_np = np.array(actual_spatial_overall)
+                        mmd_score = self.compute_mmd_rbf(predicted_np, actual_np)
+                    
+                    metrics_log[f"time_{eval_time:.4f}_mmd_rbf"] = float(mmd_score)
+                    all_mmd_scores.append(mmd_score)
+                    metric_val_str += f", MMD_RBF: {mmd_score:.4e}"
                     if verbose:
                         print(f"Evaluated at time {eval_time:.4f} ({desc}): {metric_val_str}")
 
@@ -1329,6 +1380,12 @@ class Workspace:
             metrics_log["overall_avg_wass"] = float(overall_avg_wasserstein)
             if verbose:
                 print(f"Overall Avg Wasserstein Across All Conditions and Time Points: {overall_avg_wasserstein:.4e}")
+
+        if all_mmd_scores:
+            overall_avg_mmd = np.nanmean(np.array(all_mmd_scores))
+            metrics_log["overall_avg_mmd_rbf"] = float(overall_avg_mmd)
+            if verbose:
+                print(f"Overall Avg MMD (RBF) Across All Time Points: {overall_avg_mmd:.4e}")
 
         if all_circle_distances:
             overall_avg_circle_dist = jnp.mean(jnp.array(all_circle_distances))

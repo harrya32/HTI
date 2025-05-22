@@ -287,7 +287,7 @@ class NeuralNetMetricEig(MetricBase):
     def _create_rotation_matrix(self, params):
         """
         Create a rotation matrix from parameters.
-        For D=2: uses arctan2 from 2D vector like original implementation
+        For D=2: uses arctan2 from 2D vector
         For D=3: 3 angle parameters (Euler angles)
         For D>3: D(D-1)/2 parameters for generalized rotation
         """

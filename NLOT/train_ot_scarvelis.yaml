@@ -10,16 +10,16 @@ geometry: 'sq_euclidean_manifold'
 # agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, 
 # conditional_circles_normal, conditional_semicircles, reward_weighting_data, ett_forecasts
 data: 'ett_forecasts'
-D: 2
-C: 12
+D: 12
+C: 24
 categorical: False
 num_categories: 4
 
 include_land_potential: False
 include_inverse_potential: False
-bandwidth: 0.4 #0.25 # by silverman
-#conditional_bandwidth: 1.0
-lambda: 0.05 #0.0001
+bandwidth: 1.0 #0.25 # by silverman
+conditional_bandwidth: 1.0
+lambda: 0.1 #0.0001
 
 seed: 0
 num_pairs: 2
