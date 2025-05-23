@@ -1,6 +1,6 @@
 import torch
 import os
-from torchcfm.optimal_transport import OTPlanSampler
+#from torchcfm.optimal_transport import OTPlanSampler
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -1020,7 +1020,7 @@ if __name__ == "__main__":
     torch.manual_seed(1)
     np.random.seed(1)
 
-    if True: # Semicircles marginal data for plotting results
+    if False: # Semicircles marginal data for plotting results
         t = np.linspace(0, 1, 20)
         num_points_per_condition = 10
         radius = 1.0
@@ -1249,7 +1249,7 @@ if __name__ == "__main__":
         
         print(f"Semicircle marginals saved to {os.path.join(SCRIPT_PATH, 'eval_marginals_semicircle.pkl')}")
 
-    if False:  # Conditional semicircles
+    if True:  # Conditional semicircles
         #----------------------------------------------------#
         #  Conditional Semicircles Data                      #
         #----------------------------------------------------#
