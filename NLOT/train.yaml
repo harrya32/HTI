@@ -28,7 +28,7 @@ potential_lr: 1e-4
 wandb: True
 wandb_project: "ett_forecasts_NN"
 
-plot_frequency: 50
+plot_frequency: 500
 save_frequency: ${plot_frequency}
 
 plotting:

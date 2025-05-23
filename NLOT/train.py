@@ -1292,10 +1292,10 @@ class Workspace:
                     if predicted_eval_samples.shape[1] == self.cfg.D + self.cfg.C:
                         predicted_data_torch = torch.from_numpy(np.array(predicted_eval_samples))
                         try:
-                            log_likelihood_val = log_likelihood_conditional_semicircle(
+                            log_likelihood_val = -log_likelihood_conditional_semicircle(
                                 data=predicted_data_torch,
                                 time=eval_time
-                            )
+                            ) / predicted_data_torch.shape[0]
                             metrics_log[f"time_{eval_time:.4f}_log_likelihood"] = float(log_likelihood_val)
                             all_log_likelihoods.append(log_likelihood_val)
                             if verbose:

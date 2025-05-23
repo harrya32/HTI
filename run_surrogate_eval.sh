@@ -10,7 +10,7 @@ RUN_NAME_3="eucl_w_potential"
 RUN_NAME_4="eucl_no_potential"
 
 # Python script to execute
-SCRIPT="surrogate_eval_plots.py"
+SCRIPT="DTR-Bench/surrogate_eval_plots.py"
 
 # Loop to run the script 5 times
 for i in $(seq 1 $ITERATIONS)
