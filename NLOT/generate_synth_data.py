@@ -1020,26 +1020,7 @@ if __name__ == "__main__":
     torch.manual_seed(1)
     np.random.seed(1)
 
-    if True: #ett surrogate plots
-        dataset = torch.load("data/ett_forecasts_more_noise.pt")[-1, :, :]
-        dataset = jnp.asarray(dataset)
-        for i in range(50):
-            plt.plot(dataset[i,:])
-        plt.savefig("ett_forecast_true_-1.pdf", bbox_inches='tight', pad_inches=0)
-        dataset_ambient = dataset[:, 24:]
-        dataset_conditioning = dataset[:, :24]
-        dataset = jnp.concatenate((dataset_ambient, dataset_conditioning), axis=1)
-        workspace_fp = "exp/local/2025.05.22/1210.sq_euclidean_manifold/latest.pkl"
-        workspace = load_workspace(workspace_fp)
-        pushforward = generate_pushforward(workspace, dataset, num_points=50)
-
-        print(len(pushforward[0]))
-
-        print(pushforward[0])
-
-
-
-    if False: # Semicircles marginal data for plotting results
+    if True: # Semicircles marginal data for plotting results
         t = np.linspace(0, 1, 20)
         num_points_per_condition = 10
         radius = 1.0
@@ -2005,3 +1986,20 @@ if __name__ == "__main__":
         ax.scatter(sphere_points[0, :, 0], sphere_points[0, :, 1], sphere_points[0, :, 2], c='red')
         ax.scatter(sphere_points[1, :, 0], sphere_points[1, :, 1], sphere_points[1, :, 2], c='blue')
         #plt.savefig('plots/sphere_data.png')
+
+    if False: #ett surrogate plots
+        dataset = torch.load("data/ett_forecasts_more_noise.pt")[-1, :, :]
+        dataset = jnp.asarray(dataset)
+        for i in range(50):
+            plt.plot(dataset[i,:])
+        plt.savefig("ett_forecast_true_-1.pdf", bbox_inches='tight', pad_inches=0)
+        dataset_ambient = dataset[:, 24:]
+        dataset_conditioning = dataset[:, :24]
+        dataset = jnp.concatenate((dataset_ambient, dataset_conditioning), axis=1)
+        workspace_fp = "exp/local/2025.05.22/1210.sq_euclidean_manifold/latest.pkl"
+        workspace = load_workspace(workspace_fp)
+        pushforward = generate_pushforward(workspace, dataset, num_points=50)
+
+        print(len(pushforward[0]))
+
+        print(pushforward[0])

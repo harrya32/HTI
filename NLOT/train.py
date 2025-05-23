@@ -1,7 +1,6 @@
 import argparse
 import math
 import functools
-
 import csv
 import time
 import json
@@ -14,25 +13,19 @@ import cloudpickle as pkl
 from copy import copy
 from flax.core import FrozenDict
 from scipy.optimize import linear_sum_assignment
-
 import dataclasses
 from typing import Iterator
-
 import hydra
 from omegaconf import OmegaConf
-
 from lagrangian_ot import models, neuraldual, metrics, geodesics, geometries, data, lagrangian_potentials
 from generate_synth_data import log_likelihood_conditional_semicircle
 import torch
-
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 plt.style.use('bmh')
-
 import sys
 from IPython.core import ultratb
 sys.excepthook = ultratb.FormattedTB(mode='Plain', color_scheme='Neutral', call_pdb=1)
-
 import wandb
 import ot
 from scipy.spatial.distance import cdist # Add this import
@@ -1392,9 +1385,9 @@ class Workspace:
 
 
 
-@hydra.main(config_path=".", config_name="train_ot_scarvelis.yaml", version_base="1.1")
+@hydra.main(config_path=".", config_name="train.yaml", version_base="1.1")
 def main(cfg):
-    from train_ot_scarvelis import Workspace as W
+    from train import Workspace as W
 
     fname = os.getcwd() + "/latest.pkl"
     if os.path.exists(fname):
