@@ -415,27 +415,31 @@ class Workspace:
 
                     #marginals eval
                     if 'circles' in self.data or 'reward' in self.data or 'ett' in self.data:
+                        path = os.path.dirname(os.path.realpath(__file__)) + "/eval_data/"
+
                         if self.data == 'conditional_circles':
-                            test_path = './eval_data/eval_marginals.pkl'
+                            test_path = path + 'eval_marginals.pkl'
                         elif self.data == 'conditional_circles_normal':
-                            test_path = './eval_data/eval_marginals_normal.pkl'
+                            test_path = path + 'eval_marginals_normal.pkl'
                         elif self.data == 'conditional_semicircles':
-                            test_path = './eval_data/eval_marginals_semicircle.pkl'
+                            test_path = path + 'eval_marginals_semicircle.pkl'
                         else:
-                            test_path = './eval_data/eval_marginals.pkl'
+                            test_path = path + 'eval_marginals.pkl'
                         
                         test_data = jnp.load(test_path, allow_pickle=True)
                         time_0_points = test_data[0][1]
 
                         if self.data == 'reward_weighting_data':
-                            test_path = './data/reward_weighting_data_0_10.pt'
+                            path = os.path.dirname(os.path.realpath(__file__)) + "/data/"
+                            test_path = path + 'reward_weighting_data_0_10.pt'
                             test_data = torch.load(test_path)[[0,1,2,3,4,6,7,8,9], :1000, :self.cfg.D + self.cfg.C].cpu().numpy()
                             test_data = jnp.array(test_data)
                             time_0_points = test_data[0]
                             test_data = [(0, test_data[0]), (0.1, test_data[1]), (0.2, test_data[2]), (0.3, test_data[3]), (0.4, test_data[4]), (0.6, test_data[5]), (0.7, test_data[6]), (0.8, test_data[7]), (0.9, test_data[8])]
                         
                         if self.data == 'ett_forecasts':
-                            test_path = './data/ett_forecasts_more_noise.pt'
+                            path = os.path.dirname(os.path.realpath(__file__)) + "/../data/"
+                            test_path = path + 'ett_forecasts_more_noise.pt'
                             test_data = torch.load(test_path)[[0,1,3], :, :self.cfg.D + self.cfg.C].cpu().numpy()
                             test_data = jnp.array(test_data)
                             test_data_ambient = test_data[:, :, self.cfg.C:]
