@@ -2,3 +2,4 @@ glucose/results/
 outputs/
 __pycache__/
 lightning_logs/
+exp/

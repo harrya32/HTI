@@ -42,17 +42,18 @@ class Workspace:
             name=cfg.get("run_name", None),
             mode="disabled" if not cfg.get("wandb", True) else "online",
         )
+        self.data = self.cfg.dataset 
 
         self.key = jax.random.PRNGKey(self.cfg.seed)
         self.elapsed_time = 0.
         self.frobenius_weight = self.cfg.metric.get('frobenius_reg_weight', 0.0)
-        self.samplers = data.get_samplers_scarvelis(self.cfg.data, num_pairs_requested=self.cfg.get('num_pairs', None))
+        self.samplers = data.get_samplers_scarvelis(self.data, num_pairs_requested=self.cfg.get('num_pairs', None))
         self.all_samples = jnp.concatenate([next(s) for s in self.samplers], axis=0)
         
         print(f"all_samples shape: {self.all_samples.shape}")
 
         if self.cfg.get('include_inverse_potential', False):
-            if self.cfg.data == "conditional_circles":
+            if self.data == "conditional_circles":
                 lagrangian_potential_initializer_fn = lagrangian_potentials.InverseDensityPotential(
                     D=self.cfg.get('D', 2),
                     C=self.cfg.get('C', 0),
@@ -86,7 +87,7 @@ class Workspace:
         )
 
         if 'euclidean' in self.cfg.geometry or 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry:
-            if self.cfg.data is None:
+            if self.data is None:
                 raise ValueError('data must be specified for euclidean and neural geometries')
 
         self.has_reference_geometry = 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry
@@ -104,10 +105,10 @@ class Workspace:
                 lagrangian_potential_initializer_fn=lagrangian_potential_initializer_fn
             )
 
-        if self.cfg.data is None:
-            self.cfg.data = self.cfg.geometry
+        if self.data is None:
+            self.data = self.cfg.geometry
 
-        self.geometry.bounds, self.geometry.xbounds, self.geometry.ybounds = data.get_bounds(self.cfg.data)
+        self.geometry.bounds, self.geometry.xbounds, self.geometry.ybounds = data.get_bounds(self.data)
 
         self.num_pairs = len(self.samplers) - 1
         self.time_points = cfg.get('time_points', np.linspace(0, 1, self.num_pairs + 1))
@@ -413,12 +414,12 @@ class Workspace:
                     #self.plot_assignment_paths()
 
                     #marginals eval
-                    if 'circles' in self.cfg.data or 'reward' in self.cfg.data or 'ett' in self.cfg.data:
-                        if self.cfg.data == 'conditional_circles':
+                    if 'circles' in self.data or 'reward' in self.data or 'ett' in self.data:
+                        if self.data == 'conditional_circles':
                             test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_data/eval_marginals.pkl'
-                        elif self.cfg.data == 'conditional_circles_normal':
+                        elif self.data == 'conditional_circles_normal':
                             test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_data/eval_marginals_normal.pkl'
-                        elif self.cfg.data == 'conditional_semicircles':
+                        elif self.data == 'conditional_semicircles':
                             test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_data/eval_marginals_semicircle.pkl'
                         else:
                             test_path = '/home/azureuser/localfiles/HTI/NLOT/eval_data/eval_marginals.pkl'
@@ -426,14 +427,14 @@ class Workspace:
                         test_data = jnp.load(test_path, allow_pickle=True)
                         time_0_points = test_data[0][1]
 
-                        if self.cfg.data == 'reward_weighting_data':
+                        if self.data == 'reward_weighting_data':
                             test_path = '/home/azureuser/localfiles/HTI/NLOT/data/reward_weighting_data_0_10.pt'
                             test_data = torch.load(test_path)[[0,1,2,3,4,6,7,8,9], :1000, :self.cfg.D + self.cfg.C].cpu().numpy()
                             test_data = jnp.array(test_data)
                             time_0_points = test_data[0]
                             test_data = [(0, test_data[0]), (0.1, test_data[1]), (0.2, test_data[2]), (0.3, test_data[3]), (0.4, test_data[4]), (0.6, test_data[5]), (0.7, test_data[6]), (0.8, test_data[7]), (0.9, test_data[8])]
                         
-                        if self.cfg.data == 'ett_forecasts':
+                        if self.data == 'ett_forecasts':
                             test_path = '/home/azureuser/localfiles/HTI/NLOT/data/ett_forecasts_more_noise.pt'
                             test_data = torch.load(test_path)[[0,1,3], :, :self.cfg.D + self.cfg.C].cpu().numpy()
                             test_data = jnp.array(test_data)
@@ -583,7 +584,7 @@ class Workspace:
             self.params_geometry, ax, xlims=xlims, ylims=ylims, condition=condition)
 
         if 'neural' in self.cfg.geometry or 'land' in self.cfg.geometry:
-            if self.cfg.data in ['scarvelis_xpath','scarvelis_vee','scarvelis_circle','scarvelis_arch']:
+            if self.data in ['scarvelis_xpath','scarvelis_vee','scarvelis_circle','scarvelis_arch']:
                 self.reference_geometry.add_plot_background(
                     self.params_geometry, ax, xlims=xlims, ylims=ylims,
                     alpha=0.5,
@@ -1218,7 +1219,7 @@ class Workspace:
                 actual_spatial_overall = true_eval_samples[:, :self.cfg.D]
 
                 #Wasserstein distance
-                if self.cfg.C and self.cfg.data != "ett_forecasts":
+                if self.cfg.C and self.data != "ett_forecasts":
                     true_conditions_all = true_eval_samples[:, self.cfg.D:]
                     predicted_conditions_all = predicted_eval_samples[:, self.cfg.D:]
                     unique_true_conditions = jnp.unique(true_conditions_all, axis=0)
@@ -1262,7 +1263,7 @@ class Workspace:
                         print(f"Evaluated at time {eval_time:.4f} ({desc}): {metric_val_str}")
 
                 # Circle distance
-                if "circle" in self.cfg.data:
+                if "circle" in self.data:
                     circle_centers = {0: jnp.array([-1.0, 0.0]), 1: jnp.array([-1.0, 0.0]), 2: jnp.array([1.0, 0.0]), 3: jnp.array([1.0, 0.0])}
                     circle_radius = 1.0
                     per_condition_circle_dist = []
@@ -1287,7 +1288,7 @@ class Workspace:
                         if verbose:
                             print(f"Avg Circle Distance Across Conditions: {avg_circle_dist:.4e}")
 
-                if "semicircle" in self.cfg.data and self.cfg.C > 0:
+                if "semicircle" in self.data and self.cfg.C > 0:
                     if predicted_eval_samples.shape[1] == self.cfg.D + self.cfg.C:
                         predicted_data_torch = torch.from_numpy(np.array(predicted_eval_samples))
                         try:
@@ -1330,7 +1331,7 @@ class Workspace:
                             ax_comp.scatter(pred_cond_samples[idx_pred, 0], pred_cond_samples[idx_pred, 1], alpha=0.6, s=20, color=cmap(cond_idx), edgecolors='black', linewidths=0.5)
                             ax_comp.scatter(true_cond_samples[idx_actual, 0], true_cond_samples[idx_actual, 1], alpha=0.3, s=20, color=cmap(cond_idx), marker='x')
                        
-                        if "circle" in self.cfg.data:
+                        if "circle" in self.data:
                             circle1 = plt.Circle((-1, 0), 1, color='black', fill=False, linestyle='--', lw=0.5)
                             circle2 = plt.Circle((1, 0), 1, color='black', fill=False, linestyle='--', lw=0.5)
                             ax_comp.add_artist(circle1)

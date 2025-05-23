@@ -9,7 +9,7 @@ geometry: 'neural_net_metric_eig'
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
 # agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, 
 # conditional_circles_normal, conditional_semicircles, reward_weighting_data, ett_forecasts
-data: 'ett_forecasts'
+dataset: 'ett_forecasts'
 D: 12
 C: 24
 categorical: False
