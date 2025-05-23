@@ -1274,7 +1274,7 @@ if __name__ == "__main__":
         print(f"Generated conditional semicircles data shape: {conditional_semicircles_data.shape}")
 
         # Save the data
-        save_path_semicircles = os.path.join(SCRIPT_PATH, 'data', 'conditional_semicircles.pt')
+        save_path_semicircles = os.path.join(SCRIPT_PATH, 'data', 'conditional_semicircles_test.pt')
         torch.save(conditional_semicircles_data, save_path_semicircles)
         print(f"Conditional semicircles data saved to {save_path_semicircles}")
 
