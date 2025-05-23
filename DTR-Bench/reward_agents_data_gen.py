@@ -6,13 +6,10 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env 
 import torch
 
+#Generates datasets from trained agents acting in common environment, for use with HTI
+
 #load in agent
 agent_0 = PPO.load("ppo_ghaffari_cancer_model__0.zip")
-#agent_01 = PPO.load("ppo_ghaffari_cancer_model.zip")
-#agent_025 = PPO.load("ppo_ghaffari_cancer_model_25.zip")
-#agent_05 = PPO.load("ppo_ghaffari_cancer_model_05.zip")
-#agent_075 = PPO.load("ppo_ghaffari_cancer_model_75.zip")
-#agent_09 = PPO.load("ppo_ghaffari_cancer_model_09.zip")
 agent_1 = PPO.load("ppo_ghaffari_cancer_model__100.zip")
 agent_2 = PPO.load("ppo_ghaffari_cancer_model__200.zip")
 agent_3 = PPO.load("ppo_ghaffari_cancer_model__300.zip")

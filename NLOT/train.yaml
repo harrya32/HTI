@@ -3,7 +3,7 @@ defaults:
 
 # neural_net_metric, neural_net_metric_eig, neural_net_metric_direct, land_metric, rbf_metric, 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, sq_euclidean_manifold
-geometry: 'sq_euclidean_manifold'
+geometry: 'neural_net_metric_eig'
 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, 
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
@@ -22,11 +22,11 @@ lambda: 0.01
 
 seed: 0
 num_pairs: 2
-num_train_iters: 2001
+num_train_iters: 1001
 batch_size: 1024
 potential_lr: 1e-4
 wandb: True
-wandb_project: "ett_forecasts"
+wandb_project: "ett_forecasts_NN"
 
 plot_frequency: 50
 save_frequency: ${plot_frequency}
@@ -40,7 +40,7 @@ metric:
   update_frequency: 10
   update_repeat: 1
   frobenius_reg_weight: 0
-  lr: 1e-3
+  lr: 1e-4 #changed from 5e-3
 
 geometry_kwargs:
   spline_solver_kwargs:

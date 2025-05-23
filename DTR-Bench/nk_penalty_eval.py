@@ -6,17 +6,12 @@ from stable_baselines3.common.env_util import make_vec_env
 import torch
 import matplotlib.pyplot as plt
 
+#Generates true policy NK penalty behaviour plot, across different lambda values
 
 agent_configs = [
     ("agent_lambda0", "policies/ppo_ghaffari_cancer_model__0.zip"),       
-    #("agent_lambda0.1", "ppo_ghaffari_cancer_model.zip"),      
-    #("agent_lambda0.25", "ppo_ghaffari_cancer_model_25.zip"),    
-    #("agent_lambda0.5", "ppo_ghaffari_cancer_model_05.zip"),     
-    #("agent_lambda0.75", "ppo_ghaffari_cancer_model_75.zip"),    
-    #("agent_lambda0.9", "ppo_ghaffari_cancer_model_09.zip"),  
     ("agent_lambda1", "policies/ppo_ghaffari_cancer_model__100.zip"),   
     ("agent_lambda2", "policies/ppo_ghaffari_cancer_model__200.zip"),     
-    #("agent_lambda2.5", "ppo_ghaffari_cancer_model__250.zip"),
     ("agent_lambda3", "policies/ppo_ghaffari_cancer_model__300.zip"),     
     ("agent_lambda4", "policies/ppo_ghaffari_cancer_model__400.zip"),     
     ("agent_lambda5", "policies/ppo_ghaffari_cancer_model__500.zip"),    

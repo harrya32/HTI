@@ -8,6 +8,8 @@ import argparse
 from stable_baselines3 import PPO 
 from stable_baselines3.common.env_util import make_vec_env 
 
+# Trains PPO agent in the GhaffariCancerEnv environment with a custom reward weighting
+
 # --- Parse Arguments ---
 parser = argparse.ArgumentParser(description='Train RL agent with custom reward weighting')
 parser.add_argument('--lambda_nk', type=float, default=1.0, help='Lambda value for reward weighting (default: 1.0)')

@@ -80,7 +80,6 @@ def pushforward(action, obs, lambda_val, workspace):
     """
     Uses trained OT model to push actions forward to target lambda.
     """
-    # Check if workspace is None
     if workspace is None:
         print("Workspace not available, using original action")
         return action
@@ -256,22 +255,16 @@ def evaluate_single_lambda(model, lambda_val, workspace):
         print(f"\nNo penalties recorded for agent {AGENT_NAME} across {NUM_EVAL_EPISODES} episodes.")
         return None, None, None
 
-# Main code
 print(f"Current working directory: {os.getcwd()}")
 
 print(f"--- Loading Agent: {AGENT_NAME} ---")
 model = PPO.load(AGENT_PATH)
 print(f"Successfully loaded model '{AGENT_NAME}' from '{AGENT_PATH}'")
-
-# Find all workspace files
 workspace_files = [f for f in os.listdir(WORKSPACES_DIR) if f.endswith('.pkl')]
 print(f"Found {len(workspace_files)} workspace files in {WORKSPACES_DIR}")
-
-# For storing results from all workspaces
 all_workspace_results = {}
 
 if args.all_lambdas:
-    # Dictionary to store combined results across all workspaces
     combined_results = {}
     for lambda_val in LAMBDA_VALUES:
         combined_results[lambda_val] = {
@@ -279,7 +272,6 @@ if args.all_lambdas:
             'rewards': []
         }
 
-    # Process each workspace
     for workspace_file in workspace_files:
         workspace_path = os.path.join(WORKSPACES_DIR, workspace_file)
         workspace_name = os.path.splitext(os.path.basename(workspace_path))[0]
@@ -298,7 +290,6 @@ if args.all_lambdas:
             lambda_results.append((lambda_val, avg_penalty, std_dev))
             all_lambda_rewards.append(avg_reward)
             
-            # Add to combined results
             combined_results[lambda_val]['penalties'].append(avg_penalty)
             combined_results[lambda_val]['rewards'].append(avg_reward)
         
@@ -306,7 +297,6 @@ if args.all_lambdas:
         print(f"Average Reward across all lambda values for {workspace_name} = {overall_avg_reward:.4f}")
         all_workspace_results[workspace_name] = overall_avg_reward
         
-        # Save individual workspace results
         plot_lambdas = [item[0] for item in lambda_results]
         plot_avg_penalties = [item[1] for item in lambda_results]
         plot_std_devs = [item[2] for item in lambda_results]
@@ -331,7 +321,6 @@ if args.all_lambdas:
                 writer.writerow(list(row) + [all_lambda_rewards[i]])
         print(f"Saved data for {workspace_name} to {csv_filename}")
     
-    # Calculate and plot average results across all workspaces
     avg_penalties = []
     std_penalties = []
     avg_rewards = []
@@ -348,7 +337,6 @@ if args.all_lambdas:
             std_penalties.append(0)
             avg_rewards.append(0)
     
-    # Plot average penalties across all workspaces
     plt.figure(figsize=(10, 6))
     plt.errorbar(LAMBDA_VALUES, avg_penalties, yerr=std_penalties, marker='o', linestyle='-', capsize=5)
     plt.title(f"Average NK Penalty vs. Lambda Value (Across All Workspaces)")
@@ -362,7 +350,6 @@ if args.all_lambdas:
     print(f"\nSaved average plot across all workspaces to {avg_plot_filename}")
     plt.close()
     
-    # Plot average rewards across all workspaces
     plt.figure(figsize=(10, 6))
     plt.plot(LAMBDA_VALUES, avg_rewards, marker='o', linestyle='-')
     plt.title(f"Average Reward vs. Lambda Value (Across All Workspaces)")
@@ -376,7 +363,6 @@ if args.all_lambdas:
     print(f"Saved average reward plot across all workspaces to {reward_plot_filename}")
     plt.close()
     
-    # Save combined results to CSV
     combined_csv = os.path.join(PLOT_DIR, f"surrogate_results_{RUN_NAME}_{ITER}.csv")
     with open(combined_csv, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
@@ -391,7 +377,7 @@ if args.all_lambdas:
     if n > 1:
         reward_std = np.std(valid_rewards)
         reward_se = reward_std / np.sqrt(n)
-        t_value = stats.t.ppf(0.975, n-1)  # 97.5th percentile for 95% CI
+        t_value = stats.t.ppf(0.975, n-1)
         reward_ci = t_value * reward_se
         
         print(f"\n===== Overall Results =====")
@@ -411,13 +397,11 @@ if args.all_lambdas:
         else:
             f.write("(Not enough samples to calculate confidence interval)\n")
     print(f"Saved final average reward to {final_results_file}")
-    # Print comparison of workspaces
     print("\n===== Workspace Comparison =====")
     for workspace_name, avg_reward in all_workspace_results.items():
         print(f"{workspace_name}: Average Reward = {avg_reward:.4f}")
     
 else:
-    # Single lambda evaluation for each workspace
     for workspace_file in workspace_files:
         workspace_path = os.path.join(WORKSPACES_DIR, workspace_file)
         workspace_name = os.path.splitext(os.path.basename(workspace_path))[0]
@@ -431,7 +415,6 @@ else:
         avg_penalty, std_dev, avg_reward = evaluate_single_lambda(model, LAMBDA_PUSHFORWARD, workspace)
         all_workspace_results[workspace_name] = avg_reward
     
-    # Print comparison of workspaces for single lambda
     print("\n===== Workspace Comparison =====")
     valid_rewards = []
     for workspace_name, avg_reward in all_workspace_results.items():
