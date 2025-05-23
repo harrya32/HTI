@@ -14,7 +14,7 @@ import csv
 from gymnasium.core import RewardWrapper
 from scipy import stats
 
-sys.path.append('/mnt/pdata/hmka3/HTI/NLOT')
+sys.path.append('../NLOT')
 
 AGENT_PATH = "policies/ppo_ghaffari_cancer_model__0.zip" 
 AGENT_NAME = "single_agent_eval"

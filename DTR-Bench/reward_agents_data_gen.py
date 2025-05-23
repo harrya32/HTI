@@ -9,17 +9,17 @@ import torch
 #Generates datasets from trained agents acting in common environment, for use with HTI
 
 #load in agent
-agent_0 = PPO.load("ppo_ghaffari_cancer_model__0.zip")
-agent_1 = PPO.load("ppo_ghaffari_cancer_model__100.zip")
-agent_2 = PPO.load("ppo_ghaffari_cancer_model__200.zip")
-agent_3 = PPO.load("ppo_ghaffari_cancer_model__300.zip")
-agent_4 = PPO.load("ppo_ghaffari_cancer_model__400.zip")
-agent_5 = PPO.load("ppo_ghaffari_cancer_model__500.zip")
-agent_6 = PPO.load("ppo_ghaffari_cancer_model__600.zip")
-agent_7 = PPO.load("ppo_ghaffari_cancer_model__700.zip")
-agent_8 = PPO.load("ppo_ghaffari_cancer_model__800.zip")
-agent_9 = PPO.load("ppo_ghaffari_cancer_model__900.zip")
-agent_10 = PPO.load("ppo_ghaffari_cancer_model__1000.zip")
+agent_0 = PPO.load("policies/ppo_ghaffari_cancer_model__0.zip")
+agent_1 = PPO.load("policies/ppo_ghaffari_cancer_model__100.zip")
+agent_2 = PPO.load("policies/ppo_ghaffari_cancer_model__200.zip")
+agent_3 = PPO.load("policies/ppo_ghaffari_cancer_model__300.zip")
+agent_4 = PPO.load("policies/ppo_ghaffari_cancer_model__400.zip")
+agent_5 = PPO.load("policies/ppo_ghaffari_cancer_model__500.zip")
+agent_6 = PPO.load("policies/ppo_ghaffari_cancer_model__600.zip")
+agent_7 = PPO.load("policies/ppo_ghaffari_cancer_model__700.zip")
+agent_8 = PPO.load("policies/ppo_ghaffari_cancer_model__800.zip")
+agent_9 = PPO.load("policies/ppo_ghaffari_cancer_model__900.zip")
+agent_10 = PPO.load("policies/ppo_ghaffari_cancer_model__1000.zip")
 models = [agent_0, agent_1, agent_2, agent_3, agent_4, agent_5, agent_6, agent_7, agent_8, agent_9, agent_10]
 
 # --- Parameters ---
@@ -78,7 +78,7 @@ for i in range(len(models)):
     tensor_data.append(torch.tensor(agent_data, dtype=torch.float32))
 
 dataset = torch.stack(tensor_data)
-dataset_path = os.path.join(DATASET_DIR, "reward_weighting_data_0_10.pt")
+dataset_path = os.path.join(DATASET_DIR, "reward_weighting_data_0_10_testing.pt")
 print("Shape of dataset:", dataset.shape)
 torch.save(dataset, dataset_path)
 

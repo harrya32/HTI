@@ -14,7 +14,7 @@ import seaborn as sns
 import pickle as pkl
 import sys
 
-sys.path.append('/mnt/pdata/hmka3/HTI/NLOT')
+sys.path.append('./')
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))

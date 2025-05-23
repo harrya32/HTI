@@ -26,8 +26,8 @@ MODEL_SAVE_PATH = f"policies/ppo_ghaffari_cancer_model__{int(lambda_nk * 100)}"
 PLOT_DIR = "rl_agent_plots"
 ACTION_PLOT_DIR = os.path.join(PLOT_DIR, "action_scatter_plots")
 REWARD_PLOT_DIR = os.path.join(PLOT_DIR, "reward_plots")
-os.makedirs(ACTION_PLOT_DIR, exist_ok=True)
-os.makedirs(REWARD_PLOT_DIR, exist_ok=True)
+#os.makedirs(ACTION_PLOT_DIR, exist_ok=True)
+#os.makedirs(REWARD_PLOT_DIR, exist_ok=True)
 
 class CustomRewardWrapper(RewardWrapper):
     def __init__(self, env, lambda_nk: float = 0.5):
