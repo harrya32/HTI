@@ -410,7 +410,7 @@ class Workspace:
             if not self.cfg.plotting.get('disable', False):
                 if self.train_step % self.cfg.plot_frequency == 0:
                     #self.plot_all_pairs()
-                    #self.plot_pushforward()
+                    self.plot_pushforward()
                     #self.plot_assignment_paths()
 
                     #marginals eval

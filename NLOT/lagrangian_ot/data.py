@@ -102,6 +102,9 @@ def get_bounds(name):
     elif name == "ett_forecasts":
         bounds = (-5, 55)
         xbounds = ybounds = bounds
+    elif name == "reacher_data":
+        bounds = (-1, 1)
+        xbounds = ybounds = bounds
     else:
         raise ValueError(f"Invalid data choice: {name}")
 
@@ -206,6 +209,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         "conditional_semicircles": "conditional_semicircles.pt",
         "reward_weighting_data": "reward_weighting_data_0_10.pt",
         "ett_forecasts": "ett_forecasts_more_noise.pt",
+        "reacher_data": "reacher_data.pt"
     }
     if geometry_str not in paths:
         raise ValueError(f"Invalid geometry choice: {geometry_str}")
