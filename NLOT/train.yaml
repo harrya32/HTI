@@ -8,11 +8,11 @@ geometry: 'neural_net_metric_eig'
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, 
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
 # agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, 
-# conditional_circles_normal, conditional_semicircles, reward_weighting_data
-dataset: 'conditional_semicircles'
+# conditional_circles_normal, conditional_semicircles, reward_weighting_data, reacher_data, ett_forecasts
+dataset: 'reacher_data'
 D: 2
-C: 1
-categorical: True
+C: 11
+categorical: False
 num_categories: 4
 
 include_inverse_potential: False
@@ -26,7 +26,7 @@ num_train_iters: 2001
 batch_size: 1024
 potential_lr: 1e-4
 wandb: True
-wandb_project: "semicircles"
+wandb_project: "reacher"
 
 plot_frequency: 500
 save_frequency: ${plot_frequency}
