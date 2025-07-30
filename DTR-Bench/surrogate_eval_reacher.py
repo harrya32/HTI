@@ -22,7 +22,7 @@ VEC_ENV_FILE = "vec_normalize_reacher_weight_1.pkl"
 AGENT_NAME = "single_agent_eval"
 ENV_NAME = 'Reacher-v4'
 NUM_EVAL_EPISODES = 50
-LAMBDA_VALUES = [1,2,3,4,5]
+LAMBDA_VALUES = [2,3,4]
 device = "cuda:0"
 
 parser = argparse.ArgumentParser(description='Evaluate a single agent with a pushforward function.')
