@@ -116,6 +116,8 @@ def pushforward(action, obs, lambda_val, workspace):
     pushforward_action = current_sample[:action_dim].reshape(action.shape)
     
     pushforward_action = np.array(pushforward_action, dtype=np.float32)
+    #print("initial action:", action)
+    #print("pushforward action:", pushforward_action)
 
     return pushforward_action
 
