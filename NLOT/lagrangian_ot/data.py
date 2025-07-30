@@ -208,7 +208,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         "conditional_circles_normal": "conditional_circles_normal.pt",
         "conditional_semicircles": "conditional_semicircles.pt",
         "reward_weighting_data": "reward_weighting_data_0_10.pt",
-        "ett_forecasts": "ett_forecasts_more_noise.pt",
+        "ett_forecasts": "ett_forecasts_rebuttals.pt",
         "reacher_data": "reacher_data.pt"
     }
     if geometry_str not in paths:
@@ -236,8 +236,9 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
     elif geometry_str == "ett_forecasts":
         #flip first and last 12 columns, to get the data and conditioning correct
         dataset = jnp.asarray(dataset)
-        dataset_ambient = dataset[:-1, :, 24:]
-        dataset_conditioning = dataset[:-1, :, :24]
+        dataset = dataset[jnp.array([0, 4])]
+        dataset_ambient = dataset[:, :, 24:]
+        dataset_conditioning = dataset[:, :, :24]
         dataset = jnp.concatenate((dataset_ambient, dataset_conditioning), axis=2)
 
 

@@ -414,7 +414,7 @@ class Workspace:
                     #self.plot_assignment_paths()
 
                     #marginals eval
-                    if 'circles' in self.data or 'reward' in self.data or 'ett' in self.data:
+                    if 'circles' in self.data or 'reward' in self.data:
                         path = os.path.dirname(os.path.realpath(__file__)) + "/eval_data/"
 
                         if self.data == 'conditional_circles':
