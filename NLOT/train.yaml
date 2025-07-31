@@ -9,30 +9,30 @@ geometry: 'neural_net_metric_eig'
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
 # agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, 
 # conditional_circles_normal, conditional_semicircles, reward_weighting_data, reacher_data, ett_forecasts
-dataset: 'ett_forecasts'
-D: 12
-C: 24
+dataset: 'reward_weighting_data'
+D: 2
+C: 7
 categorical: False
 num_categories: 4
 
 include_inverse_potential: False
-bandwidth: 1.0
+bandwidth: 0.25
 conditional_bandwidth: 1.0
 lambda: 0.0001
 
 seed: 0
-num_pairs: 1
+num_pairs: 2
 num_train_iters: 2000
 batch_size: 1024
 potential_lr: 1e-4
 wandb: True
-wandb_project: "ett"
+wandb_project: "cancer"
 
 plot_frequency: 50
 save_frequency: ${plot_frequency}
 
 plotting:
-  disable: False
+  disable: True
   num_pairs_plot: 100
   
 metric:
@@ -53,7 +53,7 @@ geometry_kwargs:
 ctransform_solver:
   _target_: lagrangian_ot.ctransform_solvers.CTransformLBFGS
   gtol: 1e-5
-  max_iter: 3
+  max_iter: 5
   max_linesearch_iter: 20
   linesearch_type: "backtracking"
 
