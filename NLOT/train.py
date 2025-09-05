@@ -54,7 +54,7 @@ class Workspace:
 
         if self.cfg.get('include_inverse_potential', False):
             if self.data == "conditional_semicircles":
-                lagrangian_potential_initializer_fn = lagrangian_potentials.InverseDensityPotential(
+                lagrangian_potential_initializer_fn = lagrangian_potentials.DensityPotentialCircles(
                     D=self.cfg.get('D', 2),
                     C=self.cfg.get('C', 0),
                     samples=self.all_samples,

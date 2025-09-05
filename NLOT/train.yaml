@@ -9,30 +9,30 @@ geometry: 'neural_net_metric_eig'
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
 # agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, 
 # conditional_circles_normal, conditional_semicircles, reward_weighting_data, reacher_data, ett_forecasts
-dataset: 'reward_weighting_data'
+dataset: 'conditional_semicircles'
 D: 2
-C: 7
-categorical: False
+C: 1
+categorical: True
 num_categories: 4
 
-include_inverse_potential: False
-bandwidth: 0.25
+include_inverse_potential: True
+bandwidth: 0.4
 conditional_bandwidth: 1.0
-lambda: 0.0001
+lambda: 0.05
 
 seed: 0
 num_pairs: 2
-num_train_iters: 2000
+num_train_iters: 2001
 batch_size: 1024
 potential_lr: 1e-4
 wandb: True
-wandb_project: "cancer"
+wandb_project: "test"
 
 plot_frequency: 50
 save_frequency: ${plot_frequency}
 
 plotting:
-  disable: True
+  disable: False
   num_pairs_plot: 100
   
 metric:
