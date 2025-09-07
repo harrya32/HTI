@@ -62,7 +62,7 @@ class Workspace:
                     lambda_repel=self.cfg.get('lambda', 0.01),
                 )
             else:
-                lagrangian_potential_initializer_fn = lagrangian_potentials.InverseDensityPotentialNW(
+                lagrangian_potential_initializer_fn = lagrangian_potentials.DensityPotential(
                     D=self.cfg.get('D', 2),
                     C=self.cfg.get('C', 0),
                     samples=self.all_samples,
