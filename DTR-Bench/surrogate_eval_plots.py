@@ -33,9 +33,9 @@ LAMBDA_PUSHFORWARD = args.lambda_pushforward
 RUN_NAME = args.name
 ITER = args.iter
 
-PLOT_DIR = f"surrogate_plots_test/{RUN_NAME}"
+PLOT_DIR = f"surrogate_plots_iclr/{RUN_NAME}"
 os.makedirs(PLOT_DIR, exist_ok=True)
-WORKSPACES_DIR = f"../NLOT/surrogate_models/{RUN_NAME}/"
+WORKSPACES_DIR = f"../NLOT/surrogate_models/iclr/{RUN_NAME}/"
 
 class CustomRewardWrapper(RewardWrapper):
     def __init__(self, env, lambda_nk: float = 0.5):
