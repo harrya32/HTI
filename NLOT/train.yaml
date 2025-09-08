@@ -32,7 +32,7 @@ plot_frequency: 50
 save_frequency: ${plot_frequency}
 
 plotting:
-  disable: False
+  disable: True
   num_pairs_plot: 100
   
 metric:
