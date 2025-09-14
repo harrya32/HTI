@@ -208,7 +208,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         "conditional_circles_normal": "conditional_circles_normal.pt",
         "conditional_semicircles": "conditional_semicircles.pt",
         "reward_weighting_data": "reward_weighting_data_0_10.pt",
-        "ett_forecasts": "ett_forecasts_rebuttals.pt",
+        "ett_forecasts": "ett_forecasts_iclr.pt",
         "reacher_data": "reacher_data.pt"
     }
     if geometry_str not in paths:

@@ -22,7 +22,7 @@ ITER = args.iter
 device = "cuda:0"
 PLOT_DIR = f"ett_surrogate_plots/{RUN_NAME}"
 os.makedirs(PLOT_DIR, exist_ok=True)
-WORKSPACES_DIR = f"../NLOT/surrogate_models/ett/{RUN_NAME}/"
+WORKSPACES_DIR = f"../NLOT/surrogate_models/ett/iclr/{RUN_NAME}/"
 LAMBDA_VALUES = [1,2,3]
 
 def load_workspace(workspace_path):
@@ -136,6 +136,7 @@ def main():
         for lambda_val in LAMBDA_VALUES:
             lambda_mse = evaluate_lambda(ett_data, lambda_val, workspace)
             lambda_results.append((lambda_val, lambda_mse))
+            print(f"Lambda {lambda_val}: MSE = {lambda_mse}")
             combined_results[lambda_val]['mse'].append(lambda_mse)
 
     return combined_results

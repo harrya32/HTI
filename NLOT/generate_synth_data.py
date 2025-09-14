@@ -1020,7 +1020,7 @@ if __name__ == "__main__":
     torch.manual_seed(1)
     np.random.seed(1)
 
-    if False: # Semicircles marginal data for plotting results
+    if True: # Semicircles marginal data for plotting results
         t = np.linspace(0, 1, 20)
         num_points_per_condition = 10
         radius = 1.0
@@ -1057,7 +1057,7 @@ if __name__ == "__main__":
         plt.ylim(-1.2, 1.2)
         plt.gca().set_aspect('equal', adjustable='box')
         plt.axis('off')
-        workspace_fp = "exp/2025.05.15/2000/4/latest.pkl"
+        workspace_fp = "../exp/local/2025.09.13/1555.neural_net_metric_eig/latest.pkl"
         workspace = load_workspace(workspace_fp)
         semicircle_marginal_data_t0 = semicircle_marginal_data[0]
         paths = generate_pushforward(workspace, semicircle_marginal_data_t0, num_points=50)
@@ -1067,7 +1067,7 @@ if __name__ == "__main__":
             for path in cond_paths:
                 plt.plot(path[:, 0], path[:, 1], color=colour, alpha=0.3)
 
-        plt.savefig("semicircle_plot_rotation_test.pdf", bbox_inches='tight', pad_inches=0)
+        plt.savefig("semicircle_plot_ours_1555.pdf", bbox_inches='tight', pad_inches=0)
 
     if False: # Log likelihood
 
@@ -1249,7 +1249,7 @@ if __name__ == "__main__":
         
         print(f"Semicircle marginals saved to {os.path.join(SCRIPT_PATH, 'eval_marginals_semicircle.pkl')}")
 
-    if True:  # Conditional semicircles
+    if False:  # Conditional semicircles
         #----------------------------------------------------#
         #  Conditional Semicircles Data                      #
         #----------------------------------------------------#
