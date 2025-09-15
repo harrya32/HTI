@@ -105,6 +105,9 @@ def get_bounds(name):
     elif name == "reacher_data":
         bounds = (-1, 1)
         xbounds = ybounds = bounds
+    elif name == "quantile_data":
+        bounds = (20, 55)
+        xbounds = ybounds = bounds
     else:
         raise ValueError(f"Invalid data choice: {name}")
 
@@ -209,7 +212,8 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         "conditional_semicircles": "conditional_semicircles.pt",
         "reward_weighting_data": "reward_weighting_data_0_10.pt",
         "ett_forecasts": "ett_forecasts_iclr.pt",
-        "reacher_data": "reacher_data.pt"
+        "reacher_data": "reacher_data.pt",
+        "quantile_data" : "quantile_data.pt"
     }
     if geometry_str not in paths:
         raise ValueError(f"Invalid geometry choice: {geometry_str}")
@@ -239,6 +243,12 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         dataset = dataset[jnp.array([0, 4])]
         dataset_ambient = dataset[:, :, 24:]
         dataset_conditioning = dataset[:, :, :24]
+        dataset = jnp.concatenate((dataset_ambient, dataset_conditioning), axis=2)
+    elif geometry_str == "quantile_data":
+        dataset = jnp.asarray(dataset)
+        dataset = dataset[jnp.array([0, 4])]
+        dataset_ambient = dataset[:, :1200, 48:]
+        dataset_conditioning = dataset[:, :1200, :48]
         dataset = jnp.concatenate((dataset_ambient, dataset_conditioning), axis=2)
 
 

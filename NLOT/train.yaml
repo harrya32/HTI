@@ -3,30 +3,30 @@ defaults:
 
 # neural_net_metric, neural_net_metric_eig, neural_net_metric_direct, land_metric, rbf_metric, 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, sq_euclidean_manifold
-geometry: 'neural_net_metric_eig'
+geometry: 'sq_euclidean_manifold'
 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, 
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
 # agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, 
-# conditional_circles_normal, conditional_semicircles, reward_weighting_data, reacher_data, ett_forecasts
-dataset: 'reward_weighting_data'
-D: 2
-C: 7
+# conditional_circles_normal, conditional_semicircles, reward_weighting_data, reacher_data, ett_forecasts, quantile_data
+dataset: 'quantile_data'
+D: 12
+C: 48
 categorical: False
 num_categories: 4
 
-include_inverse_potential: True
+include_inverse_potential: False
 bandwidth: 0.4
 conditional_bandwidth: 1.0
 lambda: 0.05
 
 seed: 0
 num_pairs: 2
-num_train_iters: 2001
+num_train_iters: 501
 batch_size: 1024
 potential_lr: 1e-4
 wandb: True
-wandb_project: "test"
+wandb_project: "quantile_learned"
 
 plot_frequency: 50
 save_frequency: ${plot_frequency}
@@ -63,7 +63,7 @@ spline:
   update_frequency: 25
   grad_norm_threshold: 1e-4
   noise: 0.0
-  update_on_conjugates: False
+  update_on_conjugates: True
 
 target_potential_dim_hidden: [64, 64, 64, 64]
 source_map_dim_hidden: [64, 64, 64, 64]

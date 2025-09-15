@@ -99,8 +99,8 @@ def train(args):
     print(f"\n--- Training Expert Model for Quantile τ = {args.quantile} ---")
     
     best_val_loss = float('inf')
+    epochs_no_improve = 0
     
-    # <-- NEW: Lists to store loss history -->
     train_losses = []
     val_losses = []
 
@@ -132,7 +132,6 @@ def train(args):
         avg_val_loss = total_val_loss / len(val_loader)
         epoch_time = time.time() - start_time
         
-        # <-- NEW: Append losses to history lists -->
         train_losses.append(avg_train_loss)
         val_losses.append(avg_val_loss)
 
@@ -140,19 +139,27 @@ def train(args):
 
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
+            epochs_no_improve = 0 
             os.makedirs(args.save_dir, exist_ok=True)
             save_path = os.path.join(args.save_dir, f"expert_q{str(args.quantile).replace('.', '')}.pth")
             torch.save(model.state_dict(), save_path)
             print(f"  -> Validation loss improved. Model saved to {save_path}")
+        else:
+            epochs_no_improve += 1
+            print(f"  -> No improvement in validation loss for {epochs_no_improve} epoch(s). Patience: {args.patience}")
+
+        if epochs_no_improve >= args.patience:
+            print(f"\nEarly stopping triggered after {epoch + 1} epochs.")
+            break
 
     print("\n--- Training complete! ---")
     print(f"Best model for quantile {args.quantile} saved with validation loss: {best_val_loss:.6f}")
 
-    # --- NEW: Plotting and Saving the Loss Graph ---
     print("\nGenerating and saving loss plot...")
+    epochs_ran = len(train_losses)
     plt.figure(figsize=(12, 6))
-    plt.plot(range(1, args.epochs + 1), train_losses, label='Training Loss')
-    plt.plot(range(1, args.epochs + 1), val_losses, label='Validation Loss')
+    plt.plot(range(1, epochs_ran + 1), train_losses, label='Training Loss')
+    plt.plot(range(1, epochs_ran + 1), val_losses, label='Validation Loss')
     plt.xlabel('Epochs')
     plt.ylabel('Quantile Loss')
     plt.title(f'Training & Validation Loss for Quantile τ = {args.quantile}')
@@ -172,13 +179,14 @@ if __name__ == '__main__':
     parser.add_argument('--quantile', type=float, required=True, help='The target quantile to train for (e.g., 0.1, 0.5, 0.9).')
     
     parser.add_argument('--data_path', type=str, default='../../ICL4DT/data/time_series_datasets/ETTm2.csv', help='Path to the dataset file.')
-    parser.add_argument('--seq_len', type=int, default=96, help='Length of the input sequence.')
-    parser.add_argument('--pred_len', type=int, default=24, help='Length of the prediction horizon.')
+    parser.add_argument('--seq_len', type=int, default=48, help='Length of the input sequence.')
+    parser.add_argument('--pred_len', type=int, default=12, help='Length of the prediction horizon.')
     parser.add_argument('--save_dir', type=str, default='models', help='Directory to save models and plots.')
     
-    parser.add_argument('--epochs', type=int, default=100, help='Number of training epochs.')
+    parser.add_argument('--epochs', type=int, default=2000, help='Number of training epochs.')
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size for training.')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate.')
+    parser.add_argument('--patience', type=int, default=100, help='Number of epochs to wait for improvement before stopping.')
 
     args = parser.parse_args()
     

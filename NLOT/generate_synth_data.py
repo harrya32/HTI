@@ -1057,7 +1057,7 @@ if __name__ == "__main__":
         plt.ylim(-1.2, 1.2)
         plt.gca().set_aspect('equal', adjustable='box')
         plt.axis('off')
-        workspace_fp = "../exp/local/2025.09.13/1555.neural_net_metric_eig/latest.pkl"
+        workspace_fp = "../exp/local/2025.09.14/1649.sq_euclidean_manifold/latest.pkl"
         workspace = load_workspace(workspace_fp)
         semicircle_marginal_data_t0 = semicircle_marginal_data[0]
         paths = generate_pushforward(workspace, semicircle_marginal_data_t0, num_points=50)
@@ -1067,7 +1067,7 @@ if __name__ == "__main__":
             for path in cond_paths:
                 plt.plot(path[:, 0], path[:, 1], color=colour, alpha=0.3)
 
-        plt.savefig("semicircle_plot_ours_1555.pdf", bbox_inches='tight', pad_inches=0)
+        plt.savefig("semicircle_plot_eucl_w_potential_test.pdf", bbox_inches='tight', pad_inches=0)
 
     if False: # Log likelihood
 
