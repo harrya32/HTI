@@ -23,7 +23,7 @@ device = "cuda:0"
 PLOT_DIR = f"ett_quantile_surrogate_plots/{RUN_NAME}"
 os.makedirs(PLOT_DIR, exist_ok=True)
 WORKSPACES_DIR = f"../NLOT/surrogate_models/ett_quantile/{RUN_NAME}/"
-LAMBDA_VALUES = [0.25, 0.5, 0.75]
+LAMBDA_VALUES = [0.1, 0.25, 0.5, 0.75, 0.9]
 
 def load_workspace(workspace_path):
     if os.path.exists(workspace_path):
@@ -45,7 +45,7 @@ def pushforward(forecast, input, lambda_val, workspace, final_data):
         print("Workspace not available, using original forecast")
         return forecast
         
-    time_points = [0.1,0.9]
+    time_points = [0.01,0.99]
     
     if lambda_val in time_points:
         time_idx = list(time_points).index(lambda_val)
@@ -113,7 +113,7 @@ def evaluate_lambda(data, lambda_val, workspace):
     final_forecast_portion = final_data[:,12:]
     final_input_portion = final_data[:,:12]
     final_data_reversed = torch.concat([final_forecast_portion, final_input_portion], dim=-1)
-    lambda_to_index = {0.1:0, 0.25:1, 0.5:2, 0.75:3, 0.9:4}
+    lambda_to_index = {0.01:0, 0.1:1, 0.25:2, 0.5:3, 0.75:4, 0.9:5, 0.99:6}
     true_lambda_data = data[lambda_to_index[lambda_val]]
 
     mses = []

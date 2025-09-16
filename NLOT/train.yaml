@@ -9,9 +9,9 @@ geometry: 'sq_euclidean_manifold'
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
 # agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, 
 # conditional_circles_normal, conditional_semicircles, reward_weighting_data, reacher_data, ett_forecasts, quantile_data
-dataset: 'ett_forecasts'
+dataset: 'quantile_data'
 D: 12
-C: 24
+C: 3
 categorical: False
 num_categories: 4
 
@@ -22,7 +22,7 @@ lambda: 0.05
 
 seed: 0
 num_pairs: 2
-num_train_iters: 5001
+num_train_iters: 2001
 batch_size: 1024
 potential_lr: 1e-4
 wandb: True

@@ -213,7 +213,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         "reward_weighting_data": "reward_weighting_data_0_10.pt",
         "ett_forecasts": "ett_forecasts_iclr.pt",
         "reacher_data": "reacher_data.pt",
-        "quantile_data" : "quantile_data.pt"
+        "quantile_data" : "quantile_data_new.pt"
     }
     if geometry_str not in paths:
         raise ValueError(f"Invalid geometry choice: {geometry_str}")
@@ -246,7 +246,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         dataset = jnp.concatenate((dataset_ambient, dataset_conditioning), axis=2)
     elif geometry_str == "quantile_data":
         dataset = jnp.asarray(dataset)
-        dataset = dataset[jnp.array([0, 4])]
+        dataset = dataset[jnp.array([0, -1])]
         dataset_ambient = dataset[:, :1200, 12:]
         dataset_conditioning = dataset[:, :1200, :12]
         dataset = jnp.concatenate((dataset_ambient, dataset_conditioning), axis=2)
