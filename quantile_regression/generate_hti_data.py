@@ -123,8 +123,8 @@ if __name__ == '__main__':
     parser.add_argument('--quantile', type=float, required=True, help='The quantile of the expert model to load (e.g., 0.1, 0.5, 0.9).')
     
     parser.add_argument('--data_path', type=str, default='../../ICL4DT/data/time_series_datasets/ETTm2.csv', help='Path to the dataset file.')
-    parser.add_argument('--seq_len', type=int, default=48, help='Length of the input sequence.')
-    parser.add_argument('--pred_len', type=int, default=12, help='Length of the prediction horizon.')
+    parser.add_argument('--seq_len', type=int, default=12, help='Length of the input sequence.')
+    parser.add_argument('--pred_len', type=int, default=6, help='Length of the prediction horizon.')
     parser.add_argument('--model_dir', type=str, default='models', help='Directory where trained models are stored.')
     parser.add_argument('--output_dir', type=str, default='hti_data', help='Directory to save the generated HTI training datasets.')
     

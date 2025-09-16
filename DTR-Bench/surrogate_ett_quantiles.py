@@ -62,11 +62,11 @@ def pushforward(forecast, input, lambda_val, workspace, final_data):
             params_source_map_k = workspace.state_source_maps[k].params
             params_target_potential_k = workspace.state_target_potentials[k].params
 
-            #end_sample = workspace.neural_dual_solver.source_map_apply_jit(
-            #    {'params': params_source_map_k},
-            #    current_sample
-            #)
-            
+            end_sample = workspace.neural_dual_solver.source_map_apply_jit(
+                {'params': params_source_map_k},
+                current_sample
+            )
+        
             #end_sample = workspace.neural_dual_solver.pushforward_jit(
             #    params_source_map_k,
             #    params_target_potential_k,
@@ -74,7 +74,7 @@ def pushforward(forecast, input, lambda_val, workspace, final_data):
             #    current_sample
             #).solution
 
-            end_sample = final_data.numpy()
+            #end_sample = final_data.numpy()
             
             if lambda_val < T_k_plus_1:
                 s_fraction = (lambda_val - T_k) / (T_k_plus_1 - T_k)
@@ -110,16 +110,16 @@ def evaluate_lambda(data, lambda_val, workspace):
 
     base_data = data[0]
     final_data = data[-1]
-    final_forecast_portion = final_data[:,48:]
-    final_input_portion = final_data[:,:48]
+    final_forecast_portion = final_data[:,12:]
+    final_input_portion = final_data[:,:12]
     final_data_reversed = torch.concat([final_forecast_portion, final_input_portion], dim=-1)
     lambda_to_index = {0.1:0, 0.25:1, 0.5:2, 0.75:3, 0.9:4}
     true_lambda_data = data[lambda_to_index[lambda_val]]
 
     mses = []
     for i in range(len(base_data)):
-        surrogate_forecast = pushforward(base_data[i, 48:], base_data[i, :48], lambda_val, workspace, final_data_reversed[i])
-        true_forecast = true_lambda_data[i, 48:]
+        surrogate_forecast = pushforward(base_data[i, 12:], base_data[i, :12], lambda_val, workspace, final_data_reversed[i])
+        true_forecast = true_lambda_data[i, 12:]
 
         #print(f"True forecast: {true_forecast.numpy()}")
         mse = np.mean((surrogate_forecast - true_forecast.numpy()) ** 2)

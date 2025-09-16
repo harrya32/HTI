@@ -179,14 +179,14 @@ if __name__ == '__main__':
     parser.add_argument('--quantile', type=float, required=True, help='The target quantile to train for (e.g., 0.1, 0.5, 0.9).')
     
     parser.add_argument('--data_path', type=str, default='../../ICL4DT/data/time_series_datasets/ETTm2.csv', help='Path to the dataset file.')
-    parser.add_argument('--seq_len', type=int, default=48, help='Length of the input sequence.')
-    parser.add_argument('--pred_len', type=int, default=12, help='Length of the prediction horizon.')
+    parser.add_argument('--seq_len', type=int, default=12, help='Length of the input sequence.')
+    parser.add_argument('--pred_len', type=int, default=3, help='Length of the prediction horizon.')
     parser.add_argument('--save_dir', type=str, default='models', help='Directory to save models and plots.')
     
     parser.add_argument('--epochs', type=int, default=2000, help='Number of training epochs.')
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size for training.')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate.')
-    parser.add_argument('--patience', type=int, default=100, help='Number of epochs to wait for improvement before stopping.')
+    parser.add_argument('--patience', type=int, default=10, help='Number of epochs to wait for improvement before stopping.')
 
     args = parser.parse_args()
     

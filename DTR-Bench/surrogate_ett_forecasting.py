@@ -67,15 +67,15 @@ def pushforward(forecast, input, lambda_val, workspace, final_data):
             #    current_sample
             #)
 
-            end_sample = workspace.neural_dual_solver.pushforward_jit(
-                params_source_map_k,
-                params_target_potential_k,
-                workspace.params_geometry,
-                current_sample
-            ).solution
+            #end_sample = workspace.neural_dual_solver.pushforward_jit(
+            #    params_source_map_k,
+            #    params_target_potential_k,
+            #    workspace.params_geometry,
+            #    current_sample
+            #).solution
             #print("current_sample:", current_sample)
             #print("end_sample:", end_sample)
-            #end_sample = final_data.numpy()
+            end_sample = final_data.numpy()
             if lambda_val < T_k_plus_1:
                 s_fraction = (lambda_val - T_k) / (T_k_plus_1 - T_k)
                 current_sample = workspace.geometry.apply(
@@ -101,6 +101,17 @@ def pushforward(forecast, input, lambda_val, workspace, final_data):
     pushforward_forecast = np.array(pushforward_forecast, dtype=np.float32)
     #print("initial forecast:", forecast)
     #print("pushforward forecast:", pushforward_forecast)
+    plt.figure(figsize=(8, 4))
+    plt.plot(forecast.flatten(), label="Initial Forecast", marker='o')
+    plt.plot(pushforward_forecast.flatten(), label="Pushforward Forecast", marker='x')
+    plt.title(f"Forecast Pushforward (lambda={lambda_val})")
+    plt.xlabel("Time Step")
+    plt.ylabel("Forecast Value")
+    plt.legend()
+    plot_path = os.path.join(PLOT_DIR, f"pushforward_lambda{lambda_val}.png")
+    plt.savefig(plot_path)
+    plt.close()
+
     return pushforward_forecast
 
 def evaluate_lambda(data, lambda_val, workspace):

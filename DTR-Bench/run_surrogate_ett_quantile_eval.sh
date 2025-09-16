@@ -4,7 +4,7 @@
 ITERATIONS=1
 
 # Run name
-RUN_NAME_1="eucl_no_potential"
+RUN_NAME_1="learned_no_potential"
 
 # Python script to execute
 SCRIPT="surrogate_ett_quantiles.py"

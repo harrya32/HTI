@@ -106,7 +106,7 @@ def get_bounds(name):
         bounds = (-1, 1)
         xbounds = ybounds = bounds
     elif name == "quantile_data":
-        bounds = (20, 55)
+        bounds = (25, 55)
         xbounds = ybounds = bounds
     else:
         raise ValueError(f"Invalid data choice: {name}")
@@ -247,8 +247,8 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
     elif geometry_str == "quantile_data":
         dataset = jnp.asarray(dataset)
         dataset = dataset[jnp.array([0, 4])]
-        dataset_ambient = dataset[:, :1200, 48:]
-        dataset_conditioning = dataset[:, :1200, :48]
+        dataset_ambient = dataset[:, :1200, 12:]
+        dataset_conditioning = dataset[:, :1200, :12]
         dataset = jnp.concatenate((dataset_ambient, dataset_conditioning), axis=2)
 
 
