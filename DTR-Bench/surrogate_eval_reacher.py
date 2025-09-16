@@ -88,6 +88,7 @@ def pushforward(action, obs, lambda_val, workspace):
         
         if T_k <= lambda_val <= T_k_plus_1:
             params_source_map_k = workspace.state_source_maps[k].params
+
             end_sample = workspace.neural_dual_solver.source_map_apply_jit(
                 {'params': params_source_map_k},
                 current_sample

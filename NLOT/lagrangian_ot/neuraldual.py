@@ -175,8 +175,9 @@ class ManifoldW2NeuralDual:
             out = finetune_target_hat(source, init_target_hat)
             target_hat_detach = jax.lax.stop_gradient(out.solution)
             num_ctransform_iter = jnp.mean(out.num_iter)
-            if hasattr(self.geometry, 'bounds'):
-                target_hat_detach = self.geometry.batch_project(target_hat_detach)
+            #if hasattr(self.geometry, 'bounds'):
+            #    print("Projecting to bounds")
+            target_hat_detach = self.geometry.batch_project(target_hat_detach)
         else:
             target_hat_detach = init_target_hat
             num_ctransform_iter = 0

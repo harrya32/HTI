@@ -37,7 +37,7 @@ def load_workspace(workspace_path):
             print(f"Error loading workspace: {e}")
     return None
 
-def pushforward(forecast, input, lambda_val, workspace):
+def pushforward(forecast, input, lambda_val, workspace, final_data):
     """
     Uses trained OT model to push non robust forecast forward to target lambda.
     """
@@ -61,11 +61,21 @@ def pushforward(forecast, input, lambda_val, workspace):
         
         if T_k <= lambda_val <= T_k_plus_1:
             params_source_map_k = workspace.state_source_maps[k].params
-            end_sample = workspace.neural_dual_solver.source_map_apply_jit(
-                {'params': params_source_map_k},
+            params_target_potential_k = workspace.state_target_potentials[k].params
+            #end_sample = workspace.neural_dual_solver.source_map_apply_jit(
+            #    {'params': params_source_map_k},
+            #    current_sample
+            #)
+
+            end_sample = workspace.neural_dual_solver.pushforward_jit(
+                params_source_map_k,
+                params_target_potential_k,
+                workspace.params_geometry,
                 current_sample
-            )
-            
+            ).solution
+            #print("current_sample:", current_sample)
+            #print("end_sample:", end_sample)
+            #end_sample = final_data.numpy()
             if lambda_val < T_k_plus_1:
                 s_fraction = (lambda_val - T_k) / (T_k_plus_1 - T_k)
                 current_sample = workspace.geometry.apply(
@@ -96,11 +106,15 @@ def pushforward(forecast, input, lambda_val, workspace):
 def evaluate_lambda(data, lambda_val, workspace):
     """Evaluate the surrogate model by comparing estimates with true forecasts from the relevant lambda"""
     base_data = data[0]
+    final_data = data[-1]
+    final_forecast_portion = final_data[:,24:]
+    final_input_portion = final_data[:,:24]
+    final_data_reversed = torch.concat([final_forecast_portion, final_input_portion], dim=-1)
     true_lambda_data = data[lambda_val]
 
     mses = []
     for i in range(len(base_data)):
-        surrogate_forecast = pushforward(base_data[i, 24:], base_data[i, :24], lambda_val, workspace)
+        surrogate_forecast = pushforward(base_data[i, 24:], base_data[i, :24], lambda_val, workspace, final_data_reversed[i])
         true_forecast = true_lambda_data[i, 24:]
 
         mse = np.mean((surrogate_forecast - true_forecast.numpy()) ** 2)
@@ -110,7 +124,8 @@ def evaluate_lambda(data, lambda_val, workspace):
 
 def main():
     print(f"Loading ett data")
-    ett_data = torch.load("../robustness/ett_forecasts_rebuttals.pt")
+    ett_data = torch.load("../robustness/ett_forecasts_iclr.pt")[:,1450:,:]
+
     print(f"Current working directory: {os.getcwd()}")
     workspace_files = [f for f in os.listdir(WORKSPACES_DIR) if f.endswith('.pkl')]
     print(f"Found {len(workspace_files)} workspace files in {WORKSPACES_DIR}")
