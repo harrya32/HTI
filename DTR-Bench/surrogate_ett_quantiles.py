@@ -99,6 +99,16 @@ def pushforward(forecast, input, lambda_val, workspace):
     pushforward_forecast = np.array(pushforward_forecast, dtype=np.float32)
     #print("initial forecast:", forecast)
     #print("pushforward forecast:", pushforward_forecast)
+    plt.figure(figsize=(8, 4))
+    plt.plot(forecast.flatten(), label="Initial Forecast", marker='o')
+    plt.plot(pushforward_forecast.flatten(), label="Pushforward Forecast", marker='x')
+    plt.title(f"Forecast Pushforward (lambda={lambda_val})")
+    plt.xlabel("Time Step")
+    plt.ylabel("Forecast Value")
+    plt.legend()
+    plot_path = os.path.join(PLOT_DIR, f"pushforward_lambda{lambda_val}.png")
+    plt.savefig(plot_path)
+    plt.close()
     return pushforward_forecast
 
 def evaluate_lambda(data, lambda_val, workspace):
@@ -124,7 +134,7 @@ def evaluate_lambda(data, lambda_val, workspace):
 def main():
     print(f"Loading ett data")
     ett_data = torch.load("../quantile_regression/hti_data/hti_data_combined.pt")
-    ett_testing_data = ett_data[:,1200:,:]
+    ett_testing_data = ett_data[:,1100:1200,:]
     print(f"Current working directory: {os.getcwd()}")
     workspace_files = [f for f in os.listdir(WORKSPACES_DIR) if f.endswith('.pkl')]
     print(f"Found {len(workspace_files)} workspace files in {WORKSPACES_DIR}")
