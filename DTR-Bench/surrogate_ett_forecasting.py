@@ -147,8 +147,11 @@ def main():
         combined_results[lambda_val] = {
             'mse': []
         }
+    
+    mses = []
 
     for workspace_file in workspace_files:
+        workspace_mses = []
         workspace_path = os.path.join(WORKSPACES_DIR, workspace_file)
         workspace_name = os.path.splitext(os.path.basename(workspace_path))[0]
         print(f"\n===== Processing Workspace: {workspace_name} =====")
@@ -161,13 +164,26 @@ def main():
         lambda_results = []
         for lambda_val in LAMBDA_VALUES:
             lambda_mse = evaluate_lambda(ett_data, lambda_val, workspace)
+            workspace_mses.append(lambda_mse)
             lambda_results.append((lambda_val, lambda_mse))
             print(f"Lambda {lambda_val}: MSE = {lambda_mse}")
             combined_results[lambda_val]['mse'].append(lambda_mse)
+        
+        mses.append(np.mean(workspace_mses))
+        print(f"Average MSE for workspace {workspace_name}: {np.mean(workspace_mses)}")
 
-    return combined_results
+    return combined_results, mses
+
+def print_results(results, name):
+    mean = np.mean(results)
+    std = np.std(results)
+    ci = 1.96 * std / np.sqrt(len(results))
+    print(f"{name}: {mean:.3f} ± {ci:.3f}")
+
 if __name__ == "__main__":
-    combined_results = main()
+    combined_results, mses = main()
     print("Evaluation complete. Results:")
     for lambda_val, results in combined_results.items():
         print(f"Lambda {lambda_val}: MSE = {np.mean(results['mse'])}")
+    
+    print_results(mses, f"Overall MSE for {RUN_NAME} (iter {ITER})")

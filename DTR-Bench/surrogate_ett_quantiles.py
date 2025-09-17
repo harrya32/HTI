@@ -60,7 +60,7 @@ def pushforward(forecast, input, lambda_val, workspace):
         
         if T_k <= lambda_val <= T_k_plus_1:
             params_source_map_k = workspace.state_source_maps[k].params
-            params_target_potential_k = workspace.state_target_potentials[k].params
+            #params_target_potential_k = workspace.state_target_potentials[k].params
 
             end_sample = workspace.neural_dual_solver.source_map_apply_jit(
                 {'params': params_source_map_k},
@@ -99,16 +99,7 @@ def pushforward(forecast, input, lambda_val, workspace):
     pushforward_forecast = np.array(pushforward_forecast, dtype=np.float32)
     #print("initial forecast:", forecast)
     #print("pushforward forecast:", pushforward_forecast)
-    plt.figure(figsize=(8, 4))
-    plt.plot(forecast.flatten(), label="Initial Forecast", marker='o')
-    plt.plot(pushforward_forecast.flatten(), label="Pushforward Forecast", marker='x')
-    plt.title(f"Forecast Pushforward (lambda={lambda_val})")
-    plt.xlabel("Time Step")
-    plt.ylabel("Forecast Value")
-    plt.legend()
-    plot_path = os.path.join(PLOT_DIR, f"pushforward_lambda{lambda_val}.png")
-    plt.savefig(plot_path)
-    plt.close()
+    
     return pushforward_forecast
 
 def evaluate_lambda(data, lambda_val, workspace):
@@ -122,10 +113,29 @@ def evaluate_lambda(data, lambda_val, workspace):
 
     mses = []
     for i in range(len(base_data)):
-        surrogate_forecast = pushforward(base_data[i, 12:], base_data[i, :12], lambda_val, workspace)
+        base_history = base_data[i, :12]
+        base_forecast = base_data[i, 12:]
+        surrogate_forecast = pushforward(base_forecast, base_history, lambda_val, workspace)
         true_forecast = true_lambda_data[i, 12:]
 
-        #print(f"True forecast: {true_forecast.numpy()}")
+        """plot_path = os.path.join(PLOT_DIR, f"pushforward_lambda{lambda_val}_sample{i}.png")
+        plt.figure(figsize=(10, 5))
+        x_hist = np.arange(12)
+        x_forecast = np.arange(12, 15)
+
+        plt.plot(x_hist, base_history.flatten(), label="Base History", marker='o', color='black')
+        plt.plot(x_forecast, base_forecast.flatten(), label="Base Forecast", marker='o', color='blue')
+        plt.plot(x_forecast, surrogate_forecast.flatten(), label="Surrogate Forecast", marker='x', color='orange')
+        plt.plot(x_forecast, true_forecast.flatten(), label="True Forecast", marker='^', color='green')
+
+        plt.title(f"Forecasts (lambda={lambda_val}, sample={i})")
+        plt.xlabel("Time Step")
+        plt.ylabel("Forecast Value")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(plot_path)
+        plt.close()"""
+
         mse = np.mean((surrogate_forecast - true_forecast.numpy()) ** 2)
         mses.append(mse)
 
@@ -134,7 +144,7 @@ def evaluate_lambda(data, lambda_val, workspace):
 def main():
     print(f"Loading ett data")
     ett_data = torch.load("../quantile_regression/hti_data/hti_data_combined.pt")
-    ett_testing_data = ett_data[:,1100:1200,:]
+    ett_testing_data = ett_data[:,1200:,:]
     print(f"Current working directory: {os.getcwd()}")
     workspace_files = [f for f in os.listdir(WORKSPACES_DIR) if f.endswith('.pkl')]
     print(f"Found {len(workspace_files)} workspace files in {WORKSPACES_DIR}")
@@ -145,7 +155,10 @@ def main():
             'mse': []
         }
 
+    mses = []
+
     for workspace_file in workspace_files:
+        workspace_mses = []
         workspace_path = os.path.join(WORKSPACES_DIR, workspace_file)
         workspace_name = os.path.splitext(os.path.basename(workspace_path))[0]
         print(f"\n===== Processing Workspace: {workspace_name} =====")
@@ -158,14 +171,26 @@ def main():
         lambda_results = []
         for lambda_val in LAMBDA_VALUES:
             lambda_mse = evaluate_lambda(ett_testing_data, lambda_val, workspace)
+            workspace_mses.append(lambda_mse)
             lambda_results.append((lambda_val, lambda_mse))
             print(f"Lambda {lambda_val}: MSE = {lambda_mse}")
             combined_results[lambda_val]['mse'].append(lambda_mse)
+        
+        mses.append(np.mean(workspace_mses))
+        print(f"Average MSE for workspace {workspace_name}: {np.mean(workspace_mses)}")
 
-    return combined_results
+    return combined_results, mses
+
+def print_results(results, name):
+    mean = np.mean(results)
+    std = np.std(results)
+    ci = 1.96 * std / np.sqrt(len(results))
+    print(f"{name}: {mean:.3f} ± {ci:.3f}")
 
 if __name__ == "__main__":
-    combined_results = main()
+    combined_results, mses = main()
     print("Evaluation complete. Results:")
     for lambda_val, results in combined_results.items():
         print(f"Lambda {lambda_val}: MSE = {np.mean(results['mse'])}")
+    
+    print_results(mses, f"Overall MSE for {RUN_NAME} (iter {ITER})")
