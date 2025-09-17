@@ -3,7 +3,7 @@ defaults:
 
 # neural_net_metric, neural_net_metric_eig, neural_net_metric_direct, land_metric, rbf_metric, 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, sq_euclidean_manifold
-geometry: 'sq_euclidean_manifold'
+geometry: 'neural_net_metric_eig'
 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, 
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
@@ -15,7 +15,7 @@ C: 3
 categorical: False
 num_categories: 4
 
-include_inverse_potential: False
+include_inverse_potential: True
 bandwidth: 0.4
 conditional_bandwidth: 1.0
 lambda: 0.05

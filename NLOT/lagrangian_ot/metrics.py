@@ -204,7 +204,7 @@ class NeuralNetMetricEig(MetricBase):
         if self.D == 2:
             output_size = self.D + 2
         else:
-            output_size = self.D + (self.D * (self.D - 1)) // 2
+            output_size = self.D + (self.D * (self.D - 1)) # // 2
 
         if self.categorical:
             assert x.shape[0] == self.D + 1, f"Expected categorical input shape ({self.D + 1},), got {x.shape}"
@@ -281,8 +281,7 @@ class NeuralNetMetricEig(MetricBase):
         """
         Create a rotation matrix from parameters.
         For D=2: uses arctan2 from 2D vector
-        For D=3: 3 angle parameters (Euler angles)
-        For D>3: D(D-1)/2 parameters for generalized rotation
+        For D>3: D(D-1) parameters for generalized rotation
         """
         if self.D == 2:
             theta = jnp.arctan2(params[1], params[0])
@@ -290,10 +289,34 @@ class NeuralNetMetricEig(MetricBase):
                 [jnp.cos(theta), -jnp.sin(theta)],
                 [jnp.sin(theta), jnp.cos(theta)]
             ])
-            return rotation
+
+        #trying more stable parametrisation, using 2D vectors to define each axis
         else:
-            # For higher dimensions, use a series of Givens rotations
-            # This is one approach to parameterize SO(n) with D(D-1)/2 parameters
+            rotation = jnp.eye(self.D)
+            param_idx = 0
+
+            for i in range(self.D):
+                for j in range(i + 1, self.D):
+                    # Each Givens angle comes from two params
+                    x, y = params[param_idx], params[param_idx + 1]
+                    param_idx += 2
+
+                    angle = jnp.arctan2(y, x)
+
+                    # Build Givens rotation in the (i, j) plane
+                    givens = jnp.eye(self.D)
+                    givens = givens.at[i, i].set(jnp.cos(angle))
+                    givens = givens.at[j, j].set(jnp.cos(angle))
+                    givens = givens.at[i, j].set(-jnp.sin(angle))
+                    givens = givens.at[j, i].set(jnp.sin(angle))
+
+                    rotation = rotation @ givens
+
+        return rotation
+    
+        """
+        else:
+            # For higher dimensions, use a series of Givens rotations, to parameterize SO(n) with D(D-1)/2 parameters
             rotation = jnp.eye(self.D)
             param_idx = 0
             
@@ -311,8 +334,7 @@ class NeuralNetMetricEig(MetricBase):
                     givens = givens.at[j, i].set(jnp.sin(angle))
                     
                     rotation = rotation @ givens
-                    
-            return rotation
+        """
 
 @dataclass
 class LANDMetric(MetricBase):

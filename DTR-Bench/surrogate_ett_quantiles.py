@@ -37,9 +37,9 @@ def load_workspace(workspace_path):
             print(f"Error loading workspace: {e}")
     return None
 
-def pushforward(forecast, input, lambda_val, workspace, final_data):
+def pushforward(forecast, input, lambda_val, workspace):
     """
-    Uses trained OT model to push low quantile forecast forward to target lambda.
+    Uses trained OT model to push low (0.01) quantile forecast forward to target quantile.
     """
     if workspace is None:
         print("Workspace not available, using original forecast")
@@ -73,8 +73,6 @@ def pushforward(forecast, input, lambda_val, workspace, final_data):
             #    workspace.params_geometry,
             #    current_sample
             #).solution
-
-            #end_sample = final_data.numpy()
             
             if lambda_val < T_k_plus_1:
                 s_fraction = (lambda_val - T_k) / (T_k_plus_1 - T_k)
@@ -109,16 +107,12 @@ def evaluate_lambda(data, lambda_val, workspace):
     """
 
     base_data = data[0]
-    final_data = data[-1]
-    final_forecast_portion = final_data[:,12:]
-    final_input_portion = final_data[:,:12]
-    final_data_reversed = torch.concat([final_forecast_portion, final_input_portion], dim=-1)
     lambda_to_index = {0.01:0, 0.1:1, 0.25:2, 0.5:3, 0.75:4, 0.9:5, 0.99:6}
     true_lambda_data = data[lambda_to_index[lambda_val]]
 
     mses = []
     for i in range(len(base_data)):
-        surrogate_forecast = pushforward(base_data[i, 12:], base_data[i, :12], lambda_val, workspace, final_data_reversed[i])
+        surrogate_forecast = pushforward(base_data[i, 12:], base_data[i, :12], lambda_val, workspace)
         true_forecast = true_lambda_data[i, 12:]
 
         #print(f"True forecast: {true_forecast.numpy()}")
