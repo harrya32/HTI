@@ -1,0 +1,8 @@
+Overall MSEs for learned_w_potential_1_1_001
+Workspace 0: 0.818248
+Workspace 1: 0.657680
+Workspace 2: 0.348717
+Workspace 3: 0.664238
+Workspace 4: 0.499049
+
+Mean: 0.597586, Std: 0.160244

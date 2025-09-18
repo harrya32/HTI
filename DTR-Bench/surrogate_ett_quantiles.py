@@ -194,3 +194,12 @@ if __name__ == "__main__":
         print(f"Lambda {lambda_val}: MSE = {np.mean(results['mse'])}")
     
     print_results(mses, f"Overall MSE for {RUN_NAME} (iter {ITER})")
+    
+    # Save MSEs to a text file
+    mse_file = os.path.join(PLOT_DIR, f"mses.txt")
+    with open(mse_file, "w") as f:
+        f.write(f"Overall MSEs for {RUN_NAME}\n")
+        for i, mse in enumerate(mses):
+            f.write(f"Workspace {i}: {mse:.6f}\n")
+        f.write(f"\nMean: {np.mean(mses):.6f}, Std: {np.std(mses):.6f}\n")
+    print(f"Saved MSEs to {mse_file}")
