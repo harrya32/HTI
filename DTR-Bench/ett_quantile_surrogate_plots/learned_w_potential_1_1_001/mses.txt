@@ -4,5 +4,10 @@ Workspace 1: 0.657680
 Workspace 2: 0.348717
 Workspace 3: 0.664238
 Workspace 4: 0.499049
+Workspace 5: 0.477613
+Workspace 6: 1.288715
+Workspace 7: 0.624255
+Workspace 8: 0.418026
+Workspace 9: 0.537833
 
-Mean: 0.597586, Std: 0.160244
+Mean: 0.633438, Std: 0.253794
