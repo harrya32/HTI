@@ -21,7 +21,7 @@ AGENT_PATH = "policies/ppo_ghaffari_cancer_model__0.zip"
 AGENT_NAME = "single_agent_eval"
 ENV_NAME = 'GhaffariCancerEnv-continuous'
 NUM_EVAL_EPISODES = 10
-LAMBDA_VALUES = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+LAMBDA_VALUES = [0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]
 
 parser = argparse.ArgumentParser(description='Evaluate a single agent with a pushforward function.')
 parser.add_argument('--lambda_pushforward', type=float, default=0, help='Lambda value for the pushforward function.')

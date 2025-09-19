@@ -1,0 +1,23 @@
+Overall MSEs for learned_no_potential
+Workspace 0: 0.402810
+Workspace 1: 0.898392
+Workspace 2: 0.507551
+Workspace 3: 0.713073
+Workspace 4: 0.342079
+Workspace 5: 0.727352
+Workspace 6: 0.773587
+Workspace 7: 0.727858
+Workspace 8: 1.379992
+Workspace 9: 0.643760
+Workspace 10: 0.479894
+Workspace 11: 0.632189
+Workspace 12: 0.424258
+Workspace 13: 0.972313
+Workspace 14: 0.247888
+Workspace 15: 0.390601
+Workspace 16: 0.585711
+Workspace 17: 0.309289
+Workspace 18: 0.603176
+Workspace 19: 0.237656
+
+Mean: 0.599971, Std: 0.269962
