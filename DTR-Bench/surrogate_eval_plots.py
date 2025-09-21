@@ -19,7 +19,7 @@ sys.path.append('../NLOT')
 AGENT_PATH = "policies/ppo_ghaffari_cancer_model__0.zip" 
 AGENT_NAME = "single_agent_eval"
 ENV_NAME = 'GhaffariCancerEnv-continuous'
-NUM_EVAL_EPISODES = 10
+NUM_EVAL_EPISODES = 1
 LAMBDA_VALUES = [0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]
 
 parser = argparse.ArgumentParser(description='Evaluate a single agent with a pushforward function.')

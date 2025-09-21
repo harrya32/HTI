@@ -4,7 +4,7 @@
 ITERATIONS=1
 
 # Run name
-RUN_NAME_1="nlot_metric"
+RUN_NAME_1="nlot_metric_1"
 
 # Python script to execute
 SCRIPT="surrogate_eval_plots.py"

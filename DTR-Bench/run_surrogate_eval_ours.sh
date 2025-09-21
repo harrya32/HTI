@@ -4,7 +4,8 @@
 ITERATIONS=1
 
 # Run name
-RUN_NAME_1="learned_w_potential_01"
+RUN_NAME_1="learned_w_potential_1"
+
 
 # Python script to execute
 SCRIPT="surrogate_eval_plots.py"
