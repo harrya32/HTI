@@ -4,9 +4,9 @@
 ITERATIONS=1
 
 # Run name
-RUN_NAME_1="test_2_001"
+RUN_NAME_1="nlot_test"
 
-# Python script to execute
+# Python script to executen
 SCRIPT="surrogate_eval_reacher.py"
 
 # Loop to run the script 5 times
