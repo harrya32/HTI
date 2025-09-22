@@ -4,7 +4,7 @@
 ITERATIONS=1
 
 # Run name
-RUN_NAME_1="test"
+RUN_NAME_1="test_2_001"
 
 # Python script to execute
 SCRIPT="surrogate_eval_reacher.py"
