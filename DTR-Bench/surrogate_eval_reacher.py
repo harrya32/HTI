@@ -36,7 +36,7 @@ LAMBDA_PUSHFORWARD = args.lambda_pushforward
 RUN_NAME = args.name
 ITER = args.iter
 
-PLOT_DIR = f"reacher_surrogate_plots/iclr/{RUN_NAME}"
+PLOT_DIR = f"reacher_surrogate_plots/iclr/{RUN_NAME}/test"
 os.makedirs(PLOT_DIR, exist_ok=True)
 WORKSPACES_DIR = f"../NLOT/surrogate_models/reacher/iclr/{RUN_NAME}/"
 
@@ -136,6 +136,8 @@ def evaluate_lambda(model, vec_env_file, lambda_val, workspace):
     print(f'\n--- Evaluating agent {AGENT_NAME} with lambda = {lambda_val} ---')
 
     for episode_num in range(NUM_EVAL_EPISODES):
+        #set seed for reproducibility
+        env.seed(episode_num)
         initial_obs_for_episode = env.reset()
         obs = initial_obs_for_episode
         done = False
