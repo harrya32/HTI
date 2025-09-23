@@ -112,13 +112,14 @@ def evaluate_lambda(data, lambda_val, workspace):
     true_lambda_data = data[lambda_to_index[lambda_val]]
 
     mses = []
+    surrogate_forecasts = []
     for i in range(len(base_data)):
         base_history = base_data[i, :12]
         base_forecast = base_data[i, 12:]
         surrogate_forecast = pushforward(base_forecast, base_history, lambda_val, workspace)
         true_forecast = true_lambda_data[i, 12:]
 
-        plot_path = os.path.join(PLOT_DIR, f"sample_plots/pushforward_lambda{lambda_val}_sample{i}.png")
+        """plot_path = os.path.join(PLOT_DIR, f"sample_plots/pushforward_lambda{lambda_val}_sample{i}.png")
         plt.figure(figsize=(10, 5))
         x_hist = np.arange(12)
         x_forecast = np.arange(12, 15)
@@ -134,12 +135,12 @@ def evaluate_lambda(data, lambda_val, workspace):
         plt.legend()
         plt.tight_layout()
         plt.savefig(plot_path)
-        plt.close()
-
+        plt.close()"""
         mse = np.mean((surrogate_forecast - true_forecast.numpy()) ** 2)
         mses.append(mse)
+        surrogate_forecasts.append(surrogate_forecast)
 
-    return np.mean(mses)
+    return np.mean(mses), surrogate_forecasts
 
 def main():
     print(f"Loading ett data")
@@ -158,6 +159,8 @@ def main():
 
     mses = []
 
+    surrogate_forecasts_01 = []
+    surrogate_forecasts_09 = []
     for workspace_file in workspace_files:
         workspace_mses = []
         workspace_path = os.path.join(WORKSPACES_DIR, workspace_file)
@@ -171,16 +174,21 @@ def main():
             
         lambda_results = []
         for lambda_val in LAMBDA_VALUES:
-            lambda_mse = evaluate_lambda(ett_testing_data, lambda_val, workspace)
+            lambda_mse, surrogate_forecasts = evaluate_lambda(ett_testing_data, lambda_val, workspace)
             workspace_mses.append(lambda_mse)
             lambda_results.append((lambda_val, lambda_mse))
             print(f"Lambda {lambda_val}: MSE = {lambda_mse}")
             combined_results[lambda_val]['mse'].append(lambda_mse)
+
+            if lambda_val == 0.1:
+                surrogate_forecasts_01.append(surrogate_forecasts)
+            elif lambda_val == 0.9:
+                surrogate_forecasts_09.append(surrogate_forecasts)
         
         mses.append(np.mean(workspace_mses))
         print(f"Average MSE for workspace {workspace_name}: {np.mean(workspace_mses)}")
 
-    return combined_results, mses
+    return combined_results, mses, surrogate_forecasts_01, surrogate_forecasts_09
 
 def print_results(results, name):
     mean = np.mean(results)
@@ -189,7 +197,7 @@ def print_results(results, name):
     print(f"{name}: {mean:.3f} ± {ci:.3f}")
 
 if __name__ == "__main__":
-    combined_results, mses = main()
+    combined_results, mses, surrogate_forecasts_01, surrogate_forecasts_09 = main()
     print("Evaluation complete. Results:")
     for lambda_val, results in combined_results.items():
         print(f"Lambda {lambda_val}: MSE = {np.mean(results['mse'])}")
@@ -204,3 +212,16 @@ if __name__ == "__main__":
             f.write(f"Workspace {i}: {mse:.6f}\n")
         f.write(f"\nMean: {np.mean(mses):.6f}, Std: {np.std(mses):.6f}\n")
     print(f"Saved MSEs to {mse_file}")
+
+    #combine surrogate forecasts into a single tensor and save
+    surrogate_forecasts_01 = np.array(surrogate_forecasts_01)
+    print(surrogate_forecasts_01.shape)
+    surrogate_forecasts_09 = np.array(surrogate_forecasts_09)
+    print(surrogate_forecasts_09.shape)
+
+    # After the existing code at the end of the file:
+
+combined_forecasts = np.concatenate([surrogate_forecasts_01, surrogate_forecasts_09], axis=0)
+fp = os.path.join(PLOT_DIR, f"surrogate_forecasts_q01_q09.npy")
+np.save(fp, combined_forecasts)
+print(f"Saved combined forecasts as NumPy array to {fp}, shape {combined_forecasts.shape}")
