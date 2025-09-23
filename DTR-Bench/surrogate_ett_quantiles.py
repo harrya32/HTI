@@ -118,7 +118,7 @@ def evaluate_lambda(data, lambda_val, workspace):
         surrogate_forecast = pushforward(base_forecast, base_history, lambda_val, workspace)
         true_forecast = true_lambda_data[i, 12:]
 
-        """plot_path = os.path.join(PLOT_DIR, f"pushforward_lambda{lambda_val}_sample{i}.png")
+        plot_path = os.path.join(PLOT_DIR, f"sample_plots/pushforward_lambda{lambda_val}_sample{i}.png")
         plt.figure(figsize=(10, 5))
         x_hist = np.arange(12)
         x_forecast = np.arange(12, 15)
@@ -134,7 +134,7 @@ def evaluate_lambda(data, lambda_val, workspace):
         plt.legend()
         plt.tight_layout()
         plt.savefig(plot_path)
-        plt.close()"""
+        plt.close()
 
         mse = np.mean((surrogate_forecast - true_forecast.numpy()) ** 2)
         mses.append(mse)
@@ -147,6 +147,7 @@ def main():
     ett_testing_data = ett_data[:,1200:,:]
     print(f"Current working directory: {os.getcwd()}")
     workspace_files = [f for f in os.listdir(WORKSPACES_DIR) if f.endswith('.pkl')]
+    print(workspace_files)
     print(f"Found {len(workspace_files)} workspace files in {WORKSPACES_DIR}")
 
     combined_results = {}
