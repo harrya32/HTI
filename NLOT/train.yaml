@@ -32,7 +32,7 @@ plot_frequency: 50
 save_frequency: ${plot_frequency}
 
 plotting:
-  disable: True
+  disable: False
   num_pairs_plot: 100
   
 metric:
@@ -65,10 +65,8 @@ spline:
   noise: 0.0
   update_on_conjugates: False
 
-target_potential_dim_hidden: [64, 64, 64, 64, 64, 64, 64, 64]
-#target_potential_dim_hidden: [64]
-source_map_dim_hidden: [64, 64, 64, 64, 64, 64, 64, 64]
-#source_map_dim_hidden: [64]
+target_potential_dim_hidden: [64, 64, 64, 64]
+source_map_dim_hidden: [64, 64, 64, 64]
 
 hydra:
   run:

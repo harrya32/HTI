@@ -36,7 +36,7 @@ LAMBDA_PUSHFORWARD = args.lambda_pushforward
 RUN_NAME = args.name
 ITER = args.iter
 
-PLOT_DIR = f"reacher_surrogate_plots/iclr/{RUN_NAME}/test"
+PLOT_DIR = f"reacher_surrogate_plots/iclr/{RUN_NAME}"
 os.makedirs(PLOT_DIR, exist_ok=True)
 WORKSPACES_DIR = f"../NLOT/surrogate_models/reacher/iclr/{RUN_NAME}/"
 
