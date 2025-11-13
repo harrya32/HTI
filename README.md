@@ -47,6 +47,7 @@ pip install DTRGym==0.1.0
 pip install --upgrade typing-extensions
 pip install stable_baselines3==2.6.0 --no-deps
 pip install gymnasium[mujoco] #for reacher exps
+pip install flow_matching #for CFM baseline
 ```
 
 ### 6. Train PPO agents and generate training data

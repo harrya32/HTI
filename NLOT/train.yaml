@@ -8,7 +8,7 @@ geometry: 'neural_net_metric_eig'
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, 
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
 # agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, 
-# conditional_circles_normal, conditional_semicircles, reward_weighting_data, reacher_data, ett_forecasts, quantile_data
+# conditional_circles_normal, conditional_semicircles, reward_weighting_data, reacher_data, ett_forecasts, quantile_data, quantile_data_long
 dataset: 'quantile_data'
 D: 12
 C: 3
@@ -32,7 +32,7 @@ plot_frequency: 50
 save_frequency: ${plot_frequency}
 
 plotting:
-  disable: False
+  disable: True
   num_pairs_plot: 100
   
 metric:
