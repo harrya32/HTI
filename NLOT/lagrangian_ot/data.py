@@ -109,7 +109,7 @@ def get_bounds(name):
         bounds = (25, 55)
         xbounds = ybounds = bounds
     elif name == "quantile_data_long":
-        bounds = (21, 60)
+        bounds = (20, 58)
         xbounds = ybounds = bounds
     else:
         raise ValueError(f"Invalid data choice: {name}")

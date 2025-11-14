@@ -219,8 +219,6 @@ if __name__ == "__main__":
     surrogate_forecasts_09 = np.array(surrogate_forecasts_09)
     print(surrogate_forecasts_09.shape)
 
-    # After the existing code at the end of the file:
-
 combined_forecasts = np.concatenate([surrogate_forecasts_01, surrogate_forecasts_09], axis=0)
 fp = os.path.join(PLOT_DIR, f"surrogate_forecasts_q01_q09.npy")
 np.save(fp, combined_forecasts)

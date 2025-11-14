@@ -1,0 +1,5 @@
+Overall MSEs for eucl_no_potential
+Workspace 0: 19.213825
+Workspace 1: 15.744684
+
+Mean: 17.479256, Std: 1.734571
