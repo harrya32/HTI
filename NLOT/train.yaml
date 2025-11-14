@@ -8,7 +8,7 @@ geometry: 'neural_net_metric_eig'
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, 
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
 # agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, 
-# conditional_circles_normal, conditional_semicircles, reward_weighting_data, reacher_data, ett_forecasts, quantile_data, quantile_data_long
+# conditional_circles_normal, conditional_semicircles, reward_weighting_data, reacher_data, ett_forecasts, quantile_data, quantile_data_long, reward_weighting_hinge_data
 dataset: 'quantile_data'
 D: 12
 C: 3

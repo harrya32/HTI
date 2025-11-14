@@ -20,7 +20,7 @@ lambda_nk = args.lambda_nk
 
 # --- Parameters ---
 ENV_NAME = 'GhaffariCancerEnv-continuous'
-TOTAL_TRAINING_TIMESTEPS = 100000  
+TOTAL_TRAINING_TIMESTEPS = 200000  
 NUM_EVAL_EPISODES = 20         
 MODEL_SAVE_PATH = f"policies_hinge/ppo_ghaffari_cancer_model__{int(lambda_nk * 100)}"
 PLOT_DIR = "rl_agent_plots_hinge"

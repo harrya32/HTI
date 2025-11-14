@@ -111,6 +111,13 @@ def get_bounds(name):
     elif name == "quantile_data_long":
         bounds = (20, 58)
         xbounds = ybounds = bounds
+    elif name == "reward_weighting_hinge_data":
+        xbounds = (0, 10)
+        ybounds = (0, 8)
+        bounds = (
+            jnp.array((xbounds[0], ybounds[0])),
+            jnp.array((xbounds[1], ybounds[1])),
+        )
     else:
         raise ValueError(f"Invalid data choice: {name}")
 
@@ -217,7 +224,8 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         "ett_forecasts": "ett_forecasts_iclr.pt",
         "reacher_data": "reacher_data.pt",
         "quantile_data" : "quantile_data_new.pt",
-        "quantile_data_long": "quantile_data_long.pt"
+        "quantile_data_long": "quantile_data_long.pt",
+        "reward_weighting_hinge_data": "reward_weighting_hinge_data.pt",
     }
     if geometry_str not in paths:
         raise ValueError(f"Invalid geometry choice: {geometry_str}")
@@ -237,6 +245,13 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         dataset = dataset[[0, 5, 10], :1000, :]
         dataset = jnp.asarray(dataset)
         #add tiny amount of noise for spline stability
+        noise = 0.001 * jax.random.normal(jax.random.PRNGKey(0), dataset[:, :, :2].shape)
+        dataset = dataset.at[:, :, :2].set(dataset[:, :, :2] + noise)
+        dataset = dataset.at[:, :, 0].set(jnp.clip(dataset[:, :, 0], 0, 10))
+        dataset = dataset.at[:, :, 1].set(jnp.clip(dataset[:, :, 1], 0, 8))
+    elif geometry_str == "reward_weighting_hinge_data":
+        dataset = dataset[[0, 1, 2], :1000, :]
+        dataset = jnp.asarray(dataset)
         noise = 0.001 * jax.random.normal(jax.random.PRNGKey(0), dataset[:, :, :2].shape)
         dataset = dataset.at[:, :, :2].set(dataset[:, :, :2] + noise)
         dataset = dataset.at[:, :, 0].set(jnp.clip(dataset[:, :, 0], 0, 10))
