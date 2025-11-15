@@ -674,12 +674,17 @@ class Workspace:
         path = os.path.join(self.work_dir, f"{tag}.pkl")
         print(f"Saving to {path}")
 
+        #collection folder path
+        collect_path = "/mnt/pdata/hmka3/HTI/saves/" + self.cfg.geometry + "_" + str(self.cfg.seed) + ".pkl"
+
         # Temporarily remove non-picklable samplers
         samplers_backup = self.samplers
         self.samplers = None
 
         try:
             with open(path, "wb") as f:
+                pkl.dump(self, f)
+            with open(collect_path, "wb") as f:
                 pkl.dump(self, f)
         finally:
             # Restore samplers
