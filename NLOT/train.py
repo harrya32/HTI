@@ -675,7 +675,7 @@ class Workspace:
         print(f"Saving to {path}")
 
         #collection folder path
-        collect_path = "/mnt/pdata/hmka3/HTI/saves/" + self.cfg.geometry + "_" + str(self.cfg.seed) + ".pkl"
+        collect_path = "/mnt/pdata/hmka3/HTI/saves/" + self.cfg.geometry + "_" + str(self.cfg.include_inverse_potential) + "_" + str(self.cfg.seed) + ".pkl"
 
         # Temporarily remove non-picklable samplers
         samplers_backup = self.samplers

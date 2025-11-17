@@ -16,7 +16,7 @@ from scipy import stats
 
 sys.path.append('../NLOT')
 
-AGENT_PATH = "policies/ppo_ghaffari_cancer_model__0.zip" 
+AGENT_PATH_0 = "policies/ppo_ghaffari_cancer_model__0.zip" 
 AGENT_NAME = "single_agent_eval"
 ENV_NAME = 'GhaffariCancerEnv-continuous'
 NUM_EVAL_EPISODES = 1
@@ -122,7 +122,7 @@ def pushforward(action, obs, lambda_val, workspace):
             {'params': params_source_map_k},
             current_sample
         )
-    
+
     action_dim = action.shape[1] if len(action.shape) > 1 else action.shape[0]
     pushforward_action = current_sample[:action_dim].reshape(action.shape)
     
@@ -258,8 +258,9 @@ def evaluate_single_lambda(model, lambda_val, workspace):
 print(f"Current working directory: {os.getcwd()}")
 
 print(f"--- Loading Agent: {AGENT_NAME} ---")
-model = PPO.load(AGENT_PATH)
-print(f"Successfully loaded model '{AGENT_NAME}' from '{AGENT_PATH}'")
+model = PPO.load(AGENT_PATH_0)
+
+print(f"Successfully loaded PPO models")
 workspace_files = [f for f in os.listdir(WORKSPACES_DIR) if f.endswith('.pkl')]
 print(f"Found {len(workspace_files)} workspace files in {WORKSPACES_DIR}")
 all_workspace_results = {}

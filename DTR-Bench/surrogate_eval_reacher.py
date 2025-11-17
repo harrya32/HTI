@@ -17,8 +17,12 @@ from scipy import stats
 
 sys.path.append('../NLOT')
 
-AGENT_PATH = "ppo_reacher_weight_1.zip" 
-VEC_ENV_FILE = "vec_normalize_reacher_weight_1.pkl"
+AGENT_PATH_1 = "ppo_reacher_weight_1.zip" 
+AGENT_PATH_2 = "ppo_reacher_weight_2.zip"
+AGENT_PATH_3 = "ppo_reacher_weight_3.zip"
+VEC_ENV_FILE_1 = "vec_normalize_reacher_weight_1.pkl"
+VEC_ENV_FILE_2 = "vec_normalize_reacher_weight_2.pkl"
+VEC_ENV_FILE_3 = "vec_normalize_reacher_weight_3.pkl"
 AGENT_NAME = "single_agent_eval"
 ENV_NAME = 'Reacher-v4'
 NUM_EVAL_EPISODES = 10
@@ -73,7 +77,7 @@ def pushforward(action, obs, lambda_val, workspace):
         return action
         
     #time_points = workspace.time_points
-    time_points = [1,5]
+    time_points = [1,2,3,4,5]
     
     if lambda_val in time_points:
         time_idx = list(time_points).index(lambda_val)
@@ -93,7 +97,7 @@ def pushforward(action, obs, lambda_val, workspace):
                 {'params': params_source_map_k},
                 current_sample
             )
-            
+
             if lambda_val < T_k_plus_1:
                 s_fraction = (lambda_val - T_k) / (T_k_plus_1 - T_k)
                 current_sample = workspace.geometry.apply(
@@ -107,11 +111,11 @@ def pushforward(action, obs, lambda_val, workspace):
                 current_sample = end_sample
             break
         
-        params_source_map_k = workspace.state_source_maps[k].params
-        current_sample = workspace.neural_dual_solver.source_map_apply_jit(
-            {'params': params_source_map_k},
-            current_sample
-        )
+        #params_source_map_k = workspace.state_source_maps[k].params
+        #current_sample = workspace.neural_dual_solver.source_map_apply_jit(
+        #    {'params': params_source_map_k},
+        #    current_sample
+        #)
     
     action_dim = action.shape[1] if len(action.shape) > 1 else action.shape[0]
     pushforward_action = current_sample[:action_dim].reshape(action.shape)
@@ -132,7 +136,7 @@ def evaluate_lambda(model, vec_env_file, lambda_val, workspace):
     env.training = False
     overall_average_penalties = []
     episode_rewards = []    
-    
+
     print(f'\n--- Evaluating agent {AGENT_NAME} with lambda = {lambda_val} ---')
 
     for episode_num in range(NUM_EVAL_EPISODES):
@@ -176,8 +180,10 @@ def evaluate_lambda(model, vec_env_file, lambda_val, workspace):
 print(f"Current working directory: {os.getcwd()}")
 
 print(f"--- Loading Agent: {AGENT_NAME} ---")
-model = PPO.load(AGENT_PATH)
-print(f"Successfully loaded model '{AGENT_NAME}' from '{AGENT_PATH}'")
+model_1 = PPO.load(AGENT_PATH_1)
+model_2 = PPO.load(AGENT_PATH_2)
+model_3 = PPO.load(AGENT_PATH_3)
+print(f"Successfully loaded model '{AGENT_NAME}'")
 workspace_files = [f for f in os.listdir(WORKSPACES_DIR) if f.endswith('.pkl')]
 print(f"Found {len(workspace_files)} workspace files in {WORKSPACES_DIR}")
 all_workspace_results = {}
@@ -204,7 +210,12 @@ for workspace_file in workspace_files:
     all_lambda_rewards = [] 
     
     for lambda_val in LAMBDA_VALUES:
-        avg_penalty, std_dev, avg_reward = evaluate_lambda(model, VEC_ENV_FILE, lambda_val, workspace)
+        lambda_to_model = {2: (model_1, VEC_ENV_FILE_1),
+                    3: (model_2, VEC_ENV_FILE_2),
+                    4: (model_3, VEC_ENV_FILE_3)}
+        model = lambda_to_model[lambda_val][0]
+        vec_env_file = lambda_to_model[lambda_val][1]
+        avg_penalty, std_dev, avg_reward = evaluate_lambda(model, vec_env_file, lambda_val, workspace)
         lambda_results.append((lambda_val, avg_penalty, std_dev))
         all_lambda_rewards.append(avg_reward)
         

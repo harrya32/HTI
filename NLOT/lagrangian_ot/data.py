@@ -105,6 +105,9 @@ def get_bounds(name):
     elif name == "reacher_data":
         bounds = (-1, 1)
         xbounds = ybounds = bounds
+    elif name == "reacher_all_data":
+        bounds = (-1, 1)
+        xbounds = ybounds = bounds
     elif name == "quantile_data":
         bounds = (25, 55)
         xbounds = ybounds = bounds
@@ -223,6 +226,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         "reward_weighting_data": "reward_weighting_data_0_10.pt",
         "ett_forecasts": "ett_forecasts_iclr.pt",
         "reacher_data": "reacher_data.pt",
+        "reacher_all_data": "reacher_all_data.pt",
         "quantile_data" : "quantile_data_new.pt",
         "quantile_data_long": "quantile_data_long.pt",
         "reward_weighting_hinge_data": "reward_weighting_hinge_data.pt",
@@ -242,7 +246,8 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
     dataset = th.load(fname, map_location="cpu", weights_only=False).detach()
 
     if geometry_str == "reward_weighting_data":
-        dataset = dataset[[0, 5, 10], :1000, :]
+        #dataset = dataset[[0, 5, 10], :1000, :]
+        dataset = dataset[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], :1000, :]
         dataset = jnp.asarray(dataset)
         #add tiny amount of noise for spline stability
         noise = 0.001 * jax.random.normal(jax.random.PRNGKey(0), dataset[:, :, :2].shape)
@@ -275,6 +280,8 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         dataset_ambient = dataset[:, :1200, 12:]
         dataset_conditioning = dataset[:, :1200, :12]
         dataset = jnp.concatenate((dataset_ambient, dataset_conditioning), axis=2)
+    elif geometry_str == "reacher_all_data":
+        dataset = dataset[[0,1,2,4], :, :]
 
 
     print('Dataset shape:', dataset.shape)
