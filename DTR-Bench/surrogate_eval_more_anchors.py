@@ -31,8 +31,7 @@ AGENT_NAME = "single_agent_eval"
 ENV_NAME = 'GhaffariCancerEnv-continuous'
 NUM_EVAL_EPISODES = 1
 LAMBDA_VALUES = [0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]
-LAMBDA_VALUES = [0.3, 0.4, 0.6, 0.7]
-END_POINTS = [0.1, 0.2, 0.5, 0.8, 0.9]
+END_POINTS = [0.1, 0.2, 0.3, 0.5, 0.7, 0.8, 0.9]
 
 parser = argparse.ArgumentParser(description='Evaluate a single agent with a pushforward function.')
 parser.add_argument('--lambda_pushforward', type=float, default=0, help='Lambda value for the pushforward function.')
@@ -113,10 +112,9 @@ def pushforward(action, obs, lambda_val, workspace):
     
     current_sample = np.concatenate([action.flatten(), obs.flatten()])
     
-    for k in range(nearest_lower_idx - 1, len(time_points) - 1):
+    for k in range(nearest_lower_idx, len(time_points) - 1):
         T_k = time_points[k]
         T_k_plus_1 = time_points[k+1]
-        #print(lambda_val, T_k, T_k_plus_1)
 
         
         if T_k <= lambda_val <= T_k_plus_1:
@@ -311,6 +309,7 @@ endpoint_to_model = {0.1: model_1,
                     0.2: model_2,
                     0.3: model_3,
                     0.4: model_4,
+                    0.5: model_5,
                     0.6: model_6,
                     0.7: model_7,
                     0.8: model_8,
