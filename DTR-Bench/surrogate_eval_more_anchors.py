@@ -31,7 +31,7 @@ AGENT_NAME = "single_agent_eval"
 ENV_NAME = 'GhaffariCancerEnv-continuous'
 NUM_EVAL_EPISODES = 1
 LAMBDA_VALUES = [0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]
-END_POINTS = [0.1, 0.2, 0.3, 0.5, 0.7, 0.8, 0.9]
+END_POINTS = [0.1, 0.5, 0.9]
 
 parser = argparse.ArgumentParser(description='Evaluate a single agent with a pushforward function.')
 parser.add_argument('--lambda_pushforward', type=float, default=0, help='Lambda value for the pushforward function.')
@@ -126,6 +126,7 @@ def pushforward(action, obs, lambda_val, workspace):
             
             if lambda_val < T_k_plus_1:
                 s_fraction = (lambda_val - T_k) / (T_k_plus_1 - T_k)
+
                 current_sample = workspace.geometry.apply(
                     {'params': workspace.params_geometry},
                     current_sample,
@@ -176,7 +177,7 @@ def evaluate_lambda(model, lambda_val, workspace, endpoint_model):
         env = CustomRewardWrapper(env, lambda_nk=lambda_val * 10)
         return env
     
-    env = make_vec_env(make_env, n_envs=1)
+    env = make_vec_env(make_env, n_envs=1, seed=10)
     
     overall_average_penalties = []
     episode_rewards = []
@@ -195,8 +196,10 @@ def evaluate_lambda(model, lambda_val, workspace, endpoint_model):
 
         while not done:
             if lambda_val in END_POINTS:
+                #print(f"Using endpoint model for lambda = {lambda_val}")
                 modified_action, _ = endpoint_model.predict(obs, deterministic=True)
             else:
+                #print(f"Using pushforward function for lambda = {lambda_val}")
                 action, _ = model.predict(obs, deterministic=True)
                 modified_action = pushforward(action, obs, lambda_val, workspace)
                 
@@ -295,15 +298,15 @@ model_8 = PPO.load(AGENT_PATH_8)
 model_9 = PPO.load(AGENT_PATH_9)
 model_10 = PPO.load(AGENT_PATH_10)
 
-lambda_to_model = {0.1: model_0,
+lambda_to_model = {0.1: model_1,
                    0.2: model_1,
-                   0.3: model_2,
-                   0.4: model_3,
-                   0.5: model_4,
+                   0.3: model_1,
+                   0.4: model_1,
+                   0.5: model_1,
                    0.6: model_5,
-                   0.7: model_6,
-                   0.8: model_7,
-                   0.9: model_8}
+                   0.7: model_5,
+                   0.8: model_5,
+                   0.9: model_5}
 
 endpoint_to_model = {0.1: model_1,
                     0.2: model_2,

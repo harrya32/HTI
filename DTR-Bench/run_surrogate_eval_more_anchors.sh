@@ -4,7 +4,7 @@
 ITERATIONS=1
 
 # Run name
-RUN_NAME_1="03_05_07_eucl_no_potential"
+RUN_NAME_1="01_05_09_ours"
 
 # Python script to execute
 SCRIPT="surrogate_eval_more_anchors.py"
