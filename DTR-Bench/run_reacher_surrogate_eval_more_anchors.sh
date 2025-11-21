@@ -4,7 +4,7 @@
 ITERATIONS=1
 
 # Run name
-RUN_NAME_1="3_5_eucl_w_potential"
+RUN_NAME_1="2_5_learned_no_potential"
 
 # Python script to execute
 SCRIPT="surrogate_eval_reacher_more_anchors.py"
