@@ -9,7 +9,7 @@ geometry: 'neural_net_metric_eig'
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
 # agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, 
 # conditional_circles_normal, conditional_semicircles, reward_weighting_data, reacher_data, ett_forecasts, quantile_data, quantile_data_long, reward_weighting_hinge_data, reacher_all_data
-dataset: 'quantile_data'
+dataset: 'reacher_all_data'
 D: 12
 C: 3
 categorical: False
@@ -22,7 +22,7 @@ lambda: 0.1
 
 seed: 0
 num_pairs: 11
-time_points: [0.2,0.5,0.8]
+time_points: [0,1]
 num_train_iters: 2001
 batch_size: 1024
 potential_lr: 1e-4

@@ -31,7 +31,7 @@ AGENT_NAME = "single_agent_eval"
 ENV_NAME = 'GhaffariCancerEnv-continuous'
 NUM_EVAL_EPISODES = 1
 LAMBDA_VALUES = [0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]
-END_POINTS = [0.1, 0.5, 0.9]
+END_POINTS = []
 
 parser = argparse.ArgumentParser(description='Evaluate a single agent with a pushforward function.')
 parser.add_argument('--lambda_pushforward', type=float, default=0, help='Lambda value for the pushforward function.')
@@ -119,10 +119,18 @@ def pushforward(action, obs, lambda_val, workspace):
         
         if T_k <= lambda_val <= T_k_plus_1:
             params_source_map_k = workspace.state_source_maps[k].params
+            #params_target_potential_k = workspace.state_target_potentials[k].params
+
             end_sample = workspace.neural_dual_solver.source_map_apply_jit(
                 {'params': params_source_map_k},
                 current_sample
             )
+            #end_sample = workspace.neural_dual_solver.pushforward_jit(
+            #    params_source_map_k,
+            #    params_target_potential_k,
+            #    workspace.params_geometry,
+            #    current_sample
+            #).solution
             
             if lambda_val < T_k_plus_1:
                 s_fraction = (lambda_val - T_k) / (T_k_plus_1 - T_k)
@@ -298,15 +306,15 @@ model_8 = PPO.load(AGENT_PATH_8)
 model_9 = PPO.load(AGENT_PATH_9)
 model_10 = PPO.load(AGENT_PATH_10)
 
-lambda_to_model = {0.1: model_1,
-                   0.2: model_1,
-                   0.3: model_1,
-                   0.4: model_1,
-                   0.5: model_1,
-                   0.6: model_5,
-                   0.7: model_5,
-                   0.8: model_5,
-                   0.9: model_5}
+lambda_to_model = {0.1: model_0,
+                   0.2: model_0,
+                   0.3: model_0,
+                   0.4: model_0,
+                   0.5: model_0,
+                   0.6: model_0,
+                   0.7: model_0,
+                   0.8: model_0,
+                   0.9: model_0}
 
 endpoint_to_model = {0.1: model_1,
                     0.2: model_2,

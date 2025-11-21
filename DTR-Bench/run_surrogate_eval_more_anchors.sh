@@ -4,7 +4,7 @@
 ITERATIONS=1
 
 # Run name
-RUN_NAME_1="01_05_09_ours"
+RUN_NAME_1="0_1_ours_1000_epoch"
 
 # Python script to execute
 SCRIPT="surrogate_eval_more_anchors.py"
