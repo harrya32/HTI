@@ -281,7 +281,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         dataset_conditioning = dataset[:, :1200, :12]
         dataset = jnp.concatenate((dataset_ambient, dataset_conditioning), axis=2)
     elif geometry_str == "reacher_all_data":
-        dataset = dataset[[1,4], :, :]
+        dataset = dataset[[2,4], :, :]
 
 
     print('Dataset shape:', dataset.shape)

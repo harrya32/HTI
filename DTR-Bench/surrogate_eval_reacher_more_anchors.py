@@ -31,7 +31,7 @@ AGENT_NAME = "single_agent_eval"
 ENV_NAME = 'Reacher-v4'
 NUM_EVAL_EPISODES = 10
 LAMBDA_VALUES = [2,3,4]
-END_POINTS = [1,2,5]
+END_POINTS = [1,2,3,5]
 device = "cuda:0"
 
 parser = argparse.ArgumentParser(description='Evaluate a single agent with a pushforward function.')
@@ -215,7 +215,7 @@ print(f"Found {len(workspace_files)} workspace files in {WORKSPACES_DIR}")
 all_workspace_results = {}
 lambda_to_model = {2: (model_1, VEC_ENV_FILE_1),
                     3: (model_2, VEC_ENV_FILE_2),
-                    4: (model_2, VEC_ENV_FILE_3),
+                    4: (model_3, VEC_ENV_FILE_3),
                   }
 
 endpoint_to_model = {1: (model_1, VEC_ENV_FILE_1),
