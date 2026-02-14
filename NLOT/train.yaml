@@ -3,37 +3,37 @@ defaults:
 
 # neural_net_metric, neural_net_metric_eig, neural_net_metric_direct, land_metric, rbf_metric, 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, sq_euclidean_manifold
-geometry: 'neural_net_metric_eig'
+geometry: 'sq_euclidean_manifold'
 
 # scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, 
 # scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
 # agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, 
-# conditional_circles_normal, conditional_semicircles, reward_weighting_data, reacher_data, ett_forecasts, quantile_data, quantile_data_long, reward_weighting_hinge_data, reacher_all_data
-dataset: 'reacher_all_data'
-D: 12
-C: 3
-categorical: False
-num_categories: 4
+# conditional_circles_normal, conditional_semicircles, reward_weighting_data, reacher_data, ett_forecasts, quantile_data, quantile_data_long, reward_weighting_hinge_data, reacher_all_data, 2moons_dropout
+dataset: '2moons_dropout'
+D: 2
+C: 1
+categorical: True
+num_categories: 2
 
-include_inverse_potential: False
-bandwidth: 0.4
+include_inverse_potential: True
+bandwidth: 0.2
 conditional_bandwidth: 1.0
-lambda: 0.1
+lambda: 0.05
 
-seed: 0
+seed: 1
 num_pairs: 11
-time_points: [0,1]
+time_points: [0,0.505,1]
 num_train_iters: 2001
 batch_size: 1024
 potential_lr: 1e-4
 wandb: True
-wandb_project: "quantile_eucl"
+wandb_project: "2moons_eucl_w_potential"
 
-plot_frequency: 50
+plot_frequency: 500
 save_frequency: ${plot_frequency}
 
 plotting:
-  disable: True
+  disable: False
   num_pairs_plot: 100
   
 metric:

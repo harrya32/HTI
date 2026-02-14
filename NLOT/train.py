@@ -53,7 +53,7 @@ class Workspace:
         print(f"all_samples shape: {self.all_samples.shape}")
 
         if self.cfg.get('include_inverse_potential', False):
-            if self.data == "conditional_semicircles":
+            if self.data == "conditional_semicircles" or self.data == "2moons_dropout":
                 lagrangian_potential_initializer_fn = lagrangian_potentials.DensityPotentialCircles(
                     D=self.cfg.get('D', 2),
                     C=self.cfg.get('C', 0),
@@ -414,7 +414,7 @@ class Workspace:
                     #self.plot_assignment_paths()
 
                     #marginals eval
-                    if 'circles' in self.data or 'reward' in self.data:
+                    if 'circles' in self.data or 'reward' in self.data or "dropout" in self.data:
                         path = os.path.dirname(os.path.realpath(__file__)) + "/eval_data/"
 
                         if self.data == 'conditional_circles':
@@ -448,6 +448,13 @@ class Workspace:
                             time_0_points = test_data[0]
                             test_data = [(0, test_data[0]), (0.25, test_data[1]), (0.75, test_data[2])]
 
+                        if self.data == "2moons_dropout":
+                            path = os.path.dirname(os.path.realpath(__file__)) + "/data/"
+                            test_path = path + 'diffusion_2moons_dropout.pt'
+                            test_data = torch.load(test_path).cpu().numpy()
+                            test_data = jnp.array(test_data)
+                            time_0_points = test_data[0]
+                            test_data = [(0, test_data[0]), (0.1/0.99, test_data[1]), (0.2/0.99, test_data[2]), (0.3/0.99, test_data[3]), (0.4/0.99, test_data[4]), (0.6/0.99, test_data[6]), (0.7/0.99, test_data[7]), (0.8/0.99, test_data[8]), (0.9/0.99, test_data[9])]
 
                         print("Evaluating marginals")
                         self.evaluate_marginals(time_0_points, test_data[1:], plot_results=False, verbose=False)

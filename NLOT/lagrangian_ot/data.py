@@ -121,6 +121,9 @@ def get_bounds(name):
             jnp.array((xbounds[0], ybounds[0])),
             jnp.array((xbounds[1], ybounds[1])),
         )
+    elif name == "2moons_dropout":
+        bounds = (-4, 4)
+        xbounds = ybounds = bounds
     else:
         raise ValueError(f"Invalid data choice: {name}")
 
@@ -230,6 +233,7 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         "quantile_data" : "quantile_data_new.pt",
         "quantile_data_long": "quantile_data_long.pt",
         "reward_weighting_hinge_data": "reward_weighting_hinge_data.pt",
+        "2moons_dropout": "diffusion_2moons_dropout.pt"
     }
     if geometry_str not in paths:
         raise ValueError(f"Invalid geometry choice: {geometry_str}")
@@ -282,6 +286,9 @@ def get_samplers_scarvelis(geometry_str, num_pairs_requested=None):
         dataset = jnp.concatenate((dataset_ambient, dataset_conditioning), axis=2)
     elif geometry_str == "reacher_all_data":
         dataset = dataset[[2,4], :, :]
+    elif geometry_str == "2moons_dropout":
+         dataset = dataset[[0,5,-1], :, :]
+         dataset = jnp.asarray(dataset)
 
 
     print('Dataset shape:', dataset.shape)
