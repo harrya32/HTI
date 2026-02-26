@@ -10,11 +10,8 @@ import numpy as np
 import os
 import optax
 import cloudpickle as pkl
-from copy import copy
 from flax.core import FrozenDict
 from scipy.optimize import linear_sum_assignment
-import dataclasses
-from typing import Iterator
 import hydra
 from omegaconf import OmegaConf
 from lagrangian_ot import models, neuraldual, metrics, geodesics, geometries, data, lagrangian_potentials
@@ -22,13 +19,14 @@ from generate_synth_data import log_likelihood_conditional_semicircle
 import torch
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-plt.style.use('bmh')
 import sys
 from IPython.core import ultratb
-sys.excepthook = ultratb.FormattedTB(mode='Plain', color_scheme='Neutral', call_pdb=1)
 import wandb
 import ot
-from scipy.spatial.distance import cdist # Add this import
+from scipy.spatial.distance import cdist
+
+plt.style.use('bmh')
+sys.excepthook = ultratb.FormattedTB(mode='Plain', color_scheme='Neutral', call_pdb=1)
 
 class Workspace:
     def __init__(self, cfg):
@@ -46,7 +44,6 @@ class Workspace:
 
         self.key = jax.random.PRNGKey(self.cfg.seed)
         self.elapsed_time = 0.
-        self.frobenius_weight = self.cfg.metric.get('frobenius_reg_weight', 0.0)
         self.samplers = data.get_samplers_scarvelis(self.data, num_pairs_requested=self.cfg.get('num_pairs', None))
         self.all_samples = jnp.concatenate([next(s) for s in self.samplers], axis=0)
         
@@ -186,7 +183,6 @@ class Workspace:
             ysampler = iter(sampler(k2))
         else:
             def xsampler():
-                key = jax.random.PRNGKey(0)
                 t = 0
                 while True:
                     source_samples = next(samplers[t])
@@ -261,7 +257,6 @@ class Workspace:
         inv_metric_vmap = jax.vmap(inv_metric_fn)
 
         dual_losses = []
-        frobenius_regs = [] # List to store Frobenius regularization term for each pair
 
         reg_key, key = jax.random.split(key) # Split key for regularization sampling
 
@@ -275,33 +270,10 @@ class Workspace:
             )
             dual_losses.append(-info_t.dual_loss)
             
-            if self.frobenius_weight:
-                # Scarvelis regularization
-                source_points = batch['source']
-                target_points = batch['target'] 
-
-                batch_size = source_points.shape[0]
-                t_key, reg_key = jax.random.split(reg_key)
-                times = jax.random.uniform(t_key, shape=(batch_size, 1))
-
-                # Calculate points along straight line: sigma(t') = (1-t')*x0 + t'*x1
-                path_points = (1.0 - times) * source_points + times * target_points
-
-                # Evaluate inverse metric G^-1(sigma(t'))
-                inv_metrics_at_path = inv_metric_vmap(path_points)
-
-                # Calculate squared Frobenius norm ||G^-1(sigma(t'))||^2_F = Tr((G^-1)^T G^-1) = Tr(G^-2)
-                frobenius_sq_norms = jax.vmap(lambda m: jnp.trace(m @ m))(inv_metrics_at_path)
-                mean_frobenius_reg = jnp.mean(frobenius_sq_norms)
-                frobenius_regs.append(mean_frobenius_reg)
 
         mean_dual_loss = jnp.mean(jnp.stack(dual_losses)) 
-
-        if self.frobenius_weight:
-            mean_frobenius_reg = jnp.mean(jnp.stack(frobenius_regs)) # Average over pairs
-            total_loss = mean_dual_loss + self.frobenius_weight * mean_frobenius_reg
-        else:
-            total_loss = mean_dual_loss
+        
+        total_loss = mean_dual_loss
 
         return total_loss
 
@@ -316,11 +288,6 @@ class Workspace:
             key
         )
 
-        # TODO: could remove 'spline_model' from updates
-        # (currently grads are all zero)
-        #updates, new_state_geometry = self.optimizer_geom.update(
-        #    grads, state_geometry, params=params_geometry)
-        
         updates, new_state_geometry = self.optimizer_geom.update(
             grads,
             state_geometry,
@@ -334,7 +301,6 @@ class Workspace:
     def run(self):
 
         logf, writer = self._init_logging()
-        dual_loss = -1.
 
         while self.train_step < self.cfg.num_train_iters:
             start = time.time()
@@ -472,48 +438,6 @@ class Workspace:
             if self.train_step % self.cfg.save_frequency == 0:
                 self.save()
 
-    def eval_alignment(self):
-        xflat, x1, x2 = geometries._get_grid(
-            self.geometry.xbounds, self.geometry.ybounds, 100)
-        xflat = jnp.asarray(xflat)
-
-        if self.cfg.C > 0:
-            # assume default condition is 0 for alignment evaluation
-            default_condition = jnp.zeros((xflat.shape[0], self.cfg.C))
-            x_eval = jnp.concatenate([xflat, default_condition], axis=-1)
-        else:
-            x_eval = xflat
-
-        if not hasattr(self, 'true_eigvecs') or not hasattr(self, 'learned_eigvecs'):
-            # create separate functions for each geometry to avoid comparison issues
-            @functools.partial(jax.jit)
-            @functools.partial(jax.vmap, in_axes=(None, 0))
-            def true_eigvecs(params_geometry, x):
-                A = self.reference_geometry.apply(
-                    {'params': params_geometry},
-                    x, method=self.reference_geometry.metric)
-                vals, vecs = jnp.linalg.eigh(A)
-                return vecs.T, vals
-            
-            @functools.partial(jax.jit)
-            @functools.partial(jax.vmap, in_axes=(None, 0))
-            def learned_eigvecs(params_geometry, x):
-                A = self.geometry.apply(
-                    {'params': params_geometry},
-                    x, method=self.geometry.metric)
-                vals, vecs = jnp.linalg.eigh(A)
-                return vecs.T, vals
-                
-            self.true_eigvecs = true_eigvecs
-            self.learned_eigvecs = learned_eigvecs
-
-        true_A_evecs, true_eigen_vals = self.true_eigvecs(
-            self.params_geometry, x_eval)
-        learned_A_evecs, learned_eigen_vals = self.learned_eigvecs(
-            self.params_geometry, x_eval)
-        alignment = jnp.abs(
-            (true_A_evecs * learned_A_evecs).sum(axis=2)).mean().item()
-        return alignment, true_eigen_vals, learned_eigen_vals
 
     def _init_logging(self):
         logf = open('log.csv', 'a')
@@ -682,7 +606,7 @@ class Workspace:
         print(f"Saving to {path}")
 
         #collection folder path
-        collect_path = "/mnt/pdata/hmka3/HTI/saves/" + self.cfg.geometry + "_" + str(self.cfg.include_inverse_potential) + "_" + str(self.cfg.seed) + ".pkl"
+        collect_path = "/mnt/pdata/hmka3/HTI/saves/" + self.cfg.dataset + "_" + self.cfg.geometry + "_" + str(self.cfg.include_inverse_potential) + "_" + str(self.cfg.seed) + ".pkl"
 
         # Temporarily remove non-picklable samplers
         samplers_backup = self.samplers
@@ -696,161 +620,6 @@ class Workspace:
         finally:
             # Restore samplers
             self.samplers = samplers_backup
-
-#uncert. quant.
-    def _compute_geodesic_distance(self, x, y):
-        """
-        Computes geodesic distance d(x, y) using the learned metric.
-        """
-        cost_val = self.geometry.apply(
-            {'params': self.params_geometry},
-            x,
-            y,
-            method=self.geometry.cost
-        )
-        distance = jnp.sqrt(2 * cost_val)
-        return distance
-
-    @functools.partial(jax.jit, static_argnums=(0,))
-    def _compute_pair_uncertainty(self, x_i, x_i_plus_1):
-        """
-        Computes uncertainty heuristic along the path between a single pair (x_i, x_{i+1}).
-        """
-        # 1. Compute geodesic path
-        path = self.neural_dual_solver.path_jit(
-            self.params_geometry, x_i, x_i_plus_1
-        )
-        num_path_points = path.shape[0]
-        if num_path_points < 3:
-             # Cannot find an intermediate point, return 0 uncertainty, s*=0.5 (midpoint)
-             return 0.5, 0.0
-
-        dist_to_start_fn = jax.vmap(lambda p: self._compute_geodesic_distance(p, x_i))
-        dist_to_end_fn = jax.vmap(lambda p: self._compute_geodesic_distance(p, x_i_plus_1))
-
-        # 3. Compute distances for all intermediate points
-        intermediate_path = path[1:-1] # Exclude exact start and end points
-        dists_to_start = dist_to_start_fn(intermediate_path)
-        dists_to_end = dist_to_end_fn(intermediate_path)
-
-        # 4. Find point maximizing min(dist_to_start, dist_to_end)
-        min_dists = jnp.minimum(dists_to_start, dists_to_end)
-        max_min_dist_idx = jnp.argmax(min_dists)
-        max_min_dist_val = min_dists[max_min_dist_idx] # This is U_pair
-
-        # 5. Calculate corresponding s* (time along the path)
-        s_star = (max_min_dist_idx + 1) / (num_path_points - 1)
-
-        return s_star, max_min_dist_val
-
-    def find_most_uncertain_time(self, num_pairs_per_interval=100, key=None):
-        """
-        Finds the time point t in [0, 1] estimated to be most uncertain based on
-        the heuristic of maximizing the minimum geodesic distance to endpoints along paths.
-
-        Args:
-            num_pairs_per_interval: Number of random pairs to sample per interval/condition.
-            key: JAX PRNGKey for sampling.
-
-        Returns:
-            A tuple (most_uncertain_time, max_average_uncertainty).
-            Returns (None, 0.0) if computation fails.
-        """
-        if key is None:
-            key = jax.random.PRNGKey(int(time.time()))
-
-        vmapped_pair_uncertainty = jax.vmap(self._compute_pair_uncertainty)
-
-        all_interval_results = [] # Stores (interval_idx, avg_s_star, avg_uncertainty, condition_idx)
-
-        # Assume time points are equally spaced in [0, 1] (WILL NEED TO CHANGE ONCE CONDUCTING SELECTION)
-        #time_points = jnp.linspace(0, 1, self.num_pairs + 1)
-        #time_step_duration = 1.0 / self.num_pairs if self.num_pairs > 0 else 1.0
-
-        for t in range(self.num_pairs):
-            interval_start_time = self.time_points[t]
-            interval_end_time = self.time_points[t+1]
-            interval_duration = interval_end_time - interval_start_time
-            interval_results = []
-            print(f"Analyzing interval {t} -> {t+1} (Time {interval_start_time:.2f} -> {interval_end_time:.2f})...")
-            X_i = self.eval_samples[t]
-            X_i_plus_1 = self.eval_samples[t+1]
-
-            # --- Handle Conditions ---
-            if self.cfg.C > 0:
-                conditions_i = X_i[:, self.cfg.D:]
-                # Find unique condition vectors and map samples to them
-                unique_conditions, condition_map_i = jnp.unique(conditions_i, axis=0, return_inverse=True)
-                num_conditions = unique_conditions.shape[0]
-                print(f"  Found {num_conditions} unique conditions.")
-            else:
-                unique_conditions = [None] # Placeholder
-                num_conditions = 1
-                condition_map_i = jnp.zeros(X_i.shape[0], dtype=int) # All samples belong to condition 0
-
-            for c_idx in range(num_conditions):
-                current_condition_vector = unique_conditions[c_idx]
-                if self.cfg.C > 0:
-                    indices_i = jnp.where(condition_map_i == c_idx)[0]
-                    # Find matching samples in X_{i+1} based on the condition vector
-                    condition_matches_i_plus_1 = jnp.all(X_i_plus_1[:, self.cfg.D:] == current_condition_vector, axis=1)
-                    indices_i_plus_1 = jnp.where(condition_matches_i_plus_1)[0]
-                else:
-                    indices_i = jnp.arange(X_i.shape[0])
-                    indices_i_plus_1 = jnp.arange(X_i_plus_1.shape[0])
-
-                if len(indices_i) == 0 or len(indices_i_plus_1) == 0:
-                    print(f"    Skipping condition {c_idx}: No samples found in one or both time points.")
-                    continue
-
-                X_i_c = X_i[indices_i]
-                X_i_plus_1_c = X_i_plus_1[indices_i_plus_1]
-
-                # --- Sample Pairs ---
-                n_samples_i = X_i_c.shape[0]
-                n_samples_i_plus_1 = X_i_plus_1_c.shape[0]
-                num_to_sample = min(num_pairs_per_interval, n_samples_i, n_samples_i_plus_1)
-
-                if num_to_sample == 0:
-                     print(f"    Skipping condition {c_idx}: Not enough samples ({n_samples_i}, {n_samples_i_plus_1}) to form pairs.")
-                     continue
-
-                key, subkey1, subkey2 = jax.random.split(key, 3)
-                idx1 = jax.random.choice(subkey1, n_samples_i, shape=(num_to_sample,), replace=False)
-                idx2 = jax.random.choice(subkey2, n_samples_i_plus_1, shape=(num_to_sample,), replace=False)
-
-                sampled_x_i = X_i_c[idx1]
-                sampled_x_i_plus_1 = X_i_plus_1_c[idx2]
-
-                # --- Compute Uncertainty for Sampled Pairs ---
-                s_stars, uncertainties = vmapped_pair_uncertainty(sampled_x_i, sampled_x_i_plus_1)
-                avg_s_star = jnp.mean(s_stars)
-                avg_uncertainty = jnp.mean(uncertainties)
-
-                print(f"    Avg s*: {avg_s_star:.4f}, Avg Uncertainty: {avg_uncertainty:.4f} ({num_to_sample} pairs)")
-                interval_results.append((t, avg_s_star, avg_uncertainty, c_idx))
-
-            # average across all conditions
-            interval_avg = [sum(x) / len(interval_results) for x in zip(*interval_results)]
-            all_interval_results.append(interval_avg) 
-
-        # Find the maximum average uncertainty
-        best_result_idx = jnp.argmax(jnp.array([res[2] for res in all_interval_results]))
-        best_interval_t_idx, best_s_star, max_uncertainty, best_condition_idx = all_interval_results[best_result_idx]
-        best_interval_t_idx = int(best_interval_t_idx)
-
-        # Calculate the final uncertain time t \in [0, 1]
-        interval_start_time = self.time_points[best_interval_t_idx]
-        interval_end_time = self.time_points[best_interval_t_idx + 1]
-        interval_duration = interval_end_time - interval_start_time
-        most_uncertain_time = interval_start_time + best_s_star * interval_duration
-
-        print(f"\nMost uncertain time estimated at t = {most_uncertain_time:.4f}")
-        print(f"  (Based on interval {best_interval_t_idx} -> {best_interval_t_idx+1}, Condition Index {best_condition_idx})")
-        print(f"  Max average uncertainty value: {max_uncertainty:.4f}")
-        print(f"  Corresponding average s* for max uncertainty interval/condition: {best_s_star:.4f}")
-
-        return most_uncertain_time, max_uncertainty
 
     def predictor_map_for_assignment(self, x_batch, t = 0):
         

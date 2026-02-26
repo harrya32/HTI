@@ -207,16 +207,6 @@ class ManifoldW2NeuralDual:
             amor_loss = ((self.geometry.get_ambient_dims(init_target_hat) -
                           self.geometry.get_ambient_dims(target_hat_detach)) ** 2).mean()
             #amor_loss = ((init_target_hat - target_hat_detach) ** 2).mean()
-        elif self.amortization_loss == "objective":
-            import ipdb; ipdb.set_trace()
-            batch_dot = jax.vmap(jnp.dot)
-            f_value_parameters_detached = lambda x: f_value(
-                    jax.lax.stop_gradient(params_f), x
-            )
-            amor_loss = (
-                    f_value_parameters_detached(init_source_hat) -
-                    batch_dot(init_source_hat, target)
-            ).mean()
         else:
             raise ValueError("Amortization loss has been misspecified.")
 

@@ -183,39 +183,6 @@ def get(
             lagrangian_potential_initializer_fn=lagrangian_potential_initializer_fn,
             **geometry_kwargs,
         )
-    elif name == "neural_net_metric_direct":
-        return MetricManifold(
-            bounds=(-2, 2),
-            distance_mode=DistanceModes.SQUARED_GEODESIC,
-            metric_initializer_fn=metrics.NeuralNetMetricDirect,
-            D=D,
-            C=C,
-            categorical=categorical,
-            num_categories=num_categories,
-            **geometry_kwargs,
-        )
-    elif name == "land_metric":
-        return MetricManifold(
-            bounds=(-2, 2),
-            distance_mode=DistanceModes.SQUARED_GEODESIC,
-            metric_initializer_fn=metrics.LANDMetric,
-            samples=samples,
-            land_kwargs=land_kwargs,
-            **geometry_kwargs,
-        )
-    elif name == "rbf_metric":
-        return MetricManifold(
-            bounds=(-2, 2),
-            distance_mode=DistanceModes.SQUARED_GEODESIC,
-            metric_initializer_fn=metrics.RBFMetric,
-            D=D,
-            C=C,
-            categorical=categorical,
-            num_categories=num_categories,
-            samples=samples,
-            rbf_kwargs=rbf_kwargs,
-            **geometry_kwargs,
-        )
     else:
         raise ValueError(f"Unknown geometry: {name}")
 
@@ -246,7 +213,7 @@ class GeometryBase(ABC, nn.Module):
         pass
 
 
-eps = 1e-5  # TODO: Other stabilization?
+eps = 1e-5
 divsin = lambda x: x / jnp.sin(x)
 sindiv = lambda x: jnp.sin(x) / (x + eps)
 divsinh = lambda x: x / jnp.sinh(x)

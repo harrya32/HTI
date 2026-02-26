@@ -40,7 +40,6 @@ metric:
   warmup_steps: 50
   update_frequency: 10
   update_repeat: 1
-  frobenius_reg_weight: 0
   lr: 5e-3
 
 geometry_kwargs:
