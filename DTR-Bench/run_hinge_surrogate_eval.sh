@@ -4,7 +4,7 @@
 ITERATIONS=1
 
 # Run name
-RUN_NAME_1="eucl_w_potential"
+RUN_NAME_1="pooladian"
 
 # Python script to execute
 SCRIPT="surrogate_eval_hinge.py"

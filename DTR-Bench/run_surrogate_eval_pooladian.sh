@@ -4,7 +4,7 @@
 ITERATIONS=1
 
 # Run name
-RUN_NAME_1="pooladian"
+RUN_NAME_1="pooladian_2"
 
 # Python script to execute
 SCRIPT="surrogate_eval_plots.py"

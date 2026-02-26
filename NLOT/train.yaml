@@ -22,7 +22,7 @@ lambda: 0.05
 
 seed: 1
 num_pairs: 11
-time_points: [0,0.505,1]
+#time_points: [0, 1]
 num_train_iters: 2001
 batch_size: 1024
 potential_lr: 1e-4
@@ -33,7 +33,7 @@ plot_frequency: 500
 save_frequency: ${plot_frequency}
 
 plotting:
-  disable: False
+  disable: True
   num_pairs_plot: 100
   
 metric:

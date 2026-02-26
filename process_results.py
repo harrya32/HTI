@@ -212,8 +212,8 @@ if semicircle:
     def print_results(results, name):
         mean = np.mean(results)
         std = np.std(results)
-        ci = 1.96 * std / np.sqrt(len(results))
-        print(f"{name}: {mean:.3f} ± {ci:.3f}")
+        se = std / np.sqrt(len(results))
+        print(f"{name}: {mean:.3f} ± {se:.3f}")
 
     print("Synthetic Semicircle Results")
     print("Euclidean No Potential")
