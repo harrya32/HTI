@@ -4,7 +4,7 @@
 ITERATIONS=1
 
 # Run name
-RUN_NAME_1="learned_w_potential_1"
+RUN_NAME_1="eucl_no_potential_repro"
 
 
 # Python script to execute

@@ -18,11 +18,9 @@ from scipy import stats
 sys.path.append('../NLOT')
 
 AGENT_PATH_1 = "ppo_reacher_weight_1.zip" 
-AGENT_PATH_2 = "ppo_reacher_weight_2.zip"
-AGENT_PATH_3 = "ppo_reacher_weight_3.zip"
+
 VEC_ENV_FILE_1 = "vec_normalize_reacher_weight_1.pkl"
-VEC_ENV_FILE_2 = "vec_normalize_reacher_weight_2.pkl"
-VEC_ENV_FILE_3 = "vec_normalize_reacher_weight_3.pkl"
+
 AGENT_NAME = "single_agent_eval"
 ENV_NAME = 'Reacher-v4'
 NUM_EVAL_EPISODES = 10
@@ -76,8 +74,7 @@ def pushforward(action, obs, lambda_val, workspace):
         print("Workspace not available, using original action")
         return action
         
-    #time_points = workspace.time_points
-    time_points = [1,2,3,4,5]
+    time_points = [1,5]
     
     if lambda_val in time_points:
         time_idx = list(time_points).index(lambda_val)
@@ -181,8 +178,6 @@ print(f"Current working directory: {os.getcwd()}")
 
 print(f"--- Loading Agent: {AGENT_NAME} ---")
 model_1 = PPO.load(AGENT_PATH_1)
-model_2 = PPO.load(AGENT_PATH_2)
-model_3 = PPO.load(AGENT_PATH_3)
 print(f"Successfully loaded model '{AGENT_NAME}'")
 workspace_files = [f for f in os.listdir(WORKSPACES_DIR) if f.endswith('.pkl')]
 print(f"Found {len(workspace_files)} workspace files in {WORKSPACES_DIR}")
@@ -210,11 +205,8 @@ for workspace_file in workspace_files:
     all_lambda_rewards = [] 
     
     for lambda_val in LAMBDA_VALUES:
-        lambda_to_model = {2: (model_1, VEC_ENV_FILE_1),
-                    3: (model_2, VEC_ENV_FILE_2),
-                    4: (model_3, VEC_ENV_FILE_3)}
-        model = lambda_to_model[lambda_val][0]
-        vec_env_file = lambda_to_model[lambda_val][1]
+        model = model_1
+        vec_env_file = VEC_ENV_FILE_1
         avg_penalty, std_dev, avg_reward = evaluate_lambda(model, vec_env_file, lambda_val, workspace)
         lambda_results.append((lambda_val, avg_penalty, std_dev))
         all_lambda_rewards.append(avg_reward)

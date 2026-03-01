@@ -4,7 +4,7 @@
 ITERATIONS=1
 
 # Run name
-RUN_NAME_1="test"
+RUN_NAME_1="learned_w_potential_repro"
 
 # Python script to execute
 SCRIPT="surrogate_ett_quantiles.py"
