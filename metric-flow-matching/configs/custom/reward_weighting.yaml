@@ -1,0 +1,25 @@
+data_type: "custom_pt"
+data_name: "reward_weighting_data_0_10"
+dim: 2
+#seeds: [0]
+whiten: false
+time_indices: [0, 5, 10]
+gammas: [3]
+t_exclude: null
+mfm: true
+velocity_metric: "land"
+rho: 0.001
+alpha_metric: 1
+hidden_dims_flow: [64, 64, 64]
+hidden_dims_geopath: [64, 64, 64]
+patience: 100
+patience_geopath: 100
+epochs: 2000
+batch_size: 128
+accelerator: "gpu"
+class_conditioning: true
+categorical: false
+cond_dim: 7
+max_instances: 1000
+instance_paired: true
+#ema_decay: 0.9999

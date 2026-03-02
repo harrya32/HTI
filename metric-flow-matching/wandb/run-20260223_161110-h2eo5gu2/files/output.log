@@ -1,0 +1,115 @@
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loggers/wandb.py:390: There is a wandb run already in progress and newly created instances of `WandbLogger` will reuse this run. If this is not desired, call `wandb.finish()` before instantiating `WandbLogger`.
+You are using a CUDA device ('NVIDIA A100 80GB PCIe') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+  | Name        | Type       | Params
+-------------------------------------------
+0 | geopath_net | GeoPathMLP | 11.3 K
+-------------------------------------------
+11.3 K    Trainable params
+0         Non-trainable params
+11.3 K    Total params
+0.045     Total estimated model params size (MB)
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loops/fit_loop.py:298: The number of training batches (8) is smaller than the logging interval Trainer(log_every_n_steps=50). Set a lower value for log_every_n_steps if you want to see logs for the training epoch.
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/utilities/data.py:77: Trying to infer the `batch_size` from an ambiguous collection. The batch size we found is 128. To avoid any miscalculations, use `self.log(..., batch_size=batch_size)`.
+Epoch 12:  38%|██████████▉                  | 3/8 [00:00<00:00, 95.57it/s, v_num=5gu2, GeoPathNet/train_loss_geopath_step=1.480, GeoPathNet/mean_velocity_geopath=1.130, GeoPathNet/val_loss_geopath=1.610, GeoPathNet/mean_geopath_geopath=1.350, GeoPathNet/train_loss_geopath_epoch=1.350]
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+  | Name     | Type        | Params
+-----------------------------------------
+0 | flow_net | VelocityNet | 11.2 K
+-----------------------------------------
+11.2 K    Trainable params
+0         Non-trainable params
+11.2 K    Total params
+Epoch 23: 100%|█████████████████████████████| 8/8 [00:00<00:00, 83.23it/s, v_num=5gu2, GeoPathNet/train_loss_geopath_step=1.510, GeoPathNet/mean_velocity_geopath=1.040, GeoPathNet/val_loss_geopath=1.500, GeoPathNet/mean_geopath_geopath=1.200, GeoPathNet/train_loss_geopath_epoch=1.240]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Epoch 1289: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:00<00:00, 97.57it/s, v_num=5gu2, FlowNet/mean_geopath_cfm=1.450, FlowNet/train_loss_cfm=0.0219, FlowNet/val_loss_cfm=0.0182]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Epoch 1897: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:00<00:00, 99.96it/s, v_num=5gu2, FlowNet/mean_geopath_cfm=1.450, FlowNet/train_loss_cfm=0.0231, FlowNet/val_loss_cfm=0.0159]
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+Epoch 1909: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:00<00:00, 86.54it/s, v_num=5gu2, FlowNet/mean_geopath_cfm=1.450, FlowNet/train_loss_cfm=0.0133, FlowNet/val_loss_cfm=0.0156]
+Testing DataLoader 0: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 595.61it/s]

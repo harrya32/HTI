@@ -1,0 +1,172 @@
+{
+    "os": "Linux-6.8.0-1041-azure-x86_64-with-glibc2.35",
+    "python": "3.11.14",
+    "heartbeatAt": "2026-02-24T23:12:54.491721",
+    "startedAt": "2026-02-24T23:12:53.702396",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--config_path",
+        "./configs/custom/reward_weighting_hinge.yaml",
+        "--seeds",
+        "11"
+    ],
+    "state": "running",
+    "program": "-m mfm.train.main",
+    "codePathLocal": null,
+    "git": {
+        "remote": "https://github.com/kkapusniak/metric-flow-matching.git",
+        "commit": "e44e03ec6207d2b111c1d51a03dcc53a98f87b95"
+    },
+    "email": "harryamad@gmail.com",
+    "root": "/mnt/pdata/hmka3/HTI/metric-flow-matching",
+    "host": "hmka3-1xa100",
+    "username": "azureuser",
+    "executable": "/home/azureuser/miniconda/envs/mfm/bin/python",
+    "cpu_count": 24,
+    "cpu_count_logical": 24,
+    "cpu_freq": {
+        "current": 2798.841541666666,
+        "min": 0.0,
+        "max": 0.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2445.436,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 3079.471,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 3094.343,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 3082.119,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2701.067,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2445.436,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2445.436,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2729.973,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 3094.264,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2469.872,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2445.436,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2445.436,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2445.436,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2479.523,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2445.436,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2764.912,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 3102.649,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 3037.889,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 3096.507,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 3056.067,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 3094.804,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 3075.271,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 3098.458,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 3099.744,
+            "min": 0.0,
+            "max": 0.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 118.05400085449219,
+            "used": 106.25482559204102
+        }
+    },
+    "gpu": "NVIDIA A100 80GB PCIe",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA A100 80GB PCIe",
+            "memory_total": 85899345920
+        }
+    ],
+    "memory": {
+        "total": 216.26204681396484
+    }
+}

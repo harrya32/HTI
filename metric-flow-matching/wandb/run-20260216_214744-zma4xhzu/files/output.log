@@ -1,0 +1,73 @@
+GPU available: True (cuda), used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/setup.py:187: GPU available but not used. You can set it by doing `Trainer(accelerator='gpu')`.
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loggers/wandb.py:390: There is a wandb run already in progress and newly created instances of `WandbLogger` will reuse this run. If this is not desired, call `wandb.finish()` before instantiating `WandbLogger`.
+  | Name        | Type       | Params
+-------------------------------------------
+0 | geopath_net | GeoPathMLP | 8.8 K
+-------------------------------------------
+8.8 K     Trainable params
+0         Non-trainable params
+8.8 K     Total params
+0.035     Total estimated model params size (MB)
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loops/fit_loop.py:298: The number of training batches (6) is smaller than the logging interval Trainer(log_every_n_steps=50). Set a lower value for log_every_n_steps if you want to see logs for the training epoch.
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/utilities/data.py:77: Trying to infer the `batch_size` from an ambiguous collection. The batch size we found is 128. To avoid any miscalculations, use `self.log(..., batch_size=batch_size)`.
+Epoch 19: 100%|█| 6/6 [00:00<00:00, 70.59it/s, v_num=xhzu, GeoPathNet/train_loss_geopath_step=1.850, GeoPathNet/mean_velocity_geopa
+Validation DataLoader 0:   0%|                                                                               | 0/1 [00:00<?, ?it/s]
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loggers/wandb.py:390: There is a wandb run already in progress and newly created instances of `WandbLogger` will reuse this run. If this is not desired, call `wandb.finish()` before instantiating `WandbLogger`.
+GPU available: True (cuda), used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/setup.py:187: GPU available but not used. You can set it by doing `Trainer(accelerator='gpu')`.
+  | Name     | Type        | Params
+-----------------------------------------
+0 | flow_net | VelocityNet | 8.7 K
+-----------------------------------------
+8.7 K     Trainable params
+0         Non-trainable params
+8.7 K     Total params
+0.035     Total estimated model params size (MB)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Epoch 349: 100%|█| 6/6 [00:00<00:00, 84.93it/s, v_num=xhzu, FlowNet/mean_geopath_cfm=0.184, FlowNet/train_loss_cfm=0.181, FlowNet/v
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Epoch 690: 100%|█| 6/6 [00:00<00:00, 75.37it/s, v_num=xhzu, FlowNet/mean_geopath_cfm=0.179, FlowNet/train_loss_cfm=0.155, FlowNet/v
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/connectors/data_connector.py:441: The 'test_dataloader' does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` to `num_workers=23` in the `DataLoader` to improve performance.
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/torchdyn/numerics/odeint.py:83: UserWarning: Setting tolerances has no effect on fixed-step methods
+Epoch 709: 100%|█| 6/6 [00:00<00:00, 64.19it/s, v_num=xhzu, FlowNet/mean_geopath_cfm=0.188, FlowNet/train_loss_cfm=0.162, FlowNet/v
+Testing DataLoader 0: 100%|██████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00,  1.80it/s]
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+       Test metric             DataLoader 0
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+        test_EMD            0.6280454397201538
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────

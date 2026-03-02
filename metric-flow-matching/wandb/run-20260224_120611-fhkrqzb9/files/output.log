@@ -1,0 +1,153 @@
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loggers/wandb.py:390: There is a wandb run already in progress and newly created instances of `WandbLogger` will reuse this run. If this is not desired, call `wandb.finish()` before instantiating `WandbLogger`.
+You are using a CUDA device ('NVIDIA A100 80GB PCIe') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+  | Name        | Type       | Params
+-------------------------------------------
+0 | geopath_net | GeoPathMLP | 11.3 K
+-------------------------------------------
+11.3 K    Trainable params
+0         Non-trainable params
+11.3 K    Total params
+0.045     Total estimated model params size (MB)
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loops/fit_loop.py:298: The number of training batches (8) is smaller than the logging interval Trainer(log_every_n_steps=50). Set a lower value for log_every_n_steps if you want to see logs for the training epoch.
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/utilities/data.py:77: Trying to infer the `batch_size` from an ambiguous collection. The batch size we found is 128. To avoid any miscalculations, use `self.log(..., batch_size=batch_size)`.
+
+
+Epoch 45: 100%|█████████████████████████████████████████████| 8/8 [00:00<00:00, 98.88it/s, v_num=qzb9, GeoPathNet/train_loss_geopath_step=0.972, GeoPathNet/mean_velocity_geopath=2.58e+4, GeoPathNet/val_loss_geopath=1.030, GeoPathNet/mean_geopath_geopath=0.181, GeoPathNet/train_loss_geopath_epoch=0.999]
+
+
+
+Epoch 116: 100%|███████████████████████████████████████████| 8/8 [00:00<00:00, 29.77it/s, v_num=qzb9, GeoPathNet/train_loss_geopath_step=0.958, GeoPathNet/mean_velocity_geopath=2.57e+4, GeoPathNet/val_loss_geopath=1.020, GeoPathNet/mean_geopath_geopath=0.0516, GeoPathNet/train_loss_geopath_epoch=0.998]
+
+Epoch 151: 100%|███████████████████████████████████████████| 8/8 [00:00<00:00, 99.50it/s, v_num=qzb9, GeoPathNet/train_loss_geopath_step=0.953, GeoPathNet/mean_velocity_geopath=2.58e+4, GeoPathNet/val_loss_geopath=1.030, GeoPathNet/mean_geopath_geopath=0.0367, GeoPathNet/train_loss_geopath_epoch=1.000]
+
+Validation DataLoader 0: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 390.31it/s]
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+  | Name     | Type        | Params
+-----------------------------------------
+0 | flow_net | VelocityNet | 11.2 K
+-----------------------------------------
+11.2 K    Trainable params
+0         Non-trainable params
+11.2 K    Total params
+0.045     Total estimated model params size (MB)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Epoch 409: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:00<00:00, 43.96it/s, v_num=qzb9, FlowNet/mean_geopath_cfm=0.0411, FlowNet/train_loss_cfm=0.0444, FlowNet/val_loss_cfm=0.0481]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Epoch 1589: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:00<00:00, 101.95it/s, v_num=qzb9, FlowNet/mean_geopath_cfm=0.0411, FlowNet/train_loss_cfm=0.00701, FlowNet/val_loss_cfm=0.00554]
+
+Epoch 1639: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:00<00:00, 105.09it/s, v_num=qzb9, FlowNet/mean_geopath_cfm=0.0411, FlowNet/train_loss_cfm=0.0108, FlowNet/val_loss_cfm=0.00789]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Epoch 1999: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 8/8 [00:00<00:00, 54.08it/s, v_num=qzb9, FlowNet/mean_geopath_cfm=0.0411, FlowNet/train_loss_cfm=0.00471, FlowNet/val_loss_cfm=0.00543]
+Validation DataLoader 0: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 451.00it/s]
+`Trainer.fit` stopped: `max_epochs=2000` reached.
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+Testing DataLoader 0: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 736.75it/s]

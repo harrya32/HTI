@@ -1,0 +1,152 @@
+GPU available: True (cuda), used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/setup.py:187: GPU available but not used. You can set it by doing `Trainer(accelerator='gpu')`.
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loggers/wandb.py:390: There is a wandb run already in progress and newly created instances of `WandbLogger` will reuse this run. If this is not desired, call `wandb.finish()` before instantiating `WandbLogger`.
+  | Name        | Type       | Params
+-------------------------------------------
+0 | geopath_net | GeoPathMLP | 8.8 K
+-------------------------------------------
+8.8 K     Trainable params
+0         Non-trainable params
+8.8 K     Total params
+0.035     Total estimated model params size (MB)
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loops/fit_loop.py:298: The number of training batches (35) is smaller than the logging interval Trainer(log_every_n_steps=50). Set a lower value for log_every_n_steps if you want to see logs for the training epoch.
+Training: |                                                                                                                                                                                                   | 0/? [00:00<?, ?it/s]
+
+
+
+
+
+
+
+
+
+
+
+Epoch 10: 100%|█| 35/35 [00:02<00:00, 17.22it/s, v_num=mxze, GeoPathNet/train_loss_geopath_step=0.0108, GeoPathNet/mean_velocity_geopath=2.710, GeoPathNet/val_loss_geopath=0.0097, GeoPathNet/mean_geopath_geopath=0.559, GeoPathNe
+
+
+
+
+
+
+
+Epoch 17: 100%|█| 35/35 [00:01<00:00, 18.57it/s, v_num=mxze, GeoPathNet/train_loss_geopath_step=0.00973, GeoPathNet/mean_velocity_geopath=2.280, GeoPathNet/val_loss_geopath=0.00808, GeoPathNet/mean_geopath_geopath=0.550, GeoPath
+
+
+
+
+Epoch 21:  60%|▌| 21/35 [00:01<00:00, 14.93it/s, v_num=mxze, GeoPathNet/train_loss_geopath_step=0.00805, GeoPathNet/mean_velocity_geopath=2.260, GeoPathNet/val_loss_geopath=0.00845, GeoPathNet/mean_geopath_geopath=0.537, GeoPath
+GPU available: True (cuda), used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+  | Name     | Type        | Params
+-----------------------------------------
+0 | flow_net | VelocityNet | 8.7 K
+-----------------------------------------
+8.7 K     Trainable params
+0         Non-trainable params
+8.7 K     Total params
+Epoch 21: 100%|█| 35/35 [00:02<00:00, 15.07it/s, v_num=mxze, GeoPathNet/train_loss_geopath_step=0.010, GeoPathNet/mean_velocity_geopath=2.130, GeoPathNet/val_loss_geopath=0.00831, GeoPathNet/mean_geopath_geopath=0.546, GeoPathNe
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Epoch 129: 100%|████████████████████████████████████████████████████████████████████████████| 35/35 [00:01<00:00, 22.09it/s, v_num=mxze, FlowNet/mean_geopath_cfm=0.557, FlowNet/train_loss_cfm=0.0478, FlowNet/val_loss_cfm=0.0468]
+Testing DataLoader 0:   0%|                                                                                                                                                                                   | 0/1 [00:00<?, ?it/s]
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/connectors/data_connector.py:441: The 'test_dataloader' does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` to `num_workers=23` in the `DataLoader` to improve performance.
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/torchdyn/numerics/odeint.py:83: UserWarning: Setting tolerances has no effect on fixed-step methods
+Testing DataLoader 0: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:03<00:00,  0.32it/s]
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+       Test metric             DataLoader 0
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+        test_EMD            0.11423167586326599
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────

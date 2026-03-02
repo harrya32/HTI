@@ -1,0 +1,1 @@
+{"FlowNet/train_loss_cfm": 6.740877151489258, "epoch": 349, "trainer/global_step": 2099, "_timestamp": 1772398501.3205981, "_runtime": 31.221086025238037, "_step": 384, "FlowNet/val_loss_cfm": 6.842916488647461, "_wandb": {"runtime": 30}}

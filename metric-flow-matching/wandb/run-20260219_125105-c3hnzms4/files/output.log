@@ -1,0 +1,89 @@
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loggers/wandb.py:390: There is a wandb run already in progress and newly created instances of `WandbLogger` will reuse this run. If this is not desired, call `wandb.finish()` before instantiating `WandbLogger`.
+You are using a CUDA device ('NVIDIA A100 80GB PCIe') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+  | Name        | Type       | Params
+-------------------------------------------
+0 | geopath_net | GeoPathMLP | 11.2 K
+-------------------------------------------
+11.2 K    Trainable params
+0         Non-trainable params
+11.2 K    Total params
+0.045     Total estimated model params size (MB)
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loops/fit_loop.py:298: The number of training batches (6) is smaller than the logging interval Trainer(log_every_n_steps=50). Set a lower value for log_every_n_steps if you want to see logs for the training epoch.
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/mnt/pdata/hmka3/HTI/metric-flow-matching/mfm/train/main.py", line 259, in <module>
+    main(updated_args, seed=seed, t_exclude=None)
+  File "/mnt/pdata/hmka3/HTI/metric-flow-matching/mfm/train/main.py", line 175, in main
+    trainer.fit(
+  File "/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 543, in fit
+    call._call_and_handle_interrupt(
+  File "/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/call.py", line 44, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 579, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path)
+  File "/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 986, in _run
+    results = self._run_stage()
+              ^^^^^^^^^^^^^^^^^
+  File "/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 1032, in _run_stage
+    self.fit_loop.run()
+  File "/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loops/fit_loop.py", line 201, in run
+    self.on_run_start()
+  File "/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loops/fit_loop.py", line 328, in on_run_start
+    call._call_lightning_module_hook(trainer, "on_train_start")
+  File "/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/call.py", line 157, in _call_lightning_module_hook
+    output = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/mnt/pdata/hmka3/HTI/metric-flow-matching/mfm/flow_matchers/geopath_net_train.py", line 43, in on_train_start
+    self.first_loss = self.compute_initial_loss()
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/pdata/hmka3/HTI/metric-flow-matching/mfm/flow_matchers/geopath_net_train.py", line 68, in compute_initial_loss
+    loss = self._compute_loss(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/mnt/pdata/hmka3/HTI/metric-flow-matching/mfm/flow_matchers/geopath_net_train.py", line 105, in _compute_loss
+    ts, xts, uts, ct = self._process_flow(x0s, x1s, c0s, c1s)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/pdata/hmka3/HTI/metric-flow-matching/mfm/flow_matchers/geopath_net_train.py", line 184, in _process_flow
+    t_cls = t[mask0][:min_n] if len(t) > min_n else t[:min_n]
+            ~^^^^^^^
+RuntimeError: indices should be either on cpu or on the same device as the indexed tensor (cpu)
+[1m-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+[1m<frozen runpy> 198 _run_module_as_main
+[1m<frozen runpy> 88 _run_code
+[1mmain.py 259 <module>
+[1mmain(updated_args, seed=seed, t_exclude=None)
+[1mmain.py 175 main
+[1mtrainer.fit(
+[1mtrainer.py 543 fit
+[1mcall._call_and_handle_interrupt(
+[1mcall.py 44 _call_and_handle_interrupt
+[1mreturn trainer_fn(*args, **kwargs)
+[1mtrainer.py 579 _fit_impl
+[1mself._run(model, ckpt_path=ckpt_path)
+[1mtrainer.py 986 _run
+[1mresults = self._run_stage()
+[1mtrainer.py 1032 _run_stage
+[1mself.fit_loop.run()
+[1mfit_loop.py 201 run
+[1mself.on_run_start()
+[1mfit_loop.py 328 on_run_start
+[1mcall._call_lightning_module_hook(trainer, "on_train_start")
+[1mcall.py 157 _call_lightning_module_hook
+[1moutput = fn(*args, **kwargs)
+[1mgeopath_net_train.py 43 on_train_start
+[1mself.first_loss = self.compute_initial_loss()
+[1mgeopath_net_train.py 68 compute_initial_loss
+[1mloss = self._compute_loss(
+[1mgeopath_net_train.py 105 _compute_loss
+[1mts, xts, uts, ct = self._process_flow(x0s, x1s, c0s, c1s)
+[1mgeopath_net_train.py 184 _process_flow
+[1mt_cls = t[mask0][:min_n] if len(t) > min_n else t[:min_n]
+[1mRuntimeError:
+[1mindices should be either on cpu or on the same device as the indexed tensor (cpu)
+Training: |                                                                                                                                                                                                  | 0/? [00:00<?, ?it/s]

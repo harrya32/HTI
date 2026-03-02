@@ -1,0 +1,202 @@
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loggers/wandb.py:390: There is a wandb run already in progress and newly created instances of `WandbLogger` will reuse this run. If this is not desired, call `wandb.finish()` before instantiating `WandbLogger`.
+You are using a CUDA device ('NVIDIA A100 80GB PCIe') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+  | Name        | Type       | Params
+-------------------------------------------
+0 | geopath_net | GeoPathMLP | 32.1 K
+-------------------------------------------
+32.1 K    Trainable params
+0         Non-trainable params
+32.1 K    Total params
+0.129     Total estimated model params size (MB)
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loops/fit_loop.py:298: The number of training batches (8) is smaller than the logging interval Trainer(log_every_n_steps=50). Set a lower value for log_every_n_steps if you want to see logs for the training epoch.
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/utilities/data.py:77: Trying to infer the `batch_size` from an ambiguous collection. The batch size we found is 128. To avoid any miscalculations, use `self.log(..., batch_size=batch_size)`.
+Epoch 31: 100%|█| 8/8 [00:00<00:00, 94.62it/s, v_num=zwsq, GeoPathNet/train_loss_geopath_step=1.170, GeoPathNet/mean_velocity_geopath=0.812, GeoPathNet/val_loss_geopath=0.916, GeoPathNet/mean_geopath
+
+
+
+
+
+
+Epoch 173: 100%|█| 8/8 [00:00<00:00, 94.74it/s, v_num=zwsq, GeoPathNet/train_loss_geopath_step=1.140, GeoPathNet/mean_velocity_geopath=0.779, GeoPathNet/val_loss_geopath=0.910, GeoPathNet/mean_geopat
+
+
+
+
+Epoch 271: 100%|█| 8/8 [00:00<00:00, 93.77it/s, v_num=zwsq, GeoPathNet/train_loss_geopath_step=1.190, GeoPathNet/mean_velocity_geopath=0.801, GeoPathNet/val_loss_geopath=0.904, GeoPathNet/mean_geopat
+
+
+
+
+
+Epoch 393: 100%|█| 8/8 [00:00<00:00, 93.29it/s, v_num=zwsq, GeoPathNet/train_loss_geopath_step=1.210, GeoPathNet/mean_velocity_geopath=0.789, GeoPathNet/val_loss_geopath=0.897, GeoPathNet/mean_geopat
+Validation DataLoader 0: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 386.18it/s]
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+  | Name     | Type        | Params
+-----------------------------------------
+0 | flow_net | VelocityNet | 32.0 K
+-----------------------------------------
+32.0 K    Trainable params
+0         Non-trainable params
+32.0 K    Total params
+
+
+
+
+
+
+Epoch 139: 100%|██████████████████████████████████████████████████| 8/8 [00:00<00:00, 87.34it/s, v_num=zwsq, FlowNet/mean_geopath_cfm=0.272, FlowNet/train_loss_cfm=0.056, FlowNet/val_loss_cfm=0.0318]
+
+
+
+
+
+Epoch 269: 100%|█████████████████████████████████████████████████| 8/8 [00:00<00:00, 92.30it/s, v_num=zwsq, FlowNet/mean_geopath_cfm=0.272, FlowNet/train_loss_cfm=0.0188, FlowNet/val_loss_cfm=0.0206]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Epoch 3139: 100%|█████████████████████████████████████████████████| 8/8 [00:00<00:00, 75.09it/s, v_num=zwsq, FlowNet/mean_geopath_cfm=0.272, FlowNet/train_loss_cfm=0.006, FlowNet/val_loss_cfm=0.0153]
+Testing DataLoader 0: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1/1 [00:00<00:00, 686.80it/s]
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/connectors/data_connector.py:441: The 'test_dataloader' does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` to `num_workers=23` in the `DataLoader` to improve performance.
