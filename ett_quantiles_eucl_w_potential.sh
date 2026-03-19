@@ -1,7 +1,6 @@
 #!/bin/bash
 
-seeds=(10 11)
-
+seeds=(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19)
 for seed in "${seeds[@]}"; do
   python NLOT/train.py dataset='quantile_data' geometry='sq_euclidean_manifold' num_train_iters=1001 include_inverse_potential=True bandwidth=1.0 conditional_bandwidth=1.0 lambda=0.01 wandb_project="quantile_eucl_w_potential" ctransform_solver.max_iter=10 D=3 C=12 categorical=False seed=$seed
 done
