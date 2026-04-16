@@ -1,6 +1,0 @@
-/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/trainer/setup.py:187: GPU available but not used. You can set it by doing `Trainer(accelerator='gpu')`.
-/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loggers/wandb.py:390: There is a wandb run already in progress and newly created instances of `WandbLogger` will reuse this run. If this is not desired, call `wandb.finish()` before instantiating `WandbLogger`.
-/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/loops/fit_loop.py:298: The number of training batches (6) is smaller than the logging interval Trainer(log_every_n_steps=50). Set a lower value for log_every_n_steps if you want to see logs for the training epoch.
-/home/azureuser/miniconda/envs/mfm/lib/python3.11/site-packages/pytorch_lightning/utilities/data.py:77: Trying to infer the `batch_size` from an ambiguous collection. The batch size we found is 128. To avoid any miscalculations, use `self.log(..., batch_size=batch_size)`.
-Epoch 10: 100%|██████████| 6/6 [00:00<00:00, 59.44it/s, v_num=kfiq, GeoPathNet/train_loss_geopath_step=0.475, GeoPathNet/mean_velocity_geopath=387.0, GeoPathNet/val_loss_geopath=0.724, GeoPathNet/mean_geopath_geopath=0.180, GeoPathNet/train_loss_geopath_epoch=1.180]
-Validation: |          | 0/? [00:00<?, ?it/s]
