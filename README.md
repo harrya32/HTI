@@ -2,6 +2,28 @@
 
 This repository contains code for the ICLR submission "Hyperparameter Trajectory Inference with Conditional Lagrangian Optimal Transport". 
 
+# Repository Contents
+
+```text
+HTI/
+├── NLOT/                  # Core HTI code, configs, and datasets used by train.py
+│   ├── lagrangian_ot/     # CLOT surrogate implementation
+│   ├── data/              # .pt datasets consumed by HTI training
+│   ├── eval_data/         # Optional evaluation marginals for selected experiments
+│   ├── train.py           # Main HTI training entrypoint
+│   └── train.yaml         # Default training configuration
+├── hti_scripts/           # Repro scripts for each experiment (multi-seed HTI runs)
+├── DTR-Bench/             # RL environments, agent training, surrogate evaluation scripts, policies
+│   ├── policies*/         # Saved PPO policies for reward-weighting/reacher experiments
+│   └── run_*.sh           # Surrogate evaluation runners
+├── quantile_regression/   # Quantile forecaster training + data generation
+├── generative_dropout/    # Two-moons diffusion/dropout data generation
+└── README.md              
+```
+
+The CLOT surrogate implementation extends on the code of [Pooladian et al., 2024](https://github.com/facebookresearch/lagrangian-ot).
+
+
 # Training HTI on a new dataset
 
 ## 1. Create and activate conda environment
@@ -36,7 +58,7 @@ Expected shape:
 - If `categorical=True`, the code uses the first conditioning column (`x[:, D]`) as an integer category id in `[0, num_categories-1]` (use `C=1` in this case).
 - If `categorical=False`, all `C` conditioning columns are treated as continuous features.
 
-### 5. Register the dataset name
+### 4. Register the dataset name
 Edit `NLOT/lagrangian_ot/data.py`:
 
 - In `get_samplers(...)`, add your dataset name to `paths`, e.g. `"my_dataset": "my_dataset.pt"`.
@@ -47,7 +69,7 @@ Optional:
 
 - Add custom intermediate-marginal evaluation data in `NLOT/train.py` inside `_get_marginal_eval_data(...)` if you want evaluation beyond training loss.
 
-### 6. Set training settings
+### 5. Set training settings
 Base defaults live in `NLOT/train.yaml`. You can override any field at runtime via CLI.
 
 Common settings to change:
@@ -57,7 +79,7 @@ Common settings to change:
 - Learned geometry/potential energy: `geometry`, `include_inverse_potential`
 - Logging/output: `wandb`, `wandb_project`, `plot_frequency`, `save_frequency`, `collect_save_dir`
 
-### 7. Run training
+### 6. Run training
 From repo root:
 
 ```bash
@@ -66,7 +88,7 @@ python NLOT/train.py
 
 To run the full set of HTI variants across seeds, copy/edit one of the scripts in `hti_scripts/` and replace dataset/dimension/hyperparameter values.
 
-### 8. Accessing saved checkpoints
+### 7. Accessing saved checkpoints
 Each run writes to a timestamped Hydra run directory:
 
 ```text
@@ -282,3 +304,15 @@ Run the following script to train each examined HTI method, over twenty iteratio
 ```
 
 The W.D. results can be seen in the wandb project logs.
+
+# Citation
+```
+@inproceedings{
+  amad2026hyperparameter,
+  title={Hyperparameter Trajectory Inference with Conditional Lagrangian Optimal Transport},
+  author={Harry Amad and Mihaela van der Schaar},
+  booktitle={The Fourteenth International Conference on Learning Representations},
+  year={2026},
+  url={https://openreview.net/pdf?id=P5B97gZwRb}
+}
+```
