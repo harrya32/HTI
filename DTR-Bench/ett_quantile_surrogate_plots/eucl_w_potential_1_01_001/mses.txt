@@ -1,8 +1,0 @@
-Overall MSEs for eucl_w_potential_1_01_001
-Workspace 0: 0.273710
-Workspace 1: 1.077912
-Workspace 2: 0.955198
-Workspace 3: 0.468045
-Workspace 4: 0.514825
-
-Mean: 0.657938, Std: 0.306240

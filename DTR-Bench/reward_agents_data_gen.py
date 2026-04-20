@@ -6,8 +6,6 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env 
 import torch
 
-#Generates datasets from trained agents acting in common environment, for use with HTI
-
 #load in agent
 agent_0 = PPO.load("policies/ppo_ghaffari_cancer_model__0.zip")
 agent_1 = PPO.load("policies/ppo_ghaffari_cancer_model__100.zip")
@@ -25,12 +23,7 @@ models = [agent_0, agent_1, agent_2, agent_3, agent_4, agent_5, agent_6, agent_7
 # --- Parameters ---
 ENV_NAME = 'GhaffariCancerEnv-continuous'
 NUM_EVAL_EPISODES = 20         
-PLOT_DIR = "reward_weighting_plots"
-ACTION_PLOT_DIR = os.path.join(PLOT_DIR, "action_scatter_plots")
-REWARD_PLOT_DIR = os.path.join(PLOT_DIR, "reward_plots")
 DATASET_DIR = "reward_weighting_data"
-os.makedirs(ACTION_PLOT_DIR, exist_ok=True)
-os.makedirs(REWARD_PLOT_DIR, exist_ok=True)
 os.makedirs(DATASET_DIR, exist_ok=True)
 
 env = make_vec_env(ENV_NAME, n_envs=1)
@@ -81,27 +74,4 @@ dataset = torch.stack(tensor_data)
 dataset_path = os.path.join(DATASET_DIR, "reward_weighting_data_0_10_testing.pt")
 print("Shape of dataset:", dataset.shape)
 torch.save(dataset, dataset_path)
-
-# for each model, plot the actions
-for i, model in enumerate(models):
-    agent_data = state_action_data[i][:1000]
-    agent_data = np.array(agent_data)
-    actions = agent_data[:, :2]
-    #print the average of each action for each model
-    print(f"Model {i+1} - Action 1 mean: {np.mean(actions[:, 0])}, Action 2 mean: {np.mean(actions[:, 1])}")
-    states = agent_data[:, 2:]
-    states = np.concatenate([np.repeat(i, 10) for i in range(10)])
-    
-    # Plotting
-    plt.figure(figsize=(10, 6))
-    plt.scatter(actions[:, 0], actions[:, 1], alpha=0.3)
-    plt.title(f"Actions for Model {i+1}")
-    plt.xlabel("Action 1")
-    plt.ylabel("Action 2")
-    plt.xlim(0, 10)
-    plt.ylim(0, 10)
-    plt.colorbar(label='State')
-    plt.grid()
-    plt.savefig(os.path.join(ACTION_PLOT_DIR, f"actions_model_{i+1}.png"))
-    plt.close()
     

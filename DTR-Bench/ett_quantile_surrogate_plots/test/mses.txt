@@ -1,4 +1,0 @@
-Overall MSEs for test
-Workspace 0: 0.348717
-
-Mean: 0.348717, Std: 0.000000

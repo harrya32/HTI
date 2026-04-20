@@ -1,3 +1,0 @@
-===== Overall Results =====
-Average Reward across all lambda values and all workspaces = -6.2405
-(Not enough samples to calculate confidence interval)

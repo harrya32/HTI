@@ -34,9 +34,9 @@ LAMBDA_PUSHFORWARD = args.lambda_pushforward
 RUN_NAME = args.name
 ITER = args.iter
 
-PLOT_DIR = f"reacher_surrogate_plots/iclr/{RUN_NAME}"
+PLOT_DIR = f"reacher_surrogate_plots/{RUN_NAME}"
 os.makedirs(PLOT_DIR, exist_ok=True)
-WORKSPACES_DIR = f"../NLOT/surrogate_models/reacher/iclr/{RUN_NAME}/"
+WORKSPACES_DIR = f"../NLOT/surrogate_models/reacher/{RUN_NAME}/"
 
 class ReacherRewardWrapper(gym.Wrapper):
     def __init__(self, env, control_cost_weight=1.0):

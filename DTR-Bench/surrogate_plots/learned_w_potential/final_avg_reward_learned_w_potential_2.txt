@@ -1,3 +1,0 @@
-===== Overall Results =====
-Average Reward across all lambda values and all workspaces = 59.9051
-95% CI for Final Average: [31.7343, 88.0759]
