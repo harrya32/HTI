@@ -45,7 +45,7 @@ class Workspace:
         print(f"all_samples shape: {self.all_samples.shape}")
 
         if self.cfg.get('include_inverse_potential', False):
-            if self.data in {"conditional_semicircles", "2moons_dropout"}:
+            if self.cfg.get('categorical', False):
                 lagrangian_potential_initializer_fn = lagrangian_potentials.DensityPotentialCircles(
                     D=self.cfg.get('D', 2),
                     C=self.cfg.get('C', 0),

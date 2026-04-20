@@ -27,7 +27,7 @@ wandb_project: "2moons_eucl_w_potential"
 
 plot_frequency: 500
 save_frequency: ${plot_frequency}
-collect_save_dir: null
+collect_save_dir: saves
 
 plotting:
   disable: False

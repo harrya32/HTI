@@ -31,7 +31,7 @@ LAMBDA_PUSHFORWARD = args.lambda_pushforward
 RUN_NAME = args.name
 ITER = args.iter
 
-PLOT_DIR = f"hinge_surrogate_plots/{RUN_NAME}"
+PLOT_DIR = f"surrogate_plots_hinge/{RUN_NAME}"
 os.makedirs(PLOT_DIR, exist_ok=True)
 WORKSPACES_DIR = f"../NLOT/surrogate_models/reward_weighting_hinge/{RUN_NAME}/"
 

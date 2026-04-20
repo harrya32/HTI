@@ -71,7 +71,7 @@ for i in range(len(models)):
     tensor_data.append(torch.tensor(agent_data, dtype=torch.float32))
 
 dataset = torch.stack(tensor_data)
-dataset_path = os.path.join(DATASET_DIR, "reward_weighting_data_0_10_testing.pt")
+dataset_path = os.path.join(DATASET_DIR, "reward_weighting_data_0_10.pt")
 print("Shape of dataset:", dataset.shape)
 torch.save(dataset, dataset_path)
     
