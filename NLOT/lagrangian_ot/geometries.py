@@ -5,13 +5,10 @@ from flax import linen as nn
 import functools
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-import copy
 from typing import Callable, Optional, Tuple, Dict
-from enum import Enum
 from lagrangian_ot import (
     metrics,
     geodesics,
-    lagrangian_potentials,
     splines,
     spline_amortizer,
 )
@@ -25,20 +22,13 @@ class DistanceModes:
 def get(
     name, 
     geometry_kwargs, 
-    land_kwargs, 
-    rbf_kwargs, 
-    samples=None, 
     D=2, 
     C=0, 
     categorical=False, 
     num_categories=0,
     lagrangian_potential_initializer_fn=None):
     
-    if name == "sq_euclidean":
-        return SqEuclidean()
-    elif name == "gmm":
-        return SqEuclidean(bounds=(-20, 20))
-    elif name == "sq_euclidean_manifold":
+    if name == "sq_euclidean_manifold":
         return MetricManifold(
             distance_mode=DistanceModes.SQUARED_GEODESIC,
             metric_initializer_fn=metrics.EuclideanMetric,
@@ -48,115 +38,6 @@ def get(
             categorical=categorical,
             num_categories=num_categories,
             lagrangian_potential_initializer_fn=lagrangian_potential_initializer_fn,
-            **geometry_kwargs,
-        )
-    elif name == "scarvelis_circle":
-        return MetricManifold(
-            bounds=(-1.5, 1.5),
-            distance_mode=DistanceModes.SQUARED_GEODESIC,
-            metric_initializer_fn=metrics.CircleMetric,
-            **geometry_kwargs,
-        )
-    elif name == "scarvelis_vee":
-        xbounds = (-2.5, 15)
-        ybounds = (-15, 15)
-        bounds = (
-            jnp.array((xbounds[0], ybounds[0])),
-            jnp.array((xbounds[1], ybounds[1])),
-        )
-        return MetricManifold(
-            distance_mode=DistanceModes.SQUARED_GEODESIC,
-            metric_initializer_fn=metrics.VeeMetric,
-            xbounds=xbounds,
-            ybounds=ybounds,
-            bounds=bounds,
-            **geometry_kwargs,
-        )
-    elif name == "scarvelis_xpath":
-        return MetricManifold(
-            bounds=(-1.5, 1.5),
-            distance_mode=DistanceModes.SQUARED_GEODESIC,
-            metric_initializer_fn=metrics.XMetric,
-            **geometry_kwargs,
-        )
-    elif name == "lsb_box":
-        return MetricManifold(
-            bounds=(-1.5, 1.5),
-            distance_mode=DistanceModes.LAGRANGIAN,
-            metric_initializer_fn=metrics.EuclideanMetric,
-            lagrangian_potential_initializer_fn=lagrangian_potentials.BoxPotential,
-            **geometry_kwargs,
-        )
-    elif name == "lsb_slit":
-        return MetricManifold(
-            bounds=(-1.5, 1.5),
-            distance_mode=DistanceModes.LAGRANGIAN,
-            metric_initializer_fn=metrics.EuclideanMetric,
-            lagrangian_potential_initializer_fn=lagrangian_potentials.SlitPotential,
-            **geometry_kwargs,
-        )
-    elif name == "lsb_hill":
-        return MetricManifold(
-            bounds=(-2, 2),
-            distance_mode=DistanceModes.LAGRANGIAN,
-            metric_initializer_fn=metrics.EuclideanMetric,
-            lagrangian_potential_initializer_fn=lagrangian_potentials.HillPotential,
-            **geometry_kwargs,
-        )
-    elif name == "lsb_well":
-        return MetricManifold(
-            bounds=(-2, 2),
-            distance_mode=DistanceModes.LAGRANGIAN,
-            metric_initializer_fn=metrics.EuclideanMetric,
-            lagrangian_potential_initializer_fn=lagrangian_potentials.WellPotential,
-            **geometry_kwargs,
-        )
-    elif name == "gsb_gmm":
-        return MetricManifold(
-            bounds=(-20, 20),
-            distance_mode=DistanceModes.LAGRANGIAN,
-            metric_initializer_fn=metrics.EuclideanMetric,
-            lagrangian_potential_initializer_fn=lagrangian_potentials.GSB_GMM_Potential,
-            **geometry_kwargs,
-        )
-    elif name == "gsb_vneck":
-        xbounds = (-10, 10)
-        ybounds = (-8, 8)
-        bounds = (
-            jnp.array((xbounds[0], ybounds[0])),
-            jnp.array((xbounds[1], ybounds[1])),
-        )
-        return MetricManifold(
-            xbounds=xbounds,
-            ybounds=ybounds,
-            bounds=bounds,
-            distance_mode=DistanceModes.LAGRANGIAN,
-            metric_initializer_fn=metrics.EuclideanMetric,
-            lagrangian_potential_initializer_fn=lagrangian_potentials.GSB_VNeck_Potential,
-            **geometry_kwargs,
-        )
-    elif name == "gsb_stunnel":
-        xbounds = (-15, 15)
-        ybounds = (-7.5, 7.5)
-        bounds = (
-            jnp.array((xbounds[0], ybounds[0])),
-            jnp.array((xbounds[1], ybounds[1])),
-        )
-        return MetricManifold(
-            xbounds=xbounds,
-            ybounds=ybounds,
-            bounds=bounds,
-            distance_mode=DistanceModes.LAGRANGIAN,
-            metric_initializer_fn=metrics.EuclideanMetric,
-            lagrangian_potential_initializer_fn=lagrangian_potentials.GSB_STunnel_Potential,
-            **geometry_kwargs,
-        )
-    elif name == "babymaze":
-        return MetricManifold(
-            bounds=(-2, 2),
-            distance_mode=DistanceModes.LAGRANGIAN,
-            metric_initializer_fn=metrics.EuclideanMetric,
-            lagrangian_potential_initializer_fn=lagrangian_potentials.BabyMazePotential,
             **geometry_kwargs,
         )
     elif name == "neural_net_metric":
@@ -211,137 +92,6 @@ class GeometryBase(ABC, nn.Module):
 
     def add_plot_background(self, params, ax, xlims, ylims=None, **kwargs):
         pass
-
-
-eps = 1e-5
-divsin = lambda x: x / jnp.sin(x)
-sindiv = lambda x: jnp.sin(x) / (x + eps)
-divsinh = lambda x: x / jnp.sinh(x)
-sinhdiv = lambda x: jnp.sinh(x) / (x + eps)
-
-
-class Sphere(GeometryBase):
-    jitter: float = 1e-2
-
-    def exponential_map(self, x, v):
-        v_norm = jnp.linalg.norm(v, axis=-1, keepdims=True)
-        return x * jnp.cos(v_norm) + v * sindiv(v_norm)
-
-    def log(self, x, y):
-        xy = (x * y).sum(axis=-1, keepdims=True)
-        xy = jnp.clip(xy, a_min=-1 + 1e-6, a_max=1 - 1e-6)
-        val = jnp.arccos(xy)
-        return divsin(val) * (y - xy * x)
-
-    def tangent_projection(self, x, u):
-        proj_u = u - x * x.dot(u)
-        return proj_u
-
-    def tangent_orthonormal_basis(self, x, dF):
-        assert x.ndim == 2
-
-        if x.shape[1] == 2:
-            E = x[:, jnp.array([1, 0])] * jnp.array([-1.0, 1.0])
-            E = E.reshape(*E.shape, 1)
-        elif x.shape[1] == 3:
-            norm_v = dF / jnp.linalg.norm(dF, axis=-1, keepdims=True)
-            E = jnp.dstack([norm_v, jnp.cross(x, norm_v)])
-        else:
-            raise NotImplementedError()
-
-        return E
-
-    def dist(self, x, y):
-        inner = jnp.matmul(x, y)
-        inner = inner / (1 + self.jitter)
-        return jnp.arccos(inner)
-
-    ### made cost = dist^2
-    def cost(self, x, y):
-        return self.dist(x, y) ** 2 / 2.0
-
-    ##changed to project
-    def project(self, x):
-        x /= jnp.linalg.norm(x, axis=-1, keepdims=True)
-        return x
-
-    def transp(self, x, y, u):
-        yu = jnp.sum(y * u, axis=-1, keepdims=True)
-        xy = jnp.sum(x * y, axis=-1, keepdims=True)
-        return u - yu / (1 + xy) * (x + y)
-
-    def logdetexp(self, x, u):
-        norm_u = jnp.linalg.norm(u, axis=-1)
-        val = jnp.log(jnp.abs(sindiv(norm_u)))
-        return (u.shape[-1] - 2) * val
-
-    def zero(self):
-        y = jnp.zeros(self.D)
-        y = y.at[..., 0].set(-1.0)
-        return y
-
-    def zero_like(self, x):
-        y = jnp.zeros_like(x)
-        y = y.at[..., 0].set(-1.0)
-        return y
-
-    def squeeze_tangent(self, x):
-        return x[..., 1:]
-
-    def unsqueeze_tangent(self, x):
-        return jnp.concatenate((jnp.zeros_like(x[..., :1]), x), axis=-1)
-
-    # TODO: code up the path
-    def path(self, x, y, num_points=20):
-        pass
-
-
-class SqEuclidean(GeometryBase):
-    lagrangian_potential_initializer_fn: Optional[Callable] = None
-    
-    def setup(self):
-        
-        if self.lagrangian_potential_initializer_fn is not None:
-            self.lagrangian_potential_module = self.lagrangian_potential_initializer_fn
-
-
-    def lagrangian_potential(self, x):
-        return self.lagrangian_potential_module(x)
-
-    def cost(self, x, y):
-        assert x.ndim == 1 and y.ndim == 1
-        x_ambient = x[:self.D]
-        y_ambient = y[:self.D]
-
-        if self.lagrangian_potential_initializer_fn is not None:
-            path = self.path(x, y)
-            potential = 0
-
-            for i in range(path.shape[0] - 1):
-                potential += self.lagrangian_potential(path[i])
-
-            return 0.5 * jnp.linalg.norm(x_ambient - y_ambient) ** 2 + potential
-        
-        else:
-            return 0.5 * jnp.linalg.norm(x_ambient - y_ambient) ** 2
-
-    def path(self, x, y, num_points=20):
-        assert x.ndim == 1 and y.ndim == 1
-        x_ambient = x[:self.D]
-        y_ambient = y[:self.D]
-        ambient_path = jnp.linspace(x_ambient, y_ambient, num_points)
-
-        #add back the condition
-        if self.C:
-            condition = x[self.D:]
-            condition_repeated = jnp.tile(condition.reshape(1, -1), (num_points, 1))
-            return jnp.concatenate([ambient_path, condition_repeated], axis=-1)
-        else:
-            return ambient_path
-
-    def project(self, x):
-        return x
-
 
 @dataclass
 class MetricManifold(GeometryBase):
@@ -489,7 +239,6 @@ class MetricManifold(GeometryBase):
 
     def curve_energy(self, xs):
         assert xs.ndim == 2
-        T = xs.shape[0]
         ds = (xs[1:] - xs[:-1]) + 1e-6
         Es = jax.vmap(self.energy_at_point)(xs[:-1], ds)
         return Es.sum()
@@ -575,8 +324,6 @@ class MetricManifold(GeometryBase):
             axs = np.array([axs])
 
         if issubclass(
-            self.metric_initializer_fn, metrics.ScarvelisMetric
-        ) or issubclass(
             self.metric_initializer_fn, metrics.NeuralNetMetric
             ):
             grid_size = 21
@@ -645,10 +392,7 @@ class MetricManifold(GeometryBase):
             else:
                 x_eval = xflat
 
-            vals = -self.lagrangian_potential_vmap_jit(params, x_eval).reshape(x1.shape)
-
             for ax in axs:
-                CS = ax.contourf(x1, x2, vals, cmap="Blues", levels=50)
                 ax.set_xlim(*xlims)
                 ax.set_ylim(*ylims)
 

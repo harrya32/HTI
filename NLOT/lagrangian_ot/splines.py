@@ -1,7 +1,5 @@
 import torch
-import jax
 import jax.numpy as jnp
-from dataclasses import dataclass
 import stochman
 
 def get_basis(D, num_nodes):

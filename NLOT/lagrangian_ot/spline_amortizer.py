@@ -3,10 +3,10 @@ import jax.numpy as jnp
 import optax
 import flax
 from flax import linen as nn
-from typing import Any, Optional
+from typing import Optional
 from dataclasses import dataclass
 from . import splines, meters, geodesics
-from abc import ABC, abstractmethod
+from abc import ABC
 
 class SplineMLP(nn.Module):
     out_dims: int
@@ -106,7 +106,6 @@ class SplineAmortizer:
             assert x.ndim == 1 and y.ndim == 1
             assert x.shape[0] == self.D + self.C
             assert y.shape[0] == self.D + self.C
-            # TODO: num, also set spline knots elsewhere?
             ts = jnp.linspace(0., 1., num=20)
             path = splines.compute_spline(x=x[:self.D], y=y[:self.D], basis=self.basis, params=params_spline, ts=ts)
             condition = x[self.D:]
@@ -128,7 +127,6 @@ class SplineAmortizer:
         grads = grads['spline_model']
         updates, opt_state = self.optimizer.update(grads, opt_state)
         new_params_spline_model = optax.apply_updates(params_geometry['spline_model'], updates)
-        # params_geometry = params_geometry.unfreeze()
         params_geometry['spline_model'] = new_params_spline_model
         grad_norm = jnp.linalg.norm(jax.tree_util.tree_flatten(grads)[0][0])
         return params_geometry, opt_state, loss, grad_norm

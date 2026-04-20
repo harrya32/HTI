@@ -1,16 +1,10 @@
-import numpy as np
 import jax
 import jax.numpy as jnp
 from flax import linen as nn
-import optax
-from flax.training import train_state
-from sklearn.cluster import KMeans
-import copy
-from typing import Tuple, Optional
-from dataclasses import dataclass, field
-from abc import ABC, abstractmethod
+from typing import Optional
+from dataclasses import dataclass
+from abc import abstractmethod
 
-plot_cache = {}
 
 @dataclass
 class MetricBase(nn.Module):
@@ -29,47 +23,6 @@ class EuclideanMetric(MetricBase):
     def __call__(self, x):
         assert x.ndim == 1
         return jnp.eye(self.D)
-
-
-@dataclass
-class ScarvelisMetric(MetricBase, ABC):
-    div_eps: float = 1e-6
-    metric_eps: float = 1e-3
-
-    def __call__(self, x):
-        assert x.ndim == 1
-        D = x.shape[0]
-        v_vals = self.v(x)
-        return jnp.eye(D) - (1-self.metric_eps)*jnp.outer(v_vals, v_vals)
-
-    @abstractmethod
-    def v(self, x):
-        raise NotImplementedError
-
-
-@dataclass
-class CircleMetric(ScarvelisMetric):
-    def v(self, x):
-        assert x.ndim == 1 and x.shape[0] == 2
-        norm = jnp.clip(jnp.linalg.norm(x), a_min=self.div_eps)
-        return jnp.array([-x[1], x[0]]) / norm
-
-@dataclass
-class VeeMetric(ScarvelisMetric):
-    def v(self, x):
-        assert x.ndim == 1 and x.shape[0] == 2
-        sign_y = jnp.sign(x[1])
-        return jnp.array([1./jnp.sqrt(2), sign_y/jnp.sqrt(2)])
-
-@dataclass
-class XMetric(ScarvelisMetric):
-    def v(self, x):
-        assert x.ndim == 1 and x.shape[0] == 2
-        a = 1.25 * jax.nn.tanh(jax.nn.relu(x[0]*x[1]))
-        b = -1.25 * jax.nn.tanh(jax.nn.relu(-x[0]*x[1]))
-        v1 = jnp.array([1./jnp.sqrt(2), 1./jnp.sqrt(2)])
-        v2 = jnp.array([1./jnp.sqrt(2), -1./jnp.sqrt(2)])
-        return (a*v1 + b*v2) / 1.25
 
 @dataclass
 class NeuralNetMetric(MetricBase):

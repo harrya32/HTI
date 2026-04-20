@@ -1,18 +1,8 @@
 import abc
-from typing import Any, Callable, Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence
 import flax.linen as nn
-import jax
 import jax.numpy as jnp
-import optax
-from flax import struct
-from flax.core import frozen_dict
-from flax.training import train_state
-from jax.nn import initializers
 
-from ott.math import matrix_square_root
-
-PotentialValueFn_t = Callable[[jnp.ndarray], jnp.ndarray]
-PotentialGradientFn_t = Callable[[jnp.ndarray], jnp.ndarray]
 
 class ModelBase(abc.ABC, nn.Module):
     """Base class for the neural solver models."""

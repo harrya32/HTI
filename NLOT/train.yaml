@@ -1,14 +1,10 @@
 defaults:
   - _self_
 
-# neural_net_metric, neural_net_metric_eig, neural_net_metric_direct, land_metric, rbf_metric, 
-# scarvelis_circle, scarvelis_xpath, scarvelis_vee, sq_euclidean_manifold
+# neural_net_metric, neural_net_metric_eig, sq_euclidean_manifold
 geometry: 'sq_euclidean_manifold'
 
-# scarvelis_circle, scarvelis_xpath, scarvelis_vee, scarvelis_arch, 
-# scarvelis_conditional_gaussian, scarvelis_conditional_gaussian_complex, sphere_data, 
-# agent_data, conditional_velocity, conditional_rotation, warped_circle, conditional_circles, 
-# conditional_circles_normal, conditional_semicircles, reward_weighting_data, reacher_data, ett_forecasts, quantile_data, quantile_data_long, reward_weighting_hinge_data, reacher_all_data, 2moons_dropout
+# conditional_semicircles, reward_weighting_data, reacher_data, quantile_data, reward_weighting_hinge_data, 2moons_dropout
 dataset: '2moons_dropout'
 D: 2
 C: 1
@@ -31,6 +27,7 @@ wandb_project: "2moons_eucl_w_potential"
 
 plot_frequency: 500
 save_frequency: ${plot_frequency}
+collect_save_dir: null
 
 plotting:
   disable: False

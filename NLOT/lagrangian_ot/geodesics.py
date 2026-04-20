@@ -1,8 +1,6 @@
 import jax
 import jax.numpy as jnp
 from jax import lax
-from jax.scipy import optimize
-import jaxopt
 import optax
 from collections import namedtuple
 from dataclasses import dataclass

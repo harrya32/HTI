@@ -7,7 +7,6 @@ import jax.numpy as jnp
 import optax
 import flax
 from jaxopt import LBFGS
-from ott import utils
 from lagrangian_ot import geometries
 
 class CTransformResults(NamedTuple):
