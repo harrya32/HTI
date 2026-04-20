@@ -6,10 +6,8 @@ import sys
 import pickle as pkl
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
-import torch
 import matplotlib.pyplot as plt
 import argparse
-import jax.numpy as jnp
 import csv
 from gymnasium.core import RewardWrapper
 from scipy import stats

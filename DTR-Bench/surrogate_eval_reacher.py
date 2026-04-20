@@ -1,25 +1,21 @@
-import DTRGym
 import gymnasium as gym
 import numpy as np
 import os
 import sys
 import pickle as pkl
 from stable_baselines3 import PPO
-from stable_baselines3.common.env_util import make_vec_env
 import torch
 import matplotlib.pyplot as plt
 import argparse
-import jax.numpy as jnp
 import csv
-from gymnasium.core import RewardWrapper
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 from scipy import stats
 
 sys.path.append('../NLOT')
 
-AGENT_PATH_1 = "ppo_reacher_weight_1.zip" 
+AGENT_PATH_1 = "policies_reacher/ppo_reacher_weight_1.zip" 
 
-VEC_ENV_FILE_1 = "vec_normalize_reacher_weight_1.pkl"
+VEC_ENV_FILE_1 = "policies_reacher/vec_normalize_reacher_weight_1.pkl"
 
 AGENT_NAME = "single_agent_eval"
 ENV_NAME = 'Reacher-v4'
@@ -107,19 +103,12 @@ def pushforward(action, obs, lambda_val, workspace):
             else:
                 current_sample = end_sample
             break
-        
-        #params_source_map_k = workspace.state_source_maps[k].params
-        #current_sample = workspace.neural_dual_solver.source_map_apply_jit(
-        #    {'params': params_source_map_k},
-        #    current_sample
-        #)
+
     
     action_dim = action.shape[1] if len(action.shape) > 1 else action.shape[0]
     pushforward_action = current_sample[:action_dim].reshape(action.shape)
     
     pushforward_action = np.array(pushforward_action, dtype=np.float32)
-    #print("initial action:", action)
-    #print("pushforward action:", pushforward_action)
 
     return pushforward_action
 

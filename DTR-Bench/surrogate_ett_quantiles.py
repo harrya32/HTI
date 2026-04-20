@@ -1,7 +1,4 @@
-import matplotlib.pyplot as plt
 import argparse
-import jax.numpy as jnp
-import csv
 import sys
 import os
 import pickle as pkl
@@ -60,19 +57,12 @@ def pushforward(forecast, input, lambda_val, workspace):
         
         if T_k <= lambda_val <= T_k_plus_1:
             params_source_map_k = workspace.state_source_maps[k].params
-            #params_target_potential_k = workspace.state_target_potentials[k].params
 
             end_sample = workspace.neural_dual_solver.source_map_apply_jit(
                 {'params': params_source_map_k},
                 current_sample
             )
-        
-            #end_sample = workspace.neural_dual_solver.pushforward_jit(
-            #    params_source_map_k,
-            #    params_target_potential_k,
-            #    workspace.params_geometry,
-            #    current_sample
-            #).solution
+
             
             if lambda_val < T_k_plus_1:
                 s_fraction = (lambda_val - T_k) / (T_k_plus_1 - T_k)
@@ -97,9 +87,7 @@ def pushforward(forecast, input, lambda_val, workspace):
     pushforward_forecast = current_sample[:forecast_dim].reshape(forecast.shape)
 
     pushforward_forecast = np.array(pushforward_forecast, dtype=np.float32)
-    #print("initial forecast:", forecast)
-    #print("pushforward forecast:", pushforward_forecast)
-    
+
     return pushforward_forecast
 
 def evaluate_lambda(data, lambda_val, workspace):
