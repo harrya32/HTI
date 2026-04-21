@@ -34,6 +34,11 @@ ITER = args.iter
 PLOT_DIR = f"surrogate_plots_hinge/{RUN_NAME}"
 os.makedirs(PLOT_DIR, exist_ok=True)
 WORKSPACES_DIR = f"../NLOT/surrogate_models/reward_weighting_hinge/{RUN_NAME}/"
+if not os.path.isdir(WORKSPACES_DIR):
+    raise FileNotFoundError(
+        f"Workspace directory not found: {WORKSPACES_DIR}. "
+        "Train surrogates first via ./hti_scripts/reward_weighting_hinge.sh."
+    )
 
 class CustomRewardWrapper(RewardWrapper):
     def __init__(self, env, lambda_nk: float = 0.5, tau: float = 0.1):
@@ -169,6 +174,7 @@ def evaluate_lambda(model, lambda_val, workspace):
     print(f'\n--- Evaluating agent {AGENT_NAME} for NK penalty with lambda = {lambda_val} ---')
 
     for episode_num in range(NUM_EVAL_EPISODES):
+        env.seed(episode_num)
         initial_obs_for_episode = env.reset()
         obs = initial_obs_for_episode
         done = False
@@ -214,6 +220,7 @@ def evaluate_single_lambda(model, lambda_val, workspace):
     episode_rewards = []
 
     for episode_num in range(NUM_EVAL_EPISODES):
+        env.seed(episode_num)
         initial_obs_for_episode = env.reset()
         obs = initial_obs_for_episode
         done = False
@@ -266,7 +273,7 @@ print(f"Current working directory: {os.getcwd()}")
 print(f"--- Loading Agent: {AGENT_NAME} ---")
 model = PPO.load(AGENT_PATH)
 print(f"Successfully loaded model '{AGENT_NAME}' from '{AGENT_PATH}'")
-workspace_files = [f for f in os.listdir(WORKSPACES_DIR) if f.endswith('.pkl')]
+workspace_files = sorted([f for f in os.listdir(WORKSPACES_DIR) if f.endswith('.pkl')])
 print(f"Found {len(workspace_files)} workspace files in {WORKSPACES_DIR}")
 all_workspace_results = {}
 

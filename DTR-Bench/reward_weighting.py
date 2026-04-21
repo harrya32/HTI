@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import argparse
+import random
+import torch
 from stable_baselines3 import PPO 
 from stable_baselines3.common.env_util import make_vec_env 
 
@@ -13,10 +15,16 @@ from stable_baselines3.common.env_util import make_vec_env
 # --- Parse Arguments ---
 parser = argparse.ArgumentParser(description='Train RL agent with custom reward weighting')
 parser.add_argument('--lambda_nk', type=float, default=1.0, help='Lambda value for reward weighting (default: 1.0)')
+parser.add_argument('--seed', type=int, default=1, help='Random seed for reproducibility.')
 args = parser.parse_args()
 
 # Use the provided lambda value
 lambda_nk = args.lambda_nk
+seed = args.seed
+
+np.random.seed(seed)
+random.seed(seed)
+torch.manual_seed(seed)
 
 # --- Parameters ---
 ENV_NAME = 'GhaffariCancerEnv-continuous'
@@ -59,6 +67,7 @@ def make_env():
     return env
 
 env = make_vec_env(make_env, n_envs=1)
+env.seed(seed)
 
 # --- Define and Train the Agent ---
 print(f"--- Training PPO Agent on {ENV_NAME} ---")
@@ -67,7 +76,8 @@ model = PPO("MlpPolicy",
             env, 
             verbose=1, 
             tensorboard_log=os.path.join(PLOT_DIR, "tensorboard_logs"), 
-            gamma=gamma
+            gamma=gamma,
+            seed=seed,
 )
 
 # Train the agent

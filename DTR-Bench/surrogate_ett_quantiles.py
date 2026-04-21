@@ -20,6 +20,11 @@ device = "cuda:0"
 PLOT_DIR = f"surrogate_plots_ett_quantile/{RUN_NAME}"
 os.makedirs(PLOT_DIR, exist_ok=True)
 WORKSPACES_DIR = f"../NLOT/surrogate_models/ett_quantile/{RUN_NAME}/"
+if not os.path.isdir(WORKSPACES_DIR):
+    raise FileNotFoundError(
+        f"Workspace directory not found: {WORKSPACES_DIR}. "
+        "Train surrogates first via ./hti_scripts/ett_quantiles.sh."
+    )
 LAMBDA_VALUES = [0.1, 0.25, 0.5, 0.75, 0.9]
 
 def load_workspace(workspace_path):
@@ -135,7 +140,7 @@ def main():
     ett_data = torch.load("../quantile_regression/hti_data/hti_data_combined.pt")
     ett_testing_data = ett_data[:,1200:,:]
     print(f"Current working directory: {os.getcwd()}")
-    workspace_files = [f for f in os.listdir(WORKSPACES_DIR) if f.endswith('.pkl')]
+    workspace_files = sorted([f for f in os.listdir(WORKSPACES_DIR) if f.endswith('.pkl')])
     print(workspace_files)
     print(f"Found {len(workspace_files)} workspace files in {WORKSPACES_DIR}")
 
@@ -206,10 +211,13 @@ if __name__ == "__main__":
     print(surrogate_forecasts_01.shape)
     surrogate_forecasts_09 = np.array(surrogate_forecasts_09)
     print(surrogate_forecasts_09.shape)
-
-    # After the existing code at the end of the file:
-
-combined_forecasts = np.concatenate([surrogate_forecasts_01, surrogate_forecasts_09], axis=0)
-fp = os.path.join(PLOT_DIR, f"surrogate_forecasts_q01_q09.npy")
-np.save(fp, combined_forecasts)
-print(f"Saved combined forecasts as NumPy array to {fp}, shape {combined_forecasts.shape}")
+    if surrogate_forecasts_01.size > 0 and surrogate_forecasts_09.size > 0:
+        combined_forecasts = np.concatenate(
+            [surrogate_forecasts_01, surrogate_forecasts_09],
+            axis=0
+        )
+        fp = os.path.join(PLOT_DIR, "surrogate_forecasts_q01_q09.npy")
+        np.save(fp, combined_forecasts)
+        print(f"Saved combined forecasts as NumPy array to {fp}, shape {combined_forecasts.shape}")
+    else:
+        print("No surrogate forecasts available to combine into a NumPy artifact.")

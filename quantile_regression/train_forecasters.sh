@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 QUANTILES="0.01 0.1 0.25 0.5 0.75 0.9 0.99"
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 TRAIN_SCRIPT_PATH="$SCRIPT_DIR/train_quantile_forecaster.py"

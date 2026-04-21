@@ -8,6 +8,7 @@ from sklearn.preprocessing import MinMaxScaler
 import argparse
 import os
 import time
+import random
 import matplotlib.pyplot as plt # <-- NEW IMPORT
 
 # --- 1. Quantile Loss Function (Pinball Loss) ---
@@ -61,11 +62,23 @@ class MLPForecaster(nn.Module):
         x = x.view(x.size(0), -1)
         return self.model(x)
 
+
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    if hasattr(torch.backends, "cudnn"):
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
 # --- 4. Main Training Function ---
 def train(args):
     """
     Main function to handle data loading, training, and saving the model.
     """
+    set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
@@ -187,6 +200,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size for training.')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate.')
     parser.add_argument('--patience', type=int, default=10, help='Number of epochs to wait for improvement before stopping.')
+    parser.add_argument('--seed', type=int, default=1, help='Random seed for reproducibility.')
 
     args = parser.parse_args()
     

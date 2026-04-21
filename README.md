@@ -1,115 +1,125 @@
 # Hyperparameter Trajectory Inference (HTI)
 
-This repository contains code for the ICLR submission "Hyperparameter Trajectory Inference with Conditional Lagrangian Optimal Transport". 
+Code and experiment assets for [**Hyperparameter Trajectory Inference with Conditional Lagrangian Optimal Transport**](https://openreview.net/pdf?id=P5B97gZwRb), by Harry Amad and Mihaela van der Schaar (ICLR 2026).
 
-# Repository Contents
+This repository contains:
+- Conditional Lagrangian optimal transport-based HTI surrogate training code.
+- Data generation + evaluation pipelines for experiments in the paper.
+- Reproducibility scripts that train different CLOT HTI methods across seeds.
+
+The CLOT implementation extends on the code from [Pooladian et al. (2024)](https://github.com/facebookresearch/lagrangian-ot).
+
+## Repository Structure
 
 ```text
 HTI/
-├── NLOT/                  # Core HTI code, configs, and datasets used by train.py
-│   ├── lagrangian_ot/     # CLOT surrogate implementation
-│   ├── data/              # .pt datasets consumed by HTI training
-│   ├── eval_data/         # Optional evaluation marginals for selected experiments
-│   ├── train.py           # Main HTI training entrypoint
-│   └── train.yaml         # Default training configuration
-├── hti_scripts/           # Repro scripts for each experiment (multi-seed HTI runs)
-├── DTR-Bench/             # RL environments, agent training, surrogate evaluation scripts, policies
-│   ├── policies*/         # Saved PPO policies for reward-weighting/reacher experiments
-│   └── run_*.sh           # Surrogate evaluation runners
-├── quantile_regression/   # Quantile forecaster training + data generation
-├── generative_dropout/    # Two-moons diffusion/dropout data generation
-└── README.md              
+├── NLOT/                        # Core HTI training code
+│   ├── lagrangian_ot/           # CLOT surrogate implementation
+│   ├── data/                    # HTI training datasets (.pt)
+│   ├── eval_data/               # Optional marginal eval datasets
+│   ├── train.py                 # Main HTI training entrypoint
+│   └── train.yaml               # Default training config
+├── hti_scripts/                 # Multi-seed training scripts used for paper experiments
+├── DTR-Bench/                   # Cancer and Reacher RL policy training and surrogate evaluation scripts
+├── quantile_regression/         # ETT quantile forecasting training + HTI data generation
+├── generative_dropout/          # Diffusion model with dropout training + HTI data generation
+└── README.md
 ```
 
-The CLOT surrogate implementation extends on the code of [Pooladian et al., 2024](https://github.com/facebookresearch/lagrangian-ot).
+## Environment Setup
 
-
-# Training HTI on a new dataset
-
-## 1. Create and activate conda environment
+Create and activate a Python environment:
 
 ```bash
 conda create -n hti_env python=3.10 -y
 conda activate hti_env
 ```
 
-### 2. Install HTI dependencies
+Install HTI core dependencies:
+
 ```bash
-cd NLOT
-pip install -r requirements.txt
-cd ..
+pip install -r NLOT/requirements.txt
 ```
 
-### 3. Put your dataset in `NLOT/data/`
-The HTI data loader (`NLOT/lagrangian_ot/data.py`) loads a `.pt` file from:
+`NLOT/requirements.txt` pins `jax[cuda12]`. If your machine does not use CUDA 12,
+install a compatible CPU/GPU JAX build first, then install the remaining requirements.
 
-```text
-NLOT/data/<your_dataset>.pt
+Install experiment-specific dependencies as needed:
+
+```bash
+pip install -r DTR-Bench/requirements.txt
+pip install -r quantile_regression/requirements.txt
+pip install -r generative_dropout/requirements.txt
 ```
 
-Expected shape:
+For Reacher experiments, install MuJoCo support:
+
+```bash
+pip install "gymnasium[mujoco]"
+```
+
+## Train HTI on Your Own Data
+
+### 1. Prepare data tensor
+
+HTI expects a `.pt` tensor with shape:
 
 ```text
 [num_timepoints, num_samples_per_timepoint, D + C]
 ```
 
-- `D`: ambient/state dimensions used by OT geometry (first `D` columns).
-- `C`: conditioning dimensions (last `C` columns).
-- If `categorical=True`, the code uses the first conditioning column (`x[:, D]`) as an integer category id in `[0, num_categories-1]` (use `C=1` in this case).
-- If `categorical=False`, all `C` conditioning columns are treated as continuous features.
+Interpretation:
+- First `D` columns: ambient dimensions OT operates in.
+- Last `C` columns: conditioning variables.
+- If `categorical=True`, the first conditioning column (`x[:, D]`) is treated as integer class id in `[0, num_categories - 1]`.
 
-### 4. Register the dataset name
-Edit `NLOT/lagrangian_ot/data.py`:
+### 2. Run training
 
-- In `get_samplers(...)`, add your dataset name to `paths`, e.g. `"my_dataset": "my_dataset.pt"`.
-- In `get_bounds(...)`, add plotting/interpolation bounds for your dataset.
-- Add any required dataset-specific slicing/reformatting in `get_samplers(...)`.
-
-Optional:
-
-- Add custom intermediate-marginal evaluation data in `NLOT/train.py` inside `_get_marginal_eval_data(...)` if you want evaluation beyond training loss.
-
-### 5. Set training settings
-Base defaults live in `NLOT/train.yaml`. You can override any field at runtime via CLI.
-
-Common settings to change:
-
-- Dataset name/dimensions: `dataset`, `D`, `C`, `categorical`, `num_categories`
-- Training budget: `num_train_iters`, `metric.update_frequency`
-- Learned geometry/potential energy: `geometry`, `include_inverse_potential`
-- Logging/output: `wandb`, `wandb_project`, `plot_frequency`, `save_frequency`, `collect_save_dir`
-
-### 6. Run training
-From repo root:
+Use `dataset_path` for custom data, e.g.
 
 ```bash
-python NLOT/train.py
+python NLOT/train.py \
+  dataset='my_dataset' \
+  dataset_path='/absolute/path/to/my_dataset.pt' \
+  D=2 C=3 categorical=False \
+  geometry='neural_net_metric_eig' \
+  include_inverse_potential=True \
+  wandb=False
 ```
 
-To run the full set of HTI variants across seeds, copy/edit one of the scripts in `hti_scripts/` and replace dataset/dimension/hyperparameter values.
+Notes:
+- For custom datasets, plotting bounds are auto-inferred from first 2 ambient dims.
+- You can override bounds explicitly:
 
-### 7. Accessing saved checkpoints
-Each run writes to a timestamped Hydra run directory:
+```bash
+python NLOT/train.py dataset='my_dataset' dataset_path='/path/my_dataset.pt' plot_bounds=[-3,3,-2,2]
+```
+
+- To train on a subset of transitions, use `num_pairs=<k>`.
+
+### 3. Outputs
+
+Each run writes to Hydra output dir:
 
 ```text
 exp/local/<YYYY.MM.DD>/<HHMM>.<geometry>/
 ```
 
-Inside each run directory, the main checkpoint is:
+Checkpoints:
+- `latest.pkl` in run dir.
+- Optional collection copy in `collect_save_dir` (used by reproducibility scripts).
+
+## Reproducing Paper Experiments
+
+All provided `hti_scripts/*.sh` run seeds `0..19` and save checkpoints directly to:
 
 ```text
-latest.pkl
+NLOT/surrogate_models/<experiment>/<method>/
 ```
 
-Other run artifacts include `log.csv` and plots. If `collect_save_dir` is set, a copy of the checkpoint is also written there with an auto-generated filename.
+### 1) Semicircles
 
-
-# Reproducing experiments from the paper
-
-## _Reproducing semicircle results:_
-
-### 1. Generate training data (optional)
-The synthetic training data is already included in the ```NLOT/data/``` directory. However, if you wish to regenerate it:
+Data is already included in `NLOT/data/conditional_semicircles.pt`. Optional regeneration:
 
 ```bash
 cd NLOT
@@ -117,86 +127,65 @@ python generate_synth_data.py
 cd ..
 ```
 
-### 2. Run the HTI methods
-Run the following script to train and evalaute each examined HTI method, over twenty iterations.
+Train all HTI variants:
 
 ```bash
 ./hti_scripts/semicircles.sh
 ```
 
-The NLL and C.D. results can be seen in the wandb project logs.
+Evaluation in terms of NLL/C.D. can be found in wandb logs.
 
-## _Reproducing cancer reward weighting results:_
+### 2) Cancer Reward Weighting (linear)
 
-## 1. Install dependencies for RL environment
-
-```bash
-pip install gymnasium==0.28.1
-pip install DTRGym==0.1.0
-pip install --upgrade typing-extensions
-pip install stable_baselines3==2.6.0 --no-deps
-```
-
-### 2. Train PPO agents and generate training data (optional)
-Training data is already in the required directory, but this can be re-generated as follows. To train PPO agents (for $\lambda_{nk} \in \{0,1,2,3,4,5,6,7,8,9,10\}$):
-
-```bash
-cd DTR-bench
-./train_ppo_agents.sh
-cd ..
-```
-
-or 
-
-```bash
-cd DTR-bench
-./train_ppo_reward_weighting_hinge.sh
-cd ..
-```
-
-for the non-linear reward scalarization experiment.
-
-
-To then generate the training data by running these PPO agents in the environment, run:
+Optional: retrain RL agents and regenerate HTI dataset:
 
 ```bash
 cd DTR-Bench
+./train_ppo_agents.sh
 python reward_agents_data_gen.py
 cd ..
 ```
 
-or 
+This writes HTI training data to `NLOT/data/reward_weighting_data_0_10.pt`.
 
-```bash
-cd DTR-Bench
-python reward_weighting_hinge_data_gen.py
-cd ..
-```
-
-This data will be saved to ```DTR-Bench/reward_weighting_data/reward_weighting_data_0_10.pt``` and ```DTR-Bench/reward_weighting_hinge_data/reward_weighting_hinge_data.pt```, which then needs to be moved to ```NLOT/data/reward_weighting_data_0_10.pt``` and ```NLOT/data/reward_weighting_hinge_data.pt``` to run the HTI models on.
-
-### 3. Run the HTI methods
-Run the following scripts to train the HTI methods, over twenty iterations.
+Train HTI surrogates:
 
 ```bash
 ./hti_scripts/reward_weighting.sh
 ```
 
-```bash
-./hti_scripts/reward_weighting_hinge.sh
-```
-
-Each model will be saved in their own respective runs, in a folder formatted like ```saves/<DATASET>_<GEOMETRY>_<USE_POTENTIAL_ENERGY>_<SEED>_<ALPHA>.pkl```. Each ```.pkl``` file should be moved to a relevant combined folders ```NLOT/surrogate_models/reward_weighting/eucl_no_potential``` ($\mathcal{K}_I$), ```NLOT/surrogate_models/reward_weighting/eucl_w_potential``` ($\mathcal{K}_I - \hat{\mathcal{U}}$), ```NLOT/surrogate_models/reward_weighting/learned_no_potential``` ($\mathcal{K}_\theta$), ```NLOT/surrogate_models/reward_weighting/learned_w_potential``` ($\mathcal{K}_\theta - \hat{\mathcal{U}}$) (or replace ```reward_weighting``` with ```reward_weighting_hinge``` if running non-linear scalarization experiment).
-
-### 4. Run evaluation
-Run script to run each surrogate model in the cancer environment and evaluate the average reward.
+Evaluate in DTR environment:
 
 ```bash
 cd DTR-Bench
 ./run_surrogate_eval.sh
 cd ..
 ```
-or
+
+Results are written under:
+
+```text
+DTR-Bench/surrogate_plots_reward_weighting/<method>/
+```
+
+### 3) Cancer Reward Weighting (hinge)
+
+Optional: retrain RL agents and regenerate HTI dataset:
+
+```bash
+cd DTR-Bench
+./train_ppo_reward_weighting_hinge.sh
+python reward_weighting_hinge_data_gen.py
+cd ..
+```
+
+Train HTI surrogates:
+
+```bash
+./hti_scripts/reward_weighting_hinge.sh
+```
+
+Evaluate:
 
 ```bash
 cd DTR-Bench
@@ -204,32 +193,33 @@ cd DTR-Bench
 cd ..
 ```
 
-The results will be saved in the relevant ```DTR-Bench/surrogate_plots_reward_weighting/<METHOD>``` or ```DTR-Bench/surrogate_plots_hinge/<METHOD>``` folder, with each iteration's average reward in the files ```final_avg_reward_<METHOD>_<ITER>.txt```
+Results are written under:
 
-## _Reproducing Reacher reward weighting results:_
-
-## 1. Install dependencies for RL environment
-
-```bash
-pip install gymnasium[mujoco]
+```text
+DTR-Bench/surrogate_plots_hinge/<method>/
 ```
 
-### 2. Train PPO agents and generate training data (optional)
-To train PPO agents (for $\lambda_{control} \in \{1,2,3,4,5\}$), follow the notebook ```DTR-Bench/reacher.ipynb```
+### 4) Reacher Reward Weighting
 
-This will save the policy data to ```DTR-Bench/reacher_data_<LAMBDA>.pt```, which then need to be combined and moved to ```NLOT/data/reacher_data.pt``` to run the HTI models on.
+Dataset is included as `NLOT/data/reacher_data.pt`.
 
-### 3. Run the HTI methods
-Run the following script to train each examined HTI method, over twenty iterations.
+Optional regeneration from saved Reacher policies:
+
+```bash
+cd DTR-Bench
+python reacher_data_gen.py
+cd ..
+```
+
+This writes HTI training data to `NLOT/data/reacher_data.pt`
+
+Train surrogates:
 
 ```bash
 ./hti_scripts/reacher.sh
 ```
 
-Each model will be saved in ```saves/<DATASET>_<GEOMETRY>_<USE_POTENTIAL_ENERGY>_<SEED>_<ALPHA>.pkl```. Each ```.pkl``` file should be moved to a relevant combined folders ```NLOT/surrogate_models/reacher/eucl_no_potential``` ($\mathcal{K}_I$), ```NLOT/surrogate_models/reacher/eucl_w_potential``` ($\mathcal{K}_I - \hat{\mathcal{U}}$), ```NLOT/surrogate_models/reacher/learned_no_potential``` ($\mathcal{K}_\theta$), ```NLOT/surrogate_models/reacher/learned_w_potential``` ($\mathcal{K}_\theta - \hat{\mathcal{U}}$).
-
-### 4. Run evaluation
-Run the following script to run each surrogate model in the Reacher environment and evaluate the average reward.
+Evaluate:
 
 ```bash
 cd DTR-Bench
@@ -237,41 +227,34 @@ cd DTR-Bench
 cd ..
 ```
 
-The results will be saved in the relevant ```DTR-Bench/surrogate_plots_reacher/<METHOD>```, with each iteration's average reward in the files ```final_avg_reward_<METHOD>_<ITER>.txt```
+Results are written under:
 
-## _Reproducing quantile regression results:_
+```text
+DTR-Bench/surrogate_plots_reacher/<method>/
+```
 
-### 1. Train quantile regression models and generate training data (optional)
+### 5) Quantile Regression
 
-Run the following training script to train NN time-series quantile forecasters on ETT data at $\tau \in \{0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99\}$:
+Dataset is included as `NLOT/data/quantile_data_new.pt`.
+
+Optionally train NN quantile forecasters and generate HTI training data:
 
 ```bash
 cd quantile_regression
 ./train_forecasters.sh
-cd ..
-```
-
-Run the following script to generate forecasts from each model, to act as the HTI training dataset:
-
-```bash
-cd quantile_regression
 ./generate_hti_data.sh
 cd ..
 ```
 
-The data will be saved in ``quantile_regression/hti_data``. Combine the data with the notebook and move the file to ``NLOT/data/quantile_data_new.pt```
+This writes HTI training data to `NLOT/data/quantile_data_new.pt`
 
-### 2. Run the HTI methods
-Run the following script to train each examined HTI method, over twenty iterations.
+Train surrogates:
 
 ```bash
 ./hti_scripts/ett_quantiles.sh
 ```
 
-Each model will be saved in ```saves/<DATASET>_<GEOMETRY>_<USE_POTENTIAL_ENERGY>_<SEED>_<ALPHA>.pkl```. Each ```.pkl``` file should be moved to a relevant combined folders ```NLOT/surrogate_models/ett_quantile/eucl_no_potential``` ($\mathcal{K}_I$), ```NLOT/surrogate_models/ett_quantile/eucl_w_potential``` ($\mathcal{K}_I - \hat{\mathcal{U}}$), ```NLOT/surrogate_models/ett_quantile/learned_no_potential``` ($\mathcal{K}_\theta$), ```NLOT/surrogate_models/ett_quantile/learned_w_potential``` ($\mathcal{K}_\theta - \hat{\mathcal{U}}$).
-
-### 3. Run evaluation
-Run the following script to evaluate the difference between each surrogate forecast and the true NN forecasts at unseen quantiles.
+Evaluate:
 
 ```bash
 cd DTR-Bench
@@ -279,13 +262,15 @@ cd DTR-Bench
 cd ..
 ```
 
-The results will be saved in the relevant ```DTR-Bench/surrogate_plots_ett_quantile/<METHOD>```.
+Results are written under:
 
-## _Reproducing generative dropout results:_
+```text
+DTR-Bench/surrogate_plots_ett_quantile/<method>/
+```
 
-### 1. Train diffusion models and generate training data (optional)
+### 6) Generative Dropout
 
-Run the following script to train diffusion models, and generate data from them, on the two moons dataset at $p \in \{0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99\}$:
+Optional HTI training data regeneration:
 
 ```bash
 cd generative_dropout
@@ -293,20 +278,19 @@ python generate_2moons_dropout_data.py
 cd ..
 ```
 
-The data will be saved in ``generative_dropout/diffusion_2moons_dropout.pt``. Move the file to ``NLOT/data/diffusion_2moons_dropout.pt```
+This writes HTI training data to `NLOT/data/diffusion_2moons_dropout.pt`
 
-
-### 2. Run the HTI methods
-Run the following script to train each examined HTI method, over twenty iterations.
+Train surrogates:
 
 ```bash
 ./hti_scripts/generative_dropout.sh
 ```
 
-The W.D. results can be seen in the wandb project logs.
+Evaluation in terms of W.D. can be found in wandb logs.
 
-# Citation
-```
+## Citation
+
+```bibtex
 @inproceedings{
   amad2026hyperparameter,
   title={Hyperparameter Trajectory Inference with Conditional Lagrangian Optimal Transport},

@@ -6,6 +6,12 @@ geometry: 'sq_euclidean_manifold'
 
 # conditional_semicircles, reward_weighting_data, reacher_data, quantile_data, reward_weighting_hinge_data, 2moons_dropout
 dataset: '2moons_dropout'
+# Optional absolute/relative path to custom .pt data with shape [num_timepoints, num_samples, D+C].
+# If set, built-in dataset preprocessing is skipped.
+dataset_path: null
+# Optional explicit plotting bounds for custom datasets: [xmin, xmax, ymin, ymax].
+# If null for unknown datasets, bounds are inferred from data.
+plot_bounds: null
 D: 2
 C: 1
 categorical: True

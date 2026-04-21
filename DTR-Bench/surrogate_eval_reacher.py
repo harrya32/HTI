@@ -37,6 +37,11 @@ ITER = args.iter
 PLOT_DIR = f"surrogate_plots_reacher/{RUN_NAME}"
 os.makedirs(PLOT_DIR, exist_ok=True)
 WORKSPACES_DIR = f"../NLOT/surrogate_models/reacher/{RUN_NAME}/"
+if not os.path.isdir(WORKSPACES_DIR):
+    raise FileNotFoundError(
+        f"Workspace directory not found: {WORKSPACES_DIR}. "
+        "Train surrogates first via ./hti_scripts/reacher.sh."
+    )
 
 class ReacherRewardWrapper(gym.Wrapper):
     def __init__(self, env, control_cost_weight=1.0):
@@ -168,7 +173,7 @@ print(f"Current working directory: {os.getcwd()}")
 print(f"--- Loading Agent: {AGENT_NAME} ---")
 model_1 = PPO.load(AGENT_PATH_1)
 print(f"Successfully loaded model '{AGENT_NAME}'")
-workspace_files = [f for f in os.listdir(WORKSPACES_DIR) if f.endswith('.pkl')]
+workspace_files = sorted([f for f in os.listdir(WORKSPACES_DIR) if f.endswith('.pkl')])
 print(f"Found {len(workspace_files)} workspace files in {WORKSPACES_DIR}")
 all_workspace_results = {}
 

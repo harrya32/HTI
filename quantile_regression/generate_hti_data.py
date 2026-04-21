@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 import argparse
 import os
+import random
 
 # --- 1. Time Series Dataset (Copied from training script) ---
 class TimeSeriesDataset(Dataset):
@@ -47,11 +48,23 @@ class MLPForecaster(nn.Module):
         x = x.view(x.size(0), -1)
         return self.model(x)
 
+
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    if hasattr(torch.backends, "cudnn"):
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
 # --- 3. Main Generation Function ---
 def generate_data(args):
     """
     Loads a trained model and generates an HTI training dataset from the test data.
     """
+    set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
@@ -129,6 +142,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', type=str, default='hti_data', help='Directory to save the generated HTI training datasets.')
     
     parser.add_argument('--batch_size', type=int, default=128, help='Batch size for inference.')
+    parser.add_argument('--seed', type=int, default=1, help='Random seed for reproducibility.')
 
     args = parser.parse_args()
     

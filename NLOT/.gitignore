@@ -1,2 +1,3 @@
-exp
-__pychache__/
+exp/
+__pycache__/
+*.py[cod]

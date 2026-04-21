@@ -2,9 +2,15 @@ import DTRGym
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import random
 from stable_baselines3 import PPO 
 from stable_baselines3.common.env_util import make_vec_env 
 import torch
+
+SEED = 1
+np.random.seed(SEED)
+random.seed(SEED)
+torch.manual_seed(SEED)
 
 #load in agent
 agent_0 = PPO.load("policies/ppo_ghaffari_cancer_model__0.zip")
@@ -27,6 +33,7 @@ DATASET_DIR = "reward_weighting_data"
 os.makedirs(DATASET_DIR, exist_ok=True)
 
 env = make_vec_env(ENV_NAME, n_envs=1)
+env.seed(SEED)
 
 print('Evaluating agents, using states from agent_10')
 
@@ -74,4 +81,11 @@ dataset = torch.stack(tensor_data)
 dataset_path = os.path.join(DATASET_DIR, "reward_weighting_data_0_10.pt")
 print("Shape of dataset:", dataset.shape)
 torch.save(dataset, dataset_path)
+print(f"Saved local dataset to {dataset_path}")
+
+nlot_data_dir = os.path.join("..", "NLOT", "data")
+os.makedirs(nlot_data_dir, exist_ok=True)
+nlot_dataset_path = os.path.join(nlot_data_dir, "reward_weighting_data_0_10.pt")
+torch.save(dataset, nlot_dataset_path)
+print(f"Copied dataset to {nlot_dataset_path}")
     

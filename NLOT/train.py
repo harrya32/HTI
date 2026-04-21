@@ -21,7 +21,11 @@ import wandb
 import ot
 
 plt.style.use('bmh')
-sys.excepthook = ultratb.FormattedTB(mode='Plain', color_scheme='Neutral', call_pdb=1)
+sys.excepthook = ultratb.FormattedTB(
+    mode='Plain',
+    color_scheme='Neutral',
+    call_pdb=bool(int(os.environ.get("HTI_DEBUG_PDB", "0"))),
+)
 
 class Workspace:
     def __init__(self, cfg):
@@ -36,10 +40,17 @@ class Workspace:
             mode="disabled" if not cfg.get("wandb", True) else "online",
         )
         self.data = self.cfg.dataset
+        dataset_path = self.cfg.get("dataset_path", None)
+        if dataset_path is not None:
+            dataset_path = hydra.utils.to_absolute_path(dataset_path)
 
         self.key = jax.random.PRNGKey(self.cfg.seed)
         self.elapsed_time = 0.
-        self.samplers = data.get_samplers(self.data, num_pairs_requested=self.cfg.get('num_pairs', None))
+        self.samplers = data.get_samplers(
+            self.data,
+            num_pairs_requested=self.cfg.get('num_pairs', None),
+            dataset_path=dataset_path,
+        )
         self.all_samples = jnp.concatenate([next(s) for s in self.samplers], axis=0)
         
         print(f"all_samples shape: {self.all_samples.shape}")
@@ -94,7 +105,11 @@ class Workspace:
         if self.data is None:
             self.data = self.cfg.geometry
 
-        self.geometry.bounds, self.geometry.xbounds, self.geometry.ybounds = data.get_bounds(self.data)
+        self.geometry.bounds, self.geometry.xbounds, self.geometry.ybounds = data.get_bounds(
+            self.data,
+            samples=self.all_samples,
+            custom_bounds=self.cfg.get('plot_bounds', None),
+        )
 
         self.num_pairs = len(self.samplers) - 1
         self.time_points = cfg.get('time_points', np.linspace(0, 1, self.num_pairs + 1))
@@ -409,7 +424,27 @@ class Workspace:
             logf.flush()
         return logf, writer
 
+    def _setup_ax(self, ax, condition=None):
+        """Configure plotting axes consistently across datasets."""
+        xbounds = self.geometry.xbounds
+        ybounds = self.geometry.ybounds
+        if len(xbounds) == 2:
+            ax.set_xlim(float(xbounds[0]), float(xbounds[1]))
+        if len(ybounds) == 2:
+            ax.set_ylim(float(ybounds[0]), float(ybounds[1]))
+
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        if condition is not None:
+            cond_values = np.asarray(condition).tolist()
+            ax.set_title(f"condition={cond_values}")
+
+    def _clean_axis(self, ax):
+        ax.grid(True, alpha=0.2)
+        ax.set_aspect('equal', adjustable='box')
+
     def plot_pushforward(self, num_samples=100):
+        num_samples = min(num_samples, self.eval_samples[0].shape[0])
         all_init_xs = jax.random.choice(
             jax.random.PRNGKey(0), self.eval_samples[0], shape=(num_samples,), replace=False)
 
@@ -728,7 +763,10 @@ def main(cfg):
             raise ValueError("Could not determine dataset name from checkpoint config.")
         workspace.samplers = data.get_samplers(
             dataset_name,
-            num_pairs_requested=workspace.cfg.get("num_pairs", None)
+            num_pairs_requested=workspace.cfg.get("num_pairs", None),
+            dataset_path=hydra.utils.to_absolute_path(workspace.cfg.get("dataset_path", None))
+            if workspace.cfg.get("dataset_path", None) is not None
+            else None,
         )
         workspace.data = dataset_name
         print(f"Re-initialized samplers for loaded workspace (num_pairs={len(workspace.samplers)-1})")

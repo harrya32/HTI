@@ -2,10 +2,23 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 from sklearn.datasets import make_moons
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
+
+SEED = 1
+
+
+def set_seed(seed):
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    if hasattr(torch.backends, "cudnn"):
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
 # ==========================================
 # 1. DATASET SETUP
@@ -96,6 +109,7 @@ def generate_samples(model, num_samples=1000):
 # 4. MAIN EXPERIMENT LOOP
 # ==========================================
 if __name__ == "__main__":
+    set_seed(SEED)
     dropout_settings = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]
     num_samples_per_setting = 1000
     all_results = []
@@ -120,6 +134,10 @@ if __name__ == "__main__":
     
     save_path = "diffusion_2moons_dropout.pt"
     torch.save(hti_dataset, save_path)
+    nlot_save_path = os.path.join("..", "NLOT", "data", "diffusion_2moons_dropout.pt")
+    os.makedirs(os.path.dirname(nlot_save_path), exist_ok=True)
+    torch.save(hti_dataset, nlot_save_path)
     
     print(f"\nSuccessfully saved HTI dataset to {save_path}")
+    print(f"Copied HTI dataset to {nlot_save_path}")
     print(f"Final Tensor Shape: {hti_dataset.shape}")
