@@ -394,7 +394,7 @@ if __name__ == "__main__":
         
         print(f"Semicircle marginals saved to {os.path.join(SCRIPT_PATH, 'eval_marginals_semicircle.pkl')}")
 
-    if False:  # Conditional semicircles
+    if True:  # Conditional semicircles
         #----------------------------------------------------#
         #  Conditional Semicircles Data                      #
         #----------------------------------------------------#
